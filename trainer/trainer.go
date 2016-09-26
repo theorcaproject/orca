@@ -22,8 +22,7 @@ const (
 
 var conf TrainerConfiguration
 var cloudProvider cloud.CloudProvider
-var cloudLayoutCurrent cloud.CloudLayout
-var cloudLayoutDesired cloud.CloudLayout
+var orcaCloud cloud.OrcaCloud
 
 func main() {
 	initTrainer()
@@ -64,8 +63,8 @@ func initCloud() {
 }
 
 func initLayout() {
-	cloudLayoutCurrent = make(map[string]cloud.CloudLayoutElement)
-	cloudLayoutDesired = make(map[string]cloud.CloudLayoutElement)
+	orcaCloud.Current.Layout = make(map[string]cloud.CloudLayoutElement)
+	orcaCloud.Desired.Layout = make(map[string]cloud.CloudLayoutElement)
 }
 
 

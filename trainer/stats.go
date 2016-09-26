@@ -14,7 +14,7 @@ func recordStats(r *http.Request) {
 	if err != nil {
 		Logger.Error(err)
 	} else {
-		updateCurrentCloudLayout(wrapper.HostInfo)
+		orcaCloud.UpdateCurrent(wrapper.HostInfo)
 		Logger.Info(fmt.Printf("%+v", wrapper))
 	}
 }

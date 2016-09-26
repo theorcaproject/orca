@@ -5,7 +5,6 @@ import (
 	"gatoor/orca/base"
 	"encoding/json"
 	"fmt"
-	"gatoor/orca/modules/cloud"
 )
 
 func sendConfig(w http.ResponseWriter) {
@@ -15,7 +14,7 @@ func sendConfig(w http.ResponseWriter) {
 	trainerUpdate.AppsConfiguration = make(map[string]base.AppConfiguration)
 	trainerUpdate.AppsConfiguration["ngin"] = buildAppConfiguration()
 	json.NewEncoder(w).Encode(trainerUpdate)
-	updateDesiredCloudLayout(trainerUpdate)
+	orcaCloud.UpdateDesired(trainerUpdate)
 }
 
 func buildHabitatConfiguration() base.HabitatConfiguration {
@@ -45,43 +44,4 @@ func buildAppConfiguration() base.AppConfiguration {
 	conf.RemoveCommand = base.OsCommand{base.EXEC_COMMAND, base.Command{"echo", "REMOVE"},}
 	Logger.Info(fmt.Printf("%+v", conf))
 	return conf
-}
-
-func updateDesiredCloudLayout(update base.TrainerUpdate) {
-	if _, exists := cloudLayoutDesired[update.TargetHostId]; !exists {
-		cloudLayoutDesired[update.TargetHostId] = cloud.CloudLayoutElement{"", make(map[string]string),}
-	}
-	elem := cloudLayoutDesired[update.TargetHostId]
-	elem.HabitatVersion = update.HabitatConfiguration.Version
-	for _, appConf := range update.AppsConfiguration {
-		elem.AppsVersion[appConf.AppName] = appConf.Version
-	}
-	cloudLayoutDesired[update.TargetHostId] = elem
-}
-
-func updateCurrentCloudLayout(hostInfo base.HostInfo) {
-	if _, exists := cloudLayoutCurrent[hostInfo.Id]; !exists {
-		cloudLayoutCurrent[hostInfo.Id] = cloud.CloudLayoutElement{"", make(map[string]string),}
-	}
-	elem := cloudLayoutCurrent[hostInfo.Id]
-	elem.HabitatVersion = hostInfo.HabitatInfo.Version
-	for _, app := range hostInfo.Apps {
-		elem.AppsVersion[app.Name] = app.CurrentVersion
-	}
-	cloudLayoutCurrent[hostInfo.Id] = elem
-}
-
-func deleteHostFromLayout(layout cloud.CloudLayout, id string) {
-	delete(layout, id)
-}
-
-func addHostToLayout(layout cloud.CloudLayout, id string) {
-	elem := cloud.CloudLayoutElement{}
-	elem.HabitatVersion = "0"
-	elem.AppsVersion = make(map[string]string)
-	layout[id] = elem
-}
-
-func deleteAppFromLayout(layout cloud.CloudLayout, hostId string, appName string) {
-	delete(layout[hostId].AppsVersion, appName)
 }

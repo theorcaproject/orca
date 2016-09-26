@@ -6,7 +6,6 @@ import (
 	"fmt"
 	log "gatoor/orca/base/log"
 	"encoding/json"
-	"gatoor/orca/modules/cloud"
 )
 
 
@@ -33,12 +32,6 @@ func maintenanceInstanceNew(w http.ResponseWriter, r *http.Request) {
 	createInstance()
 }
 
-type Layout struct {
-	Current cloud.CloudLayout
-	Desired cloud.CloudLayout
-}
-
 func status(w http.ResponseWriter, r *http.Request) {
-	layout := Layout{cloudLayoutCurrent, cloudLayoutDesired,}
-	json.NewEncoder(w).Encode(layout)
+	json.NewEncoder(w).Encode(orcaCloud)
 }
