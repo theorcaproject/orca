@@ -19,6 +19,7 @@ import (
 type Configuration struct {
     PollInterval int
     TrainerUrl string
+    HostId string
 }
 
 var configuration Configuration
@@ -55,16 +56,12 @@ func main() {
     poll()
 }
 
-func getHostId() string {
-    return "TODOcalfId"
-}
-
 func getOsInfo() base.OsInfo {
     return base.OsInfo{"", ""}
 }
 
 func initHost() {
-    hostInfo.Id = getHostId()
+    hostInfo.Id = configuration.HostId
     hostInfo.HabitatInfo.Version  = "0"
     hostInfo.HabitatInfo.Status = base.STATUS_INIT
     hostInfo.OsInfo = getOsInfo()
