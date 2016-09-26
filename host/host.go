@@ -34,7 +34,7 @@ var UpdateLogger = log.LoggerWithField(Logger, "Stage", "Update")
 var CmdLogger = log.LoggerWithField(log.AuditLogger, "Type", "cmd")
 
 func main() {
-    file, err := os.Open("/etc/orca/host/host.conf")
+    file, err := os.Open("/etc/orca/host.conf")
     if err != nil {
         Logger.Fatal(err)
     }

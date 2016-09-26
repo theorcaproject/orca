@@ -17,3 +17,4 @@ func LoggerWithField(logger *log.Entry, key string, val string) *log.Entry {
 		key: val,
 	})
 }
+
