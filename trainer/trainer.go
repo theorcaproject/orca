@@ -8,19 +8,16 @@ import (
 	"gatoor/orca/util"
 	"gatoor/orca/modules/cloud"
 	"gatoor/orca/modules/cloud/aws"
+	"gatoor/orca/base"
 )
 
 var Logger = log.Logger
-
-type TrainerConfiguration struct {
-	Port int
-}
 
 const (
 	TRAINER_CONFIG_FILE = "/etc/orca/trainer/trainer.conf"
 )
 
-var conf TrainerConfiguration
+var jsonConf JsonConfiguration
 var cloudProvider cloud.CloudProvider
 var orcaCloud cloud.OrcaCloud
 
@@ -36,7 +33,7 @@ func loadConfig () {
 	}
 
 	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&conf); err != nil {
+	if err := decoder.Decode(&jsonConf); err != nil {
 		extra := ""
 		if serr, ok := err.(*json.SyntaxError); ok {
 			line, col, highlight := util.HighlightBytePosition(file, serr.Offset)
@@ -50,10 +47,10 @@ func loadConfig () {
 
 
 func initTrainer() {
-	conf.Port = 5000
-	initLayout()
-	initCloud()
-	initApi()
+	jsonConf.Trainer.Port = 5000
+	//initLayout()
+	//initCloud()
+	//initApi()
 	Logger.Info("Trainer initialized.")
 }
 
@@ -63,8 +60,8 @@ func initCloud() {
 }
 
 func initLayout() {
-	orcaCloud.Current.Layout = make(map[string]cloud.CloudLayoutElement)
-	orcaCloud.Desired.Layout = make(map[string]cloud.CloudLayoutElement)
+	orcaCloud.Current.Layout = make(map[base.HostId]cloud.CloudLayoutElement)
+	orcaCloud.Desired.Layout = make(map[base.HostId]cloud.CloudLayoutElement)
 }
 
 

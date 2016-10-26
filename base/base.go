@@ -2,11 +2,15 @@ package base
 
 import linuxproc "github.com/c9s/goprocinfo/linux"
 
+type HostId string
+type IpAddr string
+type Version string
+
 type TrainerUpdate struct {
-    Version string
-    TargetHostId string
+    Version Version
+    TargetHostId HostId
     HabitatConfiguration HabitatConfiguration
-    AppsConfiguration map[string]AppConfiguration
+    AppsConfiguration map[HostId]AppConfiguration
 }
 
 type Command struct {
@@ -22,7 +26,6 @@ type OsCommand struct {
 }
 
 
-type AppType string
 
 const (
     APP_HTTP = "http"
@@ -39,31 +42,22 @@ const (
 
 type HostConfiguration struct {
     HabitatConfiguration HabitatConfiguration
-    AppsConfiguration map[string]AppConfiguration
+    AppsConfiguration map[HostId]AppConfiguration
 }
 
 type HabitatConfiguration struct {
-    Version string
+    Version Version
     Commands []OsCommand
 }
 
-type AppConfiguration struct {
-    Version string
-    AppName string
-    AppType AppType
-    InstallCommands []OsCommand
-    QueryStateCommand OsCommand
-    RemoveCommand OsCommand
-}
-
-type AppStatus string
 type HabitatStatus string
 
 type HostInfo struct {
-    Id string
+    HostId HostId
+    IpAddr IpAddr
     HabitatInfo HabitatInfo
     OsInfo OsInfo
-    Apps map[string]AppInfo
+    Apps map[HostId]AppInfo
 }
 
 type OsInfo struct {
@@ -72,14 +66,14 @@ type OsInfo struct {
 }
 
 type HabitatInfo struct {
-    Version string
+    Version Version
     Status HabitatStatus
 }
 
 type AppInfo struct {
     Type AppType
-    Name string
-    CurrentVersion string
+    Name AppName
+    Version Version
     Status AppStatus
     QueryStateCommand OsCommand
     RemoveCommand OsCommand

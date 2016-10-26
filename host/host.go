@@ -151,7 +151,7 @@ func handleAppUpdate(target base.AppConfiguration) bool {
         AppInstallLogger.Info(fmt.Sprintf("App is in DEPLOYING state. Skipping.", target.Version))
         return false
     }
-    if target.Version == hostInfo.Apps[target.AppName].CurrentVersion {
+    if target.Version == hostInfo.Apps[target.AppName].Version {
         if hostInfo.Apps[target.AppName].Status == base.STATUS_DEAD {
             AppInstallLogger.Info(fmt.Sprintf("Received same AppVersion %s. App is in DEAD state. Redeploying...", target.Version))
             return installApp(target)
@@ -159,8 +159,8 @@ func handleAppUpdate(target base.AppConfiguration) bool {
         AppInstallLogger.Info(fmt.Sprintf("Received same AppVersion %s. Nothing to do here", target.Version))
         return false
     }
-    if target.Version > hostInfo.Apps[target.AppName].CurrentVersion {
-        AppInstallLogger.Info(fmt.Sprintf("Received new AppVersion %s. Current AppVersion is %s.", target.Version, hostInfo.Apps[target.AppName].CurrentVersion))
+    if target.Version > hostInfo.Apps[target.AppName].Version {
+        AppInstallLogger.Info(fmt.Sprintf("Received new AppVersion %s. Current AppVersion is %s.", target.Version, hostInfo.Apps[target.AppName].Version))
         return installApp(target)
     }
     return false
@@ -197,7 +197,7 @@ func installApp(conf base.AppConfiguration) bool {
     tempApp.Status = base.STATUS_DEPLOYING
     tempApp.Name = conf.AppName
     tempApp.Type = conf.AppType
-    tempApp.CurrentVersion = conf.Version
+    tempApp.Version = conf.Version
     tempApp.QueryStateCommand = conf.QueryStateCommand
     tempApp.RemoveCommand = conf.RemoveCommand
     hostInfo.Apps[conf.AppName] = tempApp
@@ -290,18 +290,18 @@ func removeApps(conf map[string]base.AppConfiguration) {
 }
 
 type AppState struct {
-    Version string
+    Version base.Version
     Status base.AppStatus
 }
 
 type HabitatState struct {
-    Version string
+    Version base.Version
     Status base.HabitatStatus
 }
 
 type AppLayout struct {
     HabitatState HabitatState
-    Apps map[string]AppState
+    Apps map[base.HostId]AppState
 }
 
 
@@ -313,10 +313,10 @@ func logCurrentLayout() {
 func getCurrentLayout() AppLayout {
     layout := AppLayout{
         HabitatState{hostInfo.HabitatInfo.Version, hostInfo.HabitatInfo.Status},
-        make(map[string]AppState),
+        make(map[base.HostId]AppState),
     }
     for appName := range hostInfo.Apps {
-        layout.Apps[appName] = AppState{hostInfo.Apps[appName].CurrentVersion, hostInfo.Apps[appName].Status,}
+        layout.Apps[appName] = AppState{hostInfo.Apps[appName].Version, hostInfo.Apps[appName].Status,}
     }
     return layout
 }

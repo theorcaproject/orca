@@ -18,3 +18,14 @@ func recordStats(r *http.Request) {
 		Logger.Info(fmt.Printf("%+v", wrapper))
 	}
 }
+
+func sampleHosts() []base.HostInfo{
+	return nil
+}
+
+func isBusy() bool {
+	return false
+}
+
+
+

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	log "gatoor/orca/base/log"
 	"encoding/json"
+	"gatoor/orca/base"
 )
 
 
@@ -18,13 +19,23 @@ func initApi() {
 	r.HandleFunc("/maintenance/instance/new", maintenanceInstanceNew)
 	r.HandleFunc("/status", status)
 	http.Handle("/", r)
-	ApiLogger.Info(fmt.Sprintf("Api running at port %d", conf.Port))
-	http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), nil)
+	ApiLogger.Info(fmt.Sprintf("Api running at port %d", jsonConf.Trainer.Port))
+	http.ListenAndServe(fmt.Sprintf(":%d", jsonConf.Trainer.Port), nil)
 }
 
 func statsHandler(w http.ResponseWriter, r *http.Request) {
 	recordStats(r)
-	sendConfig(w)
+	sendConfig(w, determineTrainerUpdate())
+}
+
+
+func determineTrainerUpdate() base.TrainerUpdate {
+	var trainerUpdate base.TrainerUpdate
+	trainerUpdate.TargetHostId = "172.16.147.189"
+	trainerUpdate.HabitatConfiguration = buildHabitatConfiguration()
+	trainerUpdate.AppsConfiguration = make(map[base.HostId]base.AppConfiguration)
+	trainerUpdate.AppsConfiguration["ngin"] = buildAppConfiguration()
+	return trainerUpdate
 }
 
 func maintenanceInstanceNew(w http.ResponseWriter, r *http.Request) {

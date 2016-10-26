@@ -7,12 +7,7 @@ import (
 	"fmt"
 )
 
-func sendConfig(w http.ResponseWriter) {
-	var trainerUpdate base.TrainerUpdate
-	trainerUpdate.TargetHostId = "TODOcalfId"
-	trainerUpdate.HabitatConfiguration = buildHabitatConfiguration()
-	trainerUpdate.AppsConfiguration = make(map[string]base.AppConfiguration)
-	trainerUpdate.AppsConfiguration["ngin"] = buildAppConfiguration()
+func sendConfig(w http.ResponseWriter, trainerUpdate base.TrainerUpdate) {
 	json.NewEncoder(w).Encode(trainerUpdate)
 	orcaCloud.UpdateDesired(trainerUpdate)
 }
@@ -35,8 +30,8 @@ func buildHabitatConfiguration() base.HabitatConfiguration {
 func buildAppConfiguration() base.AppConfiguration {
 	conf := base.AppConfiguration{}
 	conf.Version = "2"
-	conf.AppName = "ngin"
-	conf.AppType = base.APP_HTTP
+	conf.Name = "ngin"
+	conf.Type = base.APP_HTTP
 	conf.InstallCommands = []base.OsCommand {
 		{base.EXEC_COMMAND, base.Command{"echo", "MORE AMAZING"},},
 	}
@@ -45,3 +40,15 @@ func buildAppConfiguration() base.AppConfiguration {
 	Logger.Info(fmt.Printf("%+v", conf))
 	return conf
 }
+
+
+func buildTrainerUpdate() {
+
+}
+
+func determineNecessaryChanges() {
+
+}
+
+
+
