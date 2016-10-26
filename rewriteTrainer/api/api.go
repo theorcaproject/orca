@@ -17,8 +17,8 @@ type Api struct{}
 var ApiLogger = Logger.LoggerWithField(Logger.Logger, "module", "api")
 var Sampler metrics.Sampler
 
-func (api Api) Init () {
-	ApiLogger.Infof("Initializing Api on Port %d", state_configuration.GlobalConfigurationState.Trainer.Port)
+func (api Api) Init (port int) {
+	ApiLogger.Infof("Initializing Api on Port %d", port)
 
 	r := mux.NewRouter()
 
@@ -30,7 +30,7 @@ func (api Api) Init () {
 
 	http.Handle("/", r)
 
-	err := http.ListenAndServe(fmt.Sprintf(":%d", state_configuration.GlobalConfigurationState.Trainer.Port), nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
 		ApiLogger.Fatalf("Api failed to start - %s", err)
 	}

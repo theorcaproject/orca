@@ -8,6 +8,8 @@ import (
 	"gatoor/orca/rewriteTrainer/api"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/rewriteTrainer/planner"
+	"os"
+	"strconv"
 )
 
 
@@ -20,9 +22,18 @@ type SampleSt struct {
 
 func main() {
 	Logger.InitLogger.Info("Starting trainer...")
-	//initState()
-	//initConfig()
-	//initApi()
+	Logger.InitLogger.Info(os.Args)
+
+	if (len(os.Args) == 2){
+		apiPort, err := strconv.Atoi(os.Args[1])
+		Logger.InitLogger.Info("Api port is %d err: %s" ,apiPort, err)
+		initState()
+		initConfig()
+		initApi(apiPort)
+
+	}else{
+		Logger.InitLogger.Info("Please supply an api port")
+	}
 }
 
 func initPlanner() {
@@ -42,7 +53,9 @@ func initConfig() {
 }
 
 
-func initApi() {
+func initApi(port int) {
+	Logger.InitLogger.Info("init api on port %d", port)
+
 	var a api.Api
-	a.Init()
+	a.Init(port)
 }
