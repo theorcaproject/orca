@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+            crossorigin="anonymous"></script>
+</head>
+<body>
+<style>
+    body {
+        height: 100%;
+    }
+
+    #body {
+        height: 100%;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        display: table;
+        position: absolute;
+        width: 100%;
+    }
+
+    #leftsection {
+        width: 250px;
+        height: 100%;
+        display: table-cell;
+    }
+
+    #lefttitle {
+        height: 50px;
+        padding-top: 11px;
+        padding-left: 41px;
+        border-bottom: solid 1px #463E87;
+        background-color: #4D458E;
+        color: white;
+        font-size: 19px;
+        font-weight: 300;
+    }
+
+    #mainsection {
+        display: table-cell;
+        right: 0px;
+        vertical-align: top;
+    }
+
+    #top {
+        height: 50px;
+        border-bottom: solid 1px #f0f0f0;
+    }
+
+    #leftnav {
+        padding-top: 20px;
+        background-color: #523F8A;
+        height: 100%;
+    }
+
+    #leftnav .navitem {
+        padding-top: 7px;
+        padding-bottom: 7px;
+    }
+
+    #leftnav .selected {
+        background: #5C4E90 !important;
+    }
+
+    #leftnav .navitem a {
+        font-weight: 300;
+        font-size: 17px;
+        color: white;
+        padding-left: 20px;
+    }
+
+    .glyphicon {
+        padding-right: 5px;
+        padding-top: 5px;
+    }
+</style>
+
+<div id="body">
+    <div id="leftsection">
+        <div id="lefttitle">
+            <b>ORCA</b> Dashboard
+        </div>
+        <div id="leftnav">
+            <div class="navitem"><a href="#"><i class="glyphicon glyphicon-home"></i> dashboard</a></div>
+            <div class="navitem selected"><a href="#"><i class="glyphicon glyphicon-th"></i> applications</a></div>
+            <div class="navitem"><a href="#"><i class="glyphicon glyphicon-signal"></i> networking</a></div>
+            <div class="navitem"><a href="#"><i class="glyphicon glyphicon-cog"></i> settings</a></div>
+        </div>
+
+    </div>
+    <div id="mainsection">
+        <div id="top">
+            Dashboard
+        </div>
+        <div id="mainblock">
+            <div class="container-fluid">
+                {% block body %}{% endblock %}
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
