@@ -4,33 +4,39 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
           integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
-          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"
+      integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+      crossorigin="anonymous"></script>
 
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
             integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
             crossorigin="anonymous"></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
+
 <body>
 <style>
     body {
         height: 100%;
     }
 
-    #body {
+    #bodysection {
         height: 100%;
         bottom: 0;
         right: 0;
         left: 0;
         display: table;
-        position: absolute;
         width: 100%;
     }
 
     #leftsection {
         width: 250px;
         height: 100%;
-        display: table-cell;
+        /*display: table-cell;*/
+        min-height:100%;
+        position:fixed
     }
 
     #lefttitle {
@@ -45,7 +51,8 @@
     }
 
     #mainsection {
-        display: table-cell;
+        /*display: table-cell;*/
+        margin-left:260px;
         right: 0px;
         vertical-align: top;
     }
@@ -81,16 +88,26 @@
         padding-right: 5px;
         padding-top: 5px;
     }
+
+    .topnavtitle {
+        padding-left: 20px;
+        padding-top: 10px;
+        font-size: 17px;
+    }
+
+    .subtitle {
+        font-size: 17px;
+        margin-bottom: 8px;
+    }
 </style>
 
-<div id="body">
+<div id="bodysection">
     <div id="leftsection">
         <div id="lefttitle">
             <b>ORCA</b> Dashboard
         </div>
         <div id="leftnav">
-            <div class="navitem"><a href="#"><i class="glyphicon glyphicon-home"></i> dashboard</a></div>
-            <div class="navitem selected"><a href="#"><i class="glyphicon glyphicon-th"></i> applications</a></div>
+            <div class="navitem selected"><a href="/"><i class="glyphicon glyphicon-th"></i> applications</a></div>
             <div class="navitem"><a href="#"><i class="glyphicon glyphicon-signal"></i> networking</a></div>
             <div class="navitem"><a href="#"><i class="glyphicon glyphicon-cog"></i> settings</a></div>
         </div>
@@ -98,7 +115,7 @@
     </div>
     <div id="mainsection">
         <div id="top">
-            Dashboard
+            {% block navigation_top %}{% endblock %}
         </div>
         <div id="mainblock">
             <div class="container-fluid">

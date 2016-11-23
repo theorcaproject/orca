@@ -8,8 +8,8 @@ import (
 	"os"
 	"encoding/json"
 	"gatoor/orca/util"
-	"fmt"
 	"gatoor/orca/rewriteTrainer/state/configuration"
+	"fmt"
 )
 
 const CONFIGURATION_FILE = "/tmp/example.json"
@@ -34,10 +34,16 @@ type AppJsonConfiguration struct {
 	Name base.AppName
 	Version base.Version
 	Type base.AppType
+
 	InstallCommands []base.OsCommand
-	QueryStateCommand base.OsCommand
-	RemoveCommand base.OsCommand
+	InstallFiles []base.OsCommand
+	QueryStateCommand[] base.OsCommand
+	RemoveCommand[] base.OsCommand
 	Needs state_needs.AppNeeds
+
+	Min base.MinInstances
+	Desired base.DesiredInstances
+	Max base.MaxInstances
 }
 
 type CloudJsonConfiguration struct {
@@ -83,6 +89,7 @@ func applyAppsConfig(appsConfs []AppJsonConfiguration) {
 			Type: aConf.Type,
 			Version: aConf.Version,
 			InstallCommands: aConf.InstallCommands,
+			InstallFiles: aConf.InstallFiles,
 			QueryStateCommand: aConf.QueryStateCommand,
 			RemoveCommand: aConf.RemoveCommand,
 		})

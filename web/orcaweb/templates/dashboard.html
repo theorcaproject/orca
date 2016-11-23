@@ -1,4 +1,59 @@
 {% extends "layout.html" %}
+{% block navigation_top %}
+<div class="topnavtitle">Orca Applications</div>
+{%endblock%}
 {% block body %}
-Fuck Fuck
+
+<script>
+    window.create_new_application = function () {
+        jQuery.post("/application", {
+            "name": $("#name").val()
+        });
+        window.location = "";
+    };
+
+    window.open_add_application = function(){
+        $("#addappmodal").modal("show");
+    };
+</script>
+
+<div id="addappmodal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Create New Application</h4>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Application Name</label>
+                    <input type="text" class="form-control" value="" name="filename" id="name">
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="window.create_new_application();">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<br>
+<ul class="list-group">
+    {% for application in configuration %}
+
+    <li class="list-group-item">
+        <span class="badge">{{application.Version}}</span>
+        <span class="badge">{{application.Type}}</span>
+        <a href="/application/{{application.Name}}">{{application.Name}}</a>
+    </li>
+    {% endfor %}
+
+    <li class="list-group-item">
+        <a onclick="window.open_add_application();">Add Application</a>
+    </li>
+</ul>
+
 {% endblock %}

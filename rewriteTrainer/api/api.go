@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/gorilla/mux"
 	"net/http"
-	"fmt"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"encoding/json"
 	"gatoor/orca/rewriteTrainer/state/needs"
@@ -11,6 +10,8 @@ import (
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/rewriteTrainer/metrics"
 	"gatoor/orca/rewriteTrainer/planner"
+	"fmt"
+	"gatoor/orca/rewriteTrainer/config"
 )
 
 type Api struct{}
@@ -27,6 +28,8 @@ func (api Api) Init (port int) {
 	r.HandleFunc("/state/config", getStateConfiguration)
 	r.HandleFunc("/state/cloud", getStateCloud)
 	r.HandleFunc("/state/needs", getStateNeeds)
+
+	r.HandleFunc("/state/config/applications", getConfigApps)
 
 	http.Handle("/", r)
 
@@ -64,6 +67,36 @@ func getStateConfiguration(w http.ResponseWriter, r *http.Request) {
 
 func getStateCloud(w http.ResponseWriter, r *http.Request) {
 	returnJson(w, state_cloud.GlobalCloudLayout.Snapshot())
+}
+
+func getConfigApps(w http.ResponseWriter, r *http.Request) {
+	if(r.Method == "POST"){
+		/* We need to create a new configuration object */
+		var object config.AppJsonConfiguration
+		decoder := json.NewDecoder(r.Body)
+		if err := decoder.Decode(&object); err != nil {
+			ApiLogger.Infof("An error occurred while reading the application information")
+		}
+
+		ApiLogger.Infof("Read new configuration for application %s", object.Name)
+		ApiLogger.Infof("version %s", object.Version)
+
+		var new_version = object.Version + 1
+		state_configuration.GlobalConfigurationState.ConfigureApp(state_configuration.AppConfiguration{
+			Name: object.Name,
+			Type: object.Type,
+			Version: new_version,
+			InstallFiles: object.InstallFiles,
+			InstallCommands: object.InstallCommands,
+			QueryStateCommand: object.QueryStateCommand,
+			RemoveCommand: object.RemoveCommand,
+
+			Min: object.Min,
+			Desired: object.Desired,
+			Max: object.Max,
+		})
+	}
+	returnJson(w, state_configuration.GlobalConfigurationState.GetAllApps())
 }
 
 func getStateNeeds(w http.ResponseWriter, r *http.Request) {
