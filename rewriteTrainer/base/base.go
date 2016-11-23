@@ -1,7 +1,5 @@
 package base
 
-import "gatoor/orca/base"
-
 const (
 	APP_HTTP = "http"
 	APP_WORKER = "worker"
