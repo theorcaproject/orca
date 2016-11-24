@@ -18,8 +18,8 @@ func main() {
 	Logger.InitLogger.Info("Starting trainer...")
 	//scheduler.Start()
 	//initState()
-	//initConfig()
-	initApi()
+	initConfig()
+	//initApi()
 	installer.InstallNewInstance("host2", "172.31.23.39")
 	Logger.InitLogger.Info("Trainer started")
 }
