@@ -3,7 +3,7 @@ package example
 import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/config"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/state/needs"
 )
 

@@ -2,8 +2,7 @@ package api
 
 import (
 	"testing"
-	"gatoor/orca/rewriteTrainer/metrics"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/state/configuration"
@@ -287,6 +286,7 @@ func prepare() {
 	state_cloud.GlobalCloudLayout.Init()
 	tracker.GlobalHostTracker = tracker.HostTracker{}
 	tracker.GlobalAppsStatusTracker = tracker.AppsStatusTracker{}
+	planner.Queue = *planner.NewPlannerQueue()
 	applySampleConfig()
 }
 
@@ -297,24 +297,24 @@ func after() {
 func TestApi_doHandlePush_NoChanges(t *testing.T) {
 	prepare()
 	defer after()
-	app1 := metrics.AppInfo{
+	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
 		Version: "http_1.0",
 		Status: base.STATUS_RUNNING,
 	}
-	app2 := metrics.AppInfo{
+	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_2",
 		Version: "worker_2.0",
 		Status: base.STATUS_RUNNING,
 	}
 
-	info := metrics.HostInfo{
-	      HostId: "host1", Apps: []metrics.AppInfo{app1, app2, app2},
+	info := base.HostInfo{
+	      HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := metrics.StatsWrapper{}
+	stats := base.StatsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -332,8 +332,8 @@ func TestApi_doHandlePush_NoChanges(t *testing.T) {
 		t.Error(errC)
 	}
 
-	info2 := metrics.HostInfo{
-		HostId: "host1", Apps: []metrics.AppInfo{app1, app2, app2, app2},
+	info2 := base.HostInfo{
+		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2, app2},
 	}
 	doHandlePush(info2, stats)
 
@@ -363,24 +363,24 @@ func TestApi_doHandlePush_AppShouldBeUpdated(t *testing.T) {
 	//check that the config contains the updated version
 	prepare()
 	defer after()
-	app1 := metrics.AppInfo{
+	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
 		Version: "http_1.0",
 		Status: base.STATUS_RUNNING,
 	}
-	app2 := metrics.AppInfo{
+	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_1",
 		Version: "worker_1.0",
 		Status: base.STATUS_RUNNING,
 	}
 
-	info := metrics.HostInfo{
-		HostId: "host1", Apps: []metrics.AppInfo{app1, app2, app2},
+	info := base.HostInfo{
+		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := metrics.StatsWrapper{}
+	stats := base.StatsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -399,8 +399,8 @@ func TestApi_doHandlePush_AppShouldBeUpdated(t *testing.T) {
 	}
 
 
-	info2 := metrics.HostInfo{
-		HostId: "host1", Apps: []metrics.AppInfo{app1, app2, app2, app2},
+	info2 := base.HostInfo{
+		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2, app2},
 	}
 
 	//set an update:
@@ -461,24 +461,24 @@ func TestApi_doHandlePush_AppStillUpdating(t *testing.T) {
 	// check that the app tracker is NOT updated
 	prepare()
 	defer after()
-	app1 := metrics.AppInfo{
+	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
 		Version: "http_1.1",
 		Status: base.STATUS_DEPLOYING,
 	}
-	app2 := metrics.AppInfo{
+	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_1",
 		Version: "worker_1.0",
 		Status: base.STATUS_RUNNING,
 	}
 
-	info := metrics.HostInfo{
-		HostId: "host1", Apps: []metrics.AppInfo{app1, app2, app2},
+	info := base.HostInfo{
+		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := metrics.StatsWrapper{}
+	stats := base.StatsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -526,24 +526,24 @@ func TestApi_doHandlePush_AppUpdate(t *testing.T) {
 
 	prepare()
 	defer after()
-	app1 := metrics.AppInfo{
+	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
 		Version: "http_1.1",
 		Status: base.STATUS_RUNNING,
 	}
-	app2 := metrics.AppInfo{
+	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_1",
 		Version: "worker_1.0",
 		Status: base.STATUS_RUNNING,
 	}
 
-	info := metrics.HostInfo{
-		HostId: "host1", Apps: []metrics.AppInfo{app1, app2, app2},
+	info := base.HostInfo{
+		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := metrics.StatsWrapper{}
+	stats := base.StatsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -591,24 +591,24 @@ func TestApi_doHandlePush_AppRollback(t *testing.T) {
 
 	prepare()
 	defer after()
-	app1 := metrics.AppInfo{
+	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
 		Version: "http_1.0",
 		Status: base.STATUS_RUNNING,
 	}
-	app2 := metrics.AppInfo{
+	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_1",
 		Version: "worker_1.0",
 		Status: base.STATUS_RUNNING,
 	}
 
-	info := metrics.HostInfo{
-		HostId: "host1", Apps: []metrics.AppInfo{app1, app2, app2},
+	info := base.HostInfo{
+		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := metrics.StatsWrapper{}
+	stats := base.StatsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -653,24 +653,24 @@ func TestApi_doHandlePush_AppShouldBeRemovedFromHost(t *testing.T) {
 
 	prepare()
 	defer after()
-	app1 := metrics.AppInfo{
+	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
 		Version: "http_1.1",
 		Status: base.STATUS_RUNNING,
 	}
-	app2 := metrics.AppInfo{
+	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_1",
 		Version: "worker_1.0",
 		Status: base.STATUS_RUNNING,
 	}
 
-	info := metrics.HostInfo{
-		HostId: "host1", Apps: []metrics.AppInfo{app1, app2, app2},
+	info := base.HostInfo{
+		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := metrics.StatsWrapper{}
+	stats := base.StatsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -716,24 +716,24 @@ func TestApi_doHandlePush_AppShouldBeScaled(t *testing.T) {
 	//check that the config contains the new deploymentCount
 	prepare()
 	defer after()
-	app1 := metrics.AppInfo{
+	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
 		Version: "http_1.1",
 		Status: base.STATUS_RUNNING,
 	}
-	app2 := metrics.AppInfo{
+	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_1",
 		Version: "worker_1.0",
 		Status: base.STATUS_RUNNING,
 	}
 
-	info := metrics.HostInfo{
-		HostId: "host1", Apps: []metrics.AppInfo{app1, app2, app2},
+	info := base.HostInfo{
+		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := metrics.StatsWrapper{}
+	stats := base.StatsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -755,7 +755,7 @@ func TestApi_doHandlePush_AppShouldBeScaled(t *testing.T) {
 	}
 
 	if conf.DeploymentCount != 5 {
-		t.Error(conf)
+		t.Errorf("%+v", conf)
 	}
 
 	tA := tracker.GlobalAppsStatusTracker["httpApp_1"]["http_1.1"]
@@ -784,11 +784,11 @@ func TestApi_doHandlePush_NewInstance(t *testing.T) {
 	prepare()
 	defer after()
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("somehost")
-	info := metrics.HostInfo{
-		HostId: "new_host", Apps: []metrics.AppInfo{},
+	info := base.HostInfo{
+		HostId: "new_host", Apps: []base.AppInfo{},
 	}
 
-	stats := metrics.StatsWrapper{}
+	stats := base.StatsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 1 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -819,24 +819,24 @@ func TestApi_doHandlePush_AppDied(t *testing.T) {
 
 	prepare()
 	defer after()
-	app1 := metrics.AppInfo{
+	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
 		Version: "http_1.0",
 		Status: base.STATUS_RUNNING,
 	}
-	app2 := metrics.AppInfo{
+	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_2",
 		Version: "worker_2.0",
 		Status: base.STATUS_DEAD,
 	}
 
-	info := metrics.HostInfo{
-		HostId: "host1", Apps: []metrics.AppInfo{app1, app2, app2},
+	info := base.HostInfo{
+		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := metrics.StatsWrapper{}
+	stats := base.StatsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -860,8 +860,8 @@ func TestApi_doHandlePush_AppDied(t *testing.T) {
 		t.Error(errC)
 	}
 
-	info2 := metrics.HostInfo{
-		HostId: "host1", Apps: []metrics.AppInfo{app1, app2, app2, app2},
+	info2 := base.HostInfo{
+		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2, app2},
 	}
 	doHandlePush(info2, stats)
 

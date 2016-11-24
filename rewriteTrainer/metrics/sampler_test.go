@@ -3,15 +3,15 @@ package metrics
 import (
 	"testing"
 	"gatoor/orca/rewriteTrainer/db"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 )
 
 
 func TestSampler_RecordStats(t *testing.T) {
 	db.Init("_test")
 	time := "sometimestamp"
-	stats :=  StatsWrapper{
-		HostStats{1.0, 2.0, 3.5}, make(map[base.AppName]AppStats),
+	stats :=  base.StatsWrapper{
+		base.HostStats{1.0, 2.0, 3.5}, make(map[base.AppName]base.AppStats),
 	}
 	RecordStats("host1", stats, time)
 
@@ -27,12 +27,12 @@ func TestSampler_RecordStats(t *testing.T) {
 func TestSampler_RecordHostInfo(t *testing.T) {
 	db.Init("_test")
 	time := "sometimestamp"
-	info :=  HostInfo{
+	info :=  base.HostInfo{
 		HostId: "host1",
 		IpAddr: "0.0.0.0",
-		OsInfo: OsInfo{},
-		HabitatInfo: HabitatInfo{},
-		Apps: []AppInfo{},
+		OsInfo: base.OsInfo{},
+		HabitatInfo: base.HabitatInfo{},
+		Apps: []base.AppInfo{},
 	}
 	RecordHostInfo(info, time)
 

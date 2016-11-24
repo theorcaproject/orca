@@ -1,7 +1,7 @@
 package tracker
 
 import (
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"time"
 	"sync"

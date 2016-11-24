@@ -3,7 +3,7 @@ package example
 import (
 	"gatoor/orca/rewriteTrainer/config"
 	"gatoor/orca/rewriteTrainer/state/needs"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 )
 
 func AwsJsonConfig() config.JsonConfiguration {

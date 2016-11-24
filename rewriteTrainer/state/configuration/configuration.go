@@ -2,7 +2,7 @@ package state_configuration
 
 import (
 	"sync"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"errors"
 	"sort"
 )
@@ -38,8 +38,8 @@ func (c *ConfigurationState) Snapshot() ConfigurationState {
 	return res
 }
 
-func (c * ConfigurationState) AllAppsLatest() map[base.AppName]AppConfiguration {
-	apps := make(map[base.AppName]AppConfiguration)
+func (c * ConfigurationState) AllAppsLatest() map[base.AppName]base.AppConfiguration {
+	apps := make(map[base.AppName]base.AppConfiguration)
 	configurationStateMutex.Lock()
 	confApps := c.Apps
 	configurationStateMutex.Unlock()
@@ -52,33 +52,33 @@ func (c * ConfigurationState) AllAppsLatest() map[base.AppName]AppConfiguration 
 	return apps
 }
 
-func (c *ConfigurationState) GetApp (name base.AppName, version base.Version) (AppConfiguration, error) {
+func (c *ConfigurationState) GetApp (name base.AppName, version base.Version) (base.AppConfiguration, error) {
 	configurationStateMutex.Lock()
 	defer configurationStateMutex.Unlock()
 	if _, exists := (*c).Apps[name]; !exists {
-		return AppConfiguration{}, errors.New("No such App")
+		return base.AppConfiguration{}, errors.New("No such App")
 	}
 	if _, exists := (*c).Apps[name][version]; !exists {
-		return AppConfiguration{}, errors.New("No such Version")
+		return base.AppConfiguration{}, errors.New("No such Version")
 	}
 	res := (*c).Apps[name][version]
 	return res, nil
 }
 
-func (c *ConfigurationState) GetHabitat (name base.HabitatName, version base.Version) (HabitatConfiguration, error){
+func (c *ConfigurationState) GetHabitat (name base.HabitatName, version base.Version) (base.HabitatConfiguration, error){
 	configurationStateMutex.Lock()
 	defer configurationStateMutex.Unlock()
 	if _, exists := (*c).Habitats[name]; !exists {
-		return HabitatConfiguration{}, errors.New("No such Habitat")
+		return base.HabitatConfiguration{}, errors.New("No such Habitat")
 	}
 	if _, exists := (*c).Habitats[name][version]; !exists {
-		return HabitatConfiguration{}, errors.New("No such Version")
+		return base.HabitatConfiguration{}, errors.New("No such Version")
 	}
 	res := (*c).Habitats[name][version]
 	return res, nil
 }
 
-func (c *ConfigurationState) ConfigureApp (conf AppConfiguration) {
+func (c *ConfigurationState) ConfigureApp (conf base.AppConfiguration) {
 	configurationStateMutex.Lock()
 	defer configurationStateMutex.Unlock()
 	if _, exists := c.Apps[conf.Name]; !exists {
@@ -87,7 +87,7 @@ func (c *ConfigurationState) ConfigureApp (conf AppConfiguration) {
 	c.Apps[conf.Name][conf.Version] = conf
 }
 
-func (c *ConfigurationState) ConfigureHabitat (conf HabitatConfiguration) {
+func (c *ConfigurationState) ConfigureHabitat (conf base.HabitatConfiguration) {
 	configurationStateMutex.Lock()
 	defer configurationStateMutex.Unlock()
 	if _, exists := c.Habitats[conf.Name]; !exists {
@@ -107,7 +107,7 @@ type TrainerConfigurationState struct {
 
 type AppsConfigurationState map[base.AppName]AppConfigurationVersions
 
-type AppConfigurationVersions map[base.Version]AppConfiguration
+type AppConfigurationVersions map[base.Version]base.AppConfiguration
 
 func (a AppConfigurationVersions) LatestVersion() base.Version {
 	var keys []string
@@ -121,23 +121,8 @@ func (a AppConfigurationVersions) LatestVersion() base.Version {
 	return base.Version(keys[0])
 }
 
-type AppConfiguration struct {
-	Name base.AppName
-	Type base.AppType
-	Version base.Version
-	MinDeploymentCount base.DeploymentCount
-	MaxDeploymentCount base.DeploymentCount
-	InstallCommands []base.OsCommand
-	QueryStateCommand base.OsCommand
-	RemoveCommand base.OsCommand
-}
-
 type HabitatsConfigurationState map[base.HabitatName]HabitatConfigurationVersions
 
-type HabitatConfigurationVersions map[base.Version]HabitatConfiguration
+type HabitatConfigurationVersions map[base.Version]base.HabitatConfiguration
 
-type HabitatConfiguration struct {
-	Name base.HabitatName
-	Version base.Version
-	InstallCommands []base.OsCommand
-}
+

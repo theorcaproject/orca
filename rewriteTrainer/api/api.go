@@ -13,6 +13,7 @@ import (
 	"gatoor/orca/rewriteTrainer/responder"
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/tracker"
+	"gatoor/orca/base"
 )
 
 type Api struct{}
@@ -69,7 +70,7 @@ func pushHandler(w http.ResponseWriter, r *http.Request) {
 	returnJson(w, config)
 }
 
-func doHandlePush(hostInfo metrics.HostInfo, stats metrics.StatsWrapper) {
+func doHandlePush(hostInfo base.HostInfo, stats base.StatsWrapper) {
 	timeString, time := db.GetNow()
 
 	metrics.RecordStats(hostInfo.HostId, stats, timeString)

@@ -1,7 +1,7 @@
 package planner
 
 import (
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"errors"
 	"sync"
@@ -293,10 +293,10 @@ func doPlan() {
 }
 
 
-func appPlanningOrder(allApps map[base.AppName]state_configuration.AppConfiguration) ([]base.AppName, []base.AppName) {
+func appPlanningOrder(allApps map[base.AppName]base.AppConfiguration) ([]base.AppName, []base.AppName) {
 	//apps := make([]base.AppName, len(allApps), len(allApps))
-	httpApps := make(map[base.AppName]state_configuration.AppConfiguration)
-	workerApps := make(map[base.AppName]state_configuration.AppConfiguration)
+	httpApps := make(map[base.AppName]base.AppConfiguration)
+	workerApps := make(map[base.AppName]base.AppConfiguration)
 
 	for appName, appObj := range allApps {
 		if appObj.Type == base.APP_HTTP {
@@ -397,7 +397,7 @@ func assignSurplusResources() {
 type HostFinderFunc func (needs state_needs.AppNeeds, app base.AppName, sortedHosts []base.HostId, goodHosts map[base.HostId]bool) base.HostId
 type DeploymentCountFunc func (resources state_cloud.InstanceResources, needs state_needs.AppNeeds) base.DeploymentCount
 
-func planApp(appObj state_configuration.AppConfiguration, hostFinderFunc HostFinderFunc, deploymentCountFunc DeploymentCountFunc, ignoreFailures bool) bool {
+func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploymentCountFunc DeploymentCountFunc, ignoreFailures bool) bool {
 	success := true
 	needs, err := state_needs.GlobalAppsNeedState.Get(appObj.Name, appObj.Version)
 	if err != nil {
@@ -452,11 +452,11 @@ func planApp(appObj state_configuration.AppConfiguration, hostFinderFunc HostFin
 	return success
 }
 
-func planWorker(appObj state_configuration.AppConfiguration, hostFinderFunc HostFinderFunc, ignoreFailures bool) bool {
+func planWorker(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, ignoreFailures bool) bool {
 	return planApp(appObj, hostFinderFunc, maxDeploymentOnHost, ignoreFailures)
 }
 
-func planHttp(appObj state_configuration.AppConfiguration, hostFinderFunc HostFinderFunc, ignoreFailures bool) bool {
+func planHttp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, ignoreFailures bool) bool {
 	httpDeploymentCountFunc := func(resources state_cloud.InstanceResources, needs state_needs.AppNeeds) base.DeploymentCount {
 		return 1
 	}
@@ -542,7 +542,7 @@ func wipeDesired() {
 	}
 }
 
-func forceAssignToHost(hostId base.HostId, app state_configuration.AppConfiguration, count base.DeploymentCount) {
+func forceAssignToHost(hostId base.HostId, app base.AppConfiguration, count base.DeploymentCount) {
 
 }
 
@@ -562,7 +562,7 @@ func addMissingAssign(name base.AppName, version base.Version, ty base.AppType, 
 	missingssignMutex.Unlock()
 }
 
-func assignAppToHost(hostId base.HostId, app state_configuration.AppConfiguration, count base.DeploymentCount) bool {
+func assignAppToHost(hostId base.HostId, app base.AppConfiguration, count base.DeploymentCount) bool {
 	PlannerLogger.Infof("Assign '%s' - '%s' to host '%s' %d times", app.Name, app.Version, hostId, count)
 	needs, err := state_needs.GlobalAppsNeedState.Get(app.Name, app.Version)
 	if err != nil {

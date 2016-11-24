@@ -3,7 +3,7 @@ package planner
 
 import (
 	"testing"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"gatoor/orca/rewriteTrainer/example"
@@ -579,6 +579,7 @@ func TestPlannerQueue_Apply(t *testing.T) {
 func TestPlanner_initialPlan(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
 	state_cloud.GlobalCloudLayout.Init()
+	state_needs.GlobalAppsNeedState = make(map[base.AppName]state_needs.AppNeedVersion)
 
 	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{TotalCpuResource: 10.0, TotalMemoryResource: 10.0, TotalNetworkResource: 10.0,})
 	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{TotalCpuResource: 20.0, TotalMemoryResource: 20.0, TotalNetworkResource: 20.0,})
@@ -830,7 +831,7 @@ func TestPlanner_assignAppToHost(t *testing.T) {
 	})
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 50, MemoryNeeds: 60, NetworkNeeds: 70})
 
-	appConf := state_configuration.AppConfiguration{Name: "app1", Version: "1.0",}
+	appConf := base.AppConfiguration{Name: "app1", Version: "1.0",}
 
 	res, _ := state_cloud.GlobalAvailableInstances.GetResources("host1")
 
@@ -1050,7 +1051,7 @@ func TestPlanner_planHttp_moreInstancesThanNeeded(t *testing.T) {
 
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
-	appObj := state_configuration.AppConfiguration{
+	appObj := base.AppConfiguration{
 		Name: "app1", Version: "1.0", MinDeploymentCount: 2,
 	}
 
@@ -1129,7 +1130,7 @@ func TestPlanner_planHttp_lessInstancesThanNeeded(t *testing.T) {
 
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
-	appObj := state_configuration.AppConfiguration{
+	appObj := base.AppConfiguration{
 		Name: "app1", Version: "1.0", MinDeploymentCount: 8,
 	}
 
@@ -1187,7 +1188,7 @@ func TestPlanner_planWorker_moreInstancesThanNeeded(t *testing.T) {
 
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
-	appObj := state_configuration.AppConfiguration{
+	appObj := base.AppConfiguration{
 		Name: "app1", Version: "1.0", MinDeploymentCount: 5,
 	}
 
@@ -1261,7 +1262,7 @@ func TestPlanner_planWorker_lessInstancesThanNeeded(t *testing.T) {
 
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
-	appObj := state_configuration.AppConfiguration{
+	appObj := base.AppConfiguration{
 		Name: "app1", Version: "1.0", MinDeploymentCount: 20,
 	}
 
@@ -1311,12 +1312,12 @@ func TestPlanner_sortByTotalNeeds(t *testing.T) {
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app3", "3.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app4", "4.0", state_needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
 
-	apps := make(map[base.AppName]state_configuration.AppConfiguration)
+	apps := make(map[base.AppName]base.AppConfiguration)
 
-	apps["app1"] = state_configuration.AppConfiguration{Name: "app1", Version: "1.0"}
-	apps["app2"] = state_configuration.AppConfiguration{Name: "app2", Version: "2.0"}
-	apps["app3"] = state_configuration.AppConfiguration{Name: "app3", Version: "3.0"}
-	apps["app4"] = state_configuration.AppConfiguration{Name: "app4", Version: "4.0"}
+	apps["app1"] = base.AppConfiguration{Name: "app1", Version: "1.0"}
+	apps["app2"] = base.AppConfiguration{Name: "app2", Version: "2.0"}
+	apps["app3"] = base.AppConfiguration{Name: "app3", Version: "3.0"}
+	apps["app4"] = base.AppConfiguration{Name: "app4", Version: "4.0"}
 
 	sorted := sortByTotalNeeds(apps)
 
@@ -1340,16 +1341,16 @@ func TestPlanner_appPlanningOrder(t *testing.T) {
 	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp3", "3.0", state_needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 20.0, NetworkNeeds: 20.0,})
 	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp4", "4.0", state_needs.AppNeeds{CpuNeeds: 100.0, MemoryNeeds: 10.0, NetworkNeeds: 10.0,})
 
-	apps := make(map[base.AppName]state_configuration.AppConfiguration)
+	apps := make(map[base.AppName]base.AppConfiguration)
 
-	apps["httpApp1"] = state_configuration.AppConfiguration{Name: "httpApp1", Version: "1.0", Type: base.APP_HTTP}
-	apps["httpApp2"] = state_configuration.AppConfiguration{Name: "httpApp2", Version: "2.0", Type: base.APP_HTTP}
-	apps["httpApp3"] = state_configuration.AppConfiguration{Name: "httpApp3", Version: "3.0", Type: base.APP_HTTP}
-	apps["httpApp4"] = state_configuration.AppConfiguration{Name: "httpApp4", Version: "4.0", Type: base.APP_HTTP}
-	apps["workerApp1"] = state_configuration.AppConfiguration{Name: "workerApp1", Version: "1.0", Type: base.APP_WORKER}
-	apps["workerApp2"] = state_configuration.AppConfiguration{Name: "workerApp2", Version: "2.0", Type: base.APP_WORKER}
-	apps["workerApp3"] = state_configuration.AppConfiguration{Name: "workerApp3", Version: "3.0", Type: base.APP_WORKER}
-	apps["workerApp4"] = state_configuration.AppConfiguration{Name: "workerApp4", Version: "4.0", Type: base.APP_WORKER}
+	apps["httpApp1"] = base.AppConfiguration{Name: "httpApp1", Version: "1.0", Type: base.APP_HTTP}
+	apps["httpApp2"] = base.AppConfiguration{Name: "httpApp2", Version: "2.0", Type: base.APP_HTTP}
+	apps["httpApp3"] = base.AppConfiguration{Name: "httpApp3", Version: "3.0", Type: base.APP_HTTP}
+	apps["httpApp4"] = base.AppConfiguration{Name: "httpApp4", Version: "4.0", Type: base.APP_HTTP}
+	apps["workerApp1"] = base.AppConfiguration{Name: "workerApp1", Version: "1.0", Type: base.APP_WORKER}
+	apps["workerApp2"] = base.AppConfiguration{Name: "workerApp2", Version: "2.0", Type: base.APP_WORKER}
+	apps["workerApp3"] = base.AppConfiguration{Name: "workerApp3", Version: "3.0", Type: base.APP_WORKER}
+	apps["workerApp4"] = base.AppConfiguration{Name: "workerApp4", Version: "4.0", Type: base.APP_WORKER}
 
 	sortedHttp, sortedWorker := appPlanningOrder(apps)
 
@@ -1529,7 +1530,7 @@ func TestPlanner_handleFailedAssign_http(t *testing.T) {
 
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
-	state_configuration.GlobalConfigurationState.ConfigureApp(state_configuration.AppConfiguration{
+	state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 		Name: "app1",
 		Type: base.APP_HTTP,
 		Version: "1.0",
@@ -1578,7 +1579,7 @@ func TestPlanner_handleFailedAssign_worker(t *testing.T) {
 
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
-	state_configuration.GlobalConfigurationState.ConfigureApp(state_configuration.AppConfiguration{
+	state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 		Name: "app1",
 		Type: base.APP_WORKER,
 		Version: "1.0",

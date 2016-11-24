@@ -1,10 +1,9 @@
 package state_cloud_test
 
 import (
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"testing"
-	"gatoor/orca/rewriteTrainer/metrics"
 )
 
 func prepareLayoutState() state_cloud.CloudLayoutAll {
@@ -281,38 +280,38 @@ func TestUpdateHost(t *testing.T) {
 	}
 
 
-	appInfo1 := metrics.AppInfo{
+	appInfo1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "app1",
 		Version: "1.0",
 		Status: base.STATUS_DEPLOYING,
 	}
 
-	appInfo2 := metrics.AppInfo{
+	appInfo2 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "app1",
 		Version: "1.0",
 		Status: base.STATUS_RUNNING,
 	}
-	appInfo3 := metrics.AppInfo{
+	appInfo3 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "app2",
 		Version: "2.0",
 		Status: base.STATUS_RUNNING,
 	}
-	appInfo4 := metrics.AppInfo{
+	appInfo4 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "app2",
 		Version: "2.0",
 		Status: base.STATUS_RUNNING,
 	}
 
-	hostInfo := metrics.HostInfo{
+	hostInfo := base.HostInfo{
 		HostId: "hostId1",
 		IpAddr: "1.1.1.1",
-		OsInfo: metrics.OsInfo{},
-		HabitatInfo: metrics.HabitatInfo{},
-		Apps: []metrics.AppInfo{appInfo1, appInfo2, appInfo3, appInfo4},
+		OsInfo: base.OsInfo{},
+		HabitatInfo: base.HabitatInfo{},
+		Apps: []base.AppInfo{appInfo1, appInfo2, appInfo3, appInfo4},
 	}
 
 	state.Current.UpdateHost(hostInfo)

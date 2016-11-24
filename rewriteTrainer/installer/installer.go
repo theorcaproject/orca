@@ -3,7 +3,7 @@ package installer
 import (
 	orcaSSh "gatoor/orca/util"
 	Logger "gatoor/orca/rewriteTrainer/log"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 )
 
 var InstallerLogger = Logger.LoggerWithField(Logger.Logger, "module", "installer")

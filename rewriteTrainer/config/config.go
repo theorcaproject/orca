@@ -1,7 +1,7 @@
 package config
 
 import (
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/cloud"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/rewriteTrainer/state/needs"
@@ -80,7 +80,7 @@ func (j *JsonConfiguration)  ApplyToState() {
 
 func applyAppsConfig(appsConfs []AppJsonConfiguration) {
 	for _, aConf := range appsConfs {
-		state_configuration.GlobalConfigurationState.ConfigureApp(state_configuration.AppConfiguration{
+		state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 			Name: aConf.Name,
 			Type: aConf.Type,
 			Version: aConf.Version,
@@ -95,7 +95,7 @@ func applyAppsConfig(appsConfs []AppJsonConfiguration) {
 
 func applyHabitatConfig (habitatConfs []HabitatJsonConfiguration) {
 	for _, hConf := range habitatConfs {
-		state_configuration.GlobalConfigurationState.ConfigureHabitat(state_configuration.HabitatConfiguration{
+		state_configuration.GlobalConfigurationState.ConfigureHabitat(base.HabitatConfiguration{
 			Name: hConf.Name,
 			Version: hConf.Version,
 			InstallCommands: hConf.InstallCommands,

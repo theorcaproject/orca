@@ -5,7 +5,7 @@ import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"gatoor/orca/rewriteTrainer/planner"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 )
 
 

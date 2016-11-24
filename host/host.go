@@ -1,15 +1,14 @@
-package main
+package host
 
 import (
     "os"
     "encoding/json"
     "time"
     "fmt"
-    "bytes"
-    "net/http"
-    linuxproc "github.com/c9s/goprocinfo/linux"
+    //"bytes"
+    //"net/http"
     "gatoor/orca/util"
-    base "gatoor/orca/base"
+    "gatoor/orca/base"
     log "gatoor/orca/base/log"
     "io/ioutil"
     "os/exec"
@@ -19,7 +18,7 @@ import (
 type Configuration struct {
     PollInterval int
     TrainerUrl string
-    HostId string
+    HostId base.HostId
 }
 
 var configuration Configuration
@@ -65,7 +64,7 @@ func initHost() {
     hostInfo.HabitatInfo.Version  = "0"
     hostInfo.HabitatInfo.Status = base.STATUS_INIT
     hostInfo.OsInfo = getOsInfo()
-    hostInfo.Apps = make(map[string]base.AppInfo)
+    hostInfo.Apps = make(map[base.HostId]base.AppInfo)
 }
 
 func poll() {
@@ -75,49 +74,47 @@ func poll() {
         //if err != nil {
         //    Logger.Warn("stat read fail")
         //sendStats(stat)
-        queryAppsState()
+        //queryAppsState()
         logCurrentLayout()
-        sendStats(nil)
+        //sendStats(nil)
         logCurrentLayout()
         time.Sleep(time.Second * time.Duration(configuration.PollInterval))
     }
 }
 
-func sendStats(stat *linuxproc.Stat) {
-    wrapper := base.StatsWrapper{hostInfo, stat}
-    b := new(bytes.Buffer)
-    json.NewEncoder(b).Encode(wrapper)
-    res, err := http.Post(configuration.TrainerUrl, "application/json; charset=utf-8", b)
-    Logger.Info(fmt.Sprintf("Sent stats to %s", configuration.TrainerUrl))
-    if err != nil {
-        Logger.Error(fmt.Sprintf("Failed to send stats - %s", err))
-    } else {
-        defer res.Body.Close()
-        body, err := ioutil.ReadAll(res.Body)
-        if err != nil {
-            Logger.Error(fmt.Sprintf("Failed to get response - %s", err))
-        } else {
-            handleUpdate(body)
-        }
-    }
-}
+//func sendStats(stat *linuxproc.Stat) {
+//    wrapper := base.StatsWrapper{hostInfo, stat}
+//    b := new(bytes.Buffer)
+//    json.NewEncoder(b).Encode(wrapper)
+//    res, err := http.Post(configuration.TrainerUrl, "application/json; charset=utf-8", b)
+//    Logger.Info(fmt.Sprintf("Sent stats to %s", configuration.TrainerUrl))
+//    if err != nil {
+//        Logger.Error(fmt.Sprintf("Failed to send stats - %s", err))
+//    } else {
+//        defer res.Body.Close()
+//        body, err := ioutil.ReadAll(res.Body)
+//        if err != nil {
+//            Logger.Error(fmt.Sprintf("Failed to get response - %s", err))
+//        } else {
+//            handleUpdate(body)
+//        }
+//    }
+//}
 
 func handleUpdate(body []byte) {
-    var trainerUpdate base.TrainerUpdate
-    if err := json.Unmarshal(body, &trainerUpdate); err != nil {
+    var config base.PushConfiguration
+    if err := json.Unmarshal(body, &config); err != nil {
         Logger.Error(fmt.Sprintf("Failed to parse response - %s HTTP_BODY: %s", err, string(body)))
     } else {
-        if trainerUpdate.TargetHostId != hostInfo.HostId {
-            UpdateLogger.Error(fmt.Sprintf("Received incorrect update, HostId is %s but received TargetId %s", hostInfo.Id, trainerUpdate.TargetHostId))
+        if config.TargetHostId != hostInfo.HostId {
+            UpdateLogger.Error(fmt.Sprintf("Received incorrect update, HostId is %s but received TargetId %s", hostInfo.HostId, config.TargetHostId))
             return
         }
         UpdateLogger.Info("Starting update...")
-        handleHabitatUpdate(trainerUpdate.HabitatConfiguration)
+        handleHabitatUpdate(config.HabitatConfiguration)
         if hostInfo.HabitatInfo.Status == base.STATUS_RUNNING {
-            for _, val := range trainerUpdate.AppsConfiguration {
-                handleAppUpdate(val)
-            }
-            removeApps(trainerUpdate.AppsConfiguration)
+            handleAppUpdate(config.AppConfiguration)
+            //removeApps(config.AppConfiguration)
         } else {
             UpdateLogger.Info(fmt.Sprintf("Habitat is in %s state, skipping Apps update.", hostInfo.HabitatInfo.Status))
         }
@@ -141,7 +138,7 @@ func handleHabitatUpdate(target base.HabitatConfiguration) bool {
 }
 
 func handleAppUpdate(target base.AppConfiguration) bool {
-    AppInstallLogger := log.LoggerWithField(AppInstallBaseLogger, "AppName", target.Name)
+    AppInstallLogger := log.LoggerWithField(AppInstallBaseLogger, "AppName", string(target.Name))
     _, exists := hostInfo.Apps[target.Name]
     if !exists {
         AppInstallLogger.Info(fmt.Sprintf("Received new App %s with AppVersion %s", target.Name, target.Version))
@@ -172,15 +169,15 @@ func installHabitat(conf base.HabitatConfiguration) bool {
     }
 
     HabitatInstallLogger.Info(fmt.Sprintf("Starting install of HabitatInfo.Version  %s", conf.Version))
-    hostInfo.HabitatInfo.Status = base.STATUS_DEPLOYING
-    for _, command := range conf.Commands {
-        res := executeCommand(command)
-        if !res {
-            HabitatInstallLogger.Error(fmt.Sprintf("Install of HabitatInfo.Version  %s failed", conf.Version))
-            hostInfo.HabitatInfo.Status = base.STATUS_DEAD
-            return false
-        }
-    }
+    //hostInfo.HabitatInfo.Status = base.STATUS_DEPLOYING
+    //for _, command := range conf.Commands {
+    //    res := executeCommand(command)
+    //    if !res {
+    //        HabitatInstallLogger.Error(fmt.Sprintf("Install of HabitatInfo.Version  %s failed", conf.Version))
+    //        hostInfo.HabitatInfo.Status = base.STATUS_DEAD
+    //        return false
+    //    }
+    //}
     HabitatInstallLogger.Info(fmt.Sprintf("Install of HabitatInfo.Version  %s successful", conf.Version))
     hostInfo.HabitatInfo.Status = base.STATUS_RUNNING
     hostInfo.HabitatInfo.Version = conf.Version
@@ -193,26 +190,26 @@ func installApp(conf base.AppConfiguration) bool {
         AppInstallLogger.Info(fmt.Sprintf("App Status is %s, aborting install", hostInfo.Apps[conf.Name].Status))
     }
     AppInstallLogger.Info(fmt.Sprintf("Starting install of AppVersion %s", conf.Version))
-    tempApp := hostInfo.Apps[conf.Name]
-    tempApp.Status = base.STATUS_DEPLOYING
-    tempApp.Name = conf.Name
-    tempApp.Type = conf.Type
-    tempApp.Version = conf.Version
-    tempApp.QueryStateCommand = conf.QueryStateCommand
-    tempApp.RemoveCommand = conf.RemoveCommand
-    hostInfo.Apps[conf.Name] = tempApp
-    for _, command := range conf.InstallCommands {
-        res := executeCommand(command)
-        if !res {
-            AppInstallLogger.Error(fmt.Sprintf("Install of AppVersion %s failed", conf.Version))
-            tempApp.Status = base.STATUS_DEAD
-            hostInfo.Apps[conf.Name] = tempApp
-            return false
-        }
-    }
+    //tempApp := hostInfo.Apps[conf.Name]
+    //tempApp.Status = base.STATUS_DEPLOYING
+    //tempApp.Name = conf.Name
+    //tempApp.Type = conf.Type
+    //tempApp.Version = conf.Version
+    //tempApp.QueryStateCommand = conf.QueryStateCommand
+    //tempApp.RemoveCommand = conf.RemoveCommand
+    //hostInfo.Apps[conf.Name] = tempApp
+    //for _, command := range conf.InstallCommands {
+    //    res := executeCommand(command)
+    //    if !res {
+    //        AppInstallLogger.Error(fmt.Sprintf("Install of AppVersion %s failed", conf.Version))
+    //        tempApp.Status = base.STATUS_DEAD
+    //        hostInfo.Apps[conf.Name] = tempApp
+    //        return false
+    //    }
+    //}
     AppInstallLogger.Info(fmt.Sprintf("Install of AppVersion %s successful", conf.Version))
-    tempApp.Status = base.STATUS_RUNNING
-    hostInfo.Apps[conf.Name] = tempApp
+    //tempApp.Status = base.STATUS_RUNNING
+    //hostInfo.Apps[conf.Name] = tempApp
     return true
 }
 
@@ -257,36 +254,36 @@ func executeExecCommand(command base.Command) bool {
 }
 
 
-func queryAppsState() {
-    for appName := range hostInfo.Apps {
-        var AppLogger = log.LoggerWithField(AppInstallBaseLogger, "AppName", appName)
-        tempApp := hostInfo.Apps[appName]
-        if tempApp.Status == base.STATUS_DEAD || tempApp.Status == base.STATUS_RUNNING {
-            AppLogger.Infof("Querying App state: %+v", tempApp)
-            res := executeCommand(tempApp.QueryStateCommand)
-            if res {
-                tempApp.Status = base.STATUS_RUNNING
-            } else {
-                tempApp.Status = base.STATUS_DEAD
-            }
-            hostInfo.Apps[appName] = tempApp
-            AppLogger.Info(fmt.Sprintf("Updating App state to %s.", tempApp.Status))
-        }
-    }
-}
+//func queryAppsState() {
+//    for appName := range hostInfo.Apps {
+//        var AppLogger = log.LoggerWithField(AppInstallBaseLogger, "AppName", appName)
+//        tempApp := hostInfo.Apps[appName]
+//        if tempApp.Status == base.STATUS_DEAD || tempApp.Status == base.STATUS_RUNNING {
+//            AppLogger.Infof("Querying App state: %+v", tempApp)
+//            res := executeCommand(tempApp.QueryStateCommand)
+//            if res {
+//                tempApp.Status = base.STATUS_RUNNING
+//            } else {
+//                tempApp.Status = base.STATUS_DEAD
+//            }
+//            hostInfo.Apps[appName] = tempApp
+//            AppLogger.Info(fmt.Sprintf("Updating App state to %s.", tempApp.Status))
+//        }
+//    }
+//}
 
-func removeApps(conf map[string]base.AppConfiguration) {
-    for appName := range hostInfo.Apps {
-        _, exists := conf[appName]
-        if !exists {
-            var AppLogger = log.LoggerWithField(AppInstallBaseLogger, "AppName", appName)
-            AppLogger.Infof("Removing App %s from Host...", appName)
-            executeCommand(hostInfo.Apps[appName].RemoveCommand)
-            delete(hostInfo.Apps, appName)
-            AppLogger.Infof("Removed App %s from Host.", appName)
-        }
-    }
-}
+//func removeApps(conf map[base.HostId]base.AppConfiguration) {
+//    for appName := range hostInfo.Apps {
+//        _, exists := conf[appName]
+//        if !exists {
+//            var AppLogger = log.LoggerWithField(AppInstallBaseLogger, "AppName", appName)
+//            AppLogger.Infof("Removing App %s from Host...", appName)
+//            executeCommand(hostInfo.Apps[appName].RemoveCommand)
+//            delete(hostInfo.Apps, appName)
+//            AppLogger.Infof("Removed App %s from Host.", appName)
+//        }
+//    }
+//}
 
 type AppState struct {
     Version base.Version

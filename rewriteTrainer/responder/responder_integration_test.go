@@ -6,7 +6,7 @@ import (
 	"gatoor/orca/rewriteTrainer/planner"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"gatoor/orca/rewriteTrainer/state/needs"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/config"
 )
 
@@ -16,6 +16,7 @@ func initTrainer() {
 	state_needs.GlobalAppsNeedState = state_needs.AppsNeedState{}
 	applySampleConfig()
 	initCloudProvider()
+	planner.Queue = *planner.NewPlannerQueue()
 }
 
 func applySampleConfig() {

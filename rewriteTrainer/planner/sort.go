@@ -3,7 +3,7 @@ package planner
 import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/state/configuration"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"sort"
 	"gatoor/orca/rewriteTrainer/state/needs"
 )
@@ -99,7 +99,7 @@ func (p ConfList) Less(i, j int) bool { return (int(p[i].Val.CpuNeeds) + int(p[i
 func (p ConfList) Swap(i, j int){ p[i], p[j] = p[j], p[i] }
 
 
-func sortByTotalNeeds(apps map[base.AppName]state_configuration.AppConfiguration) []base.AppName {
+func sortByTotalNeeds(apps map[base.AppName]base.AppConfiguration) []base.AppName {
 	sorted := make([]base.AppName, len(apps), len(apps))
 	appList := make(ConfList, len(apps), len(apps))
 	c := 0

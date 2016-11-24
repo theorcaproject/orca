@@ -6,7 +6,7 @@ import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/rewriteTrainer/config"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"fmt"
 	"github.com/Sirupsen/logrus"
@@ -691,7 +691,7 @@ func TestPlannerIntegration_initialPlan_BigAssDeployment(t *testing.T) {
 		c := rand.Intn(1000)
 		d := rand.Intn(1000)
 		appCount += c + d
-		state_configuration.GlobalConfigurationState.ConfigureApp(state_configuration.AppConfiguration{
+		state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 			Name: base.AppName("fillerHttp_" + fmt.Sprint(i)),
 			Type: base.APP_HTTP,
 			Version: "1.0",
@@ -701,7 +701,7 @@ func TestPlannerIntegration_initialPlan_BigAssDeployment(t *testing.T) {
 			CpuNeeds: state_needs.CpuNeeds(rand.Intn(10) + 1), MemoryNeeds: state_needs.MemoryNeeds(rand.Intn(10) + 1), NetworkNeeds: state_needs.NetworkNeeds(rand.Intn(10) + 1),
 		})
 
-		state_configuration.GlobalConfigurationState.ConfigureApp(state_configuration.AppConfiguration{
+		state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 			Name: base.AppName("fillerWorker_" + fmt.Sprint(i)),
 			Type: base.APP_WORKER,
 			Version: "1.0",

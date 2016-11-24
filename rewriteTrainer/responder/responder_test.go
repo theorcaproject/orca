@@ -4,10 +4,9 @@ package responder
 import (
 	"testing"
 	"gatoor/orca/rewriteTrainer/planner"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/state/configuration"
-	"gatoor/orca/rewriteTrainer/metrics"
 	"gatoor/orca/rewriteTrainer/tracker"
 )
 
@@ -96,10 +95,10 @@ func TestResponder_GetConfigForHost_HasChanges(t *testing.T) {
 	}
 
 	state_configuration.GlobalConfigurationState.Init()
-	state_configuration.GlobalConfigurationState.ConfigureApp(state_configuration.AppConfiguration{
+	state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 		Name: "app1", Type: base.APP_HTTP, Version: "1.0",
 	})
-	state_configuration.GlobalConfigurationState.ConfigureApp(state_configuration.AppConfiguration{
+	state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 		Name: "app2", Type: base.APP_HTTP, Version: "2.0",
 	})
 
@@ -126,7 +125,7 @@ func TestResponder_simpleAppCheck(t *testing.T) {
 		t.Error(tracker.GlobalAppsStatusTracker)
 	}
 
-	simpleAppCheck(metrics.AppInfo{Name: "app1", Version:"1.0", Status:base.STATUS_RUNNING}, "host1")
+	simpleAppCheck(base.AppInfo{Name: "app1", Version:"1.0", Status:base.STATUS_RUNNING}, "host1")
 
 	if len(tracker.GlobalAppsStatusTracker) != 1 {
 		t.Error(tracker.GlobalAppsStatusTracker)
@@ -141,7 +140,7 @@ func TestResponder_simpleAppCheck(t *testing.T) {
 	}
 
 
-	simpleAppCheck(metrics.AppInfo{Name: "app1", Version:"1.0", Status:base.STATUS_DEAD}, "host1")
+	simpleAppCheck(base.AppInfo{Name: "app1", Version:"1.0", Status:base.STATUS_DEAD}, "host1")
 
 	if len(tracker.GlobalAppsStatusTracker) != 1 {
 		t.Error(tracker.GlobalAppsStatusTracker)
@@ -174,7 +173,7 @@ func TestResponder_checkAppUpdate(t *testing.T) {
 		t.Error(before)
 	}
 
-	checkAppUpdate(metrics.AppInfo{Name: "app1", Version:"1.0", Status:base.STATUS_RUNNING}, "host1", before["app1"])
+	checkAppUpdate(base.AppInfo{Name: "app1", Version:"1.0", Status:base.STATUS_RUNNING}, "host1", before["app1"])
 
 	if len(tracker.GlobalAppsStatusTracker) != 0 {
 		t.Error(tracker.GlobalAppsStatusTracker)
@@ -188,7 +187,7 @@ func TestResponder_checkAppUpdate(t *testing.T) {
 		t.Error(before1)
 	}
 
-	checkAppUpdate(metrics.AppInfo{Name: "app1", Version:"1.0", Status:base.STATUS_DEAD}, "host1", before1["app1"])
+	checkAppUpdate(base.AppInfo{Name: "app1", Version:"1.0", Status:base.STATUS_DEAD}, "host1", before1["app1"])
 
 	if len(tracker.GlobalAppsStatusTracker) != 0 {    // Illegal state, do nothing
 		t.Error(tracker.GlobalAppsStatusTracker)
@@ -208,7 +207,7 @@ func TestResponder_checkAppUpdate(t *testing.T) {
 
 	// app is dead - the update crashed the app and no rollback
 
-	checkAppUpdate(metrics.AppInfo{Name: "app1", Version:"1.0", Status:base.STATUS_DEAD}, "host1", before2["app1"])
+	checkAppUpdate(base.AppInfo{Name: "app1", Version:"1.0", Status:base.STATUS_DEAD}, "host1", before2["app1"])
 
 	if len(tracker.GlobalAppsStatusTracker) != 1 {
 		t.Error(tracker.GlobalAppsStatusTracker)

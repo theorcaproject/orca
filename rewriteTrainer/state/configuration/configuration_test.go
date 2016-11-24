@@ -2,7 +2,7 @@ package state_configuration_test
 
 import (
 	"gatoor/orca/rewriteTrainer/state/configuration"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"testing"
 )
 
@@ -14,7 +14,7 @@ func prepareConfigState() state_configuration.ConfigurationState {
 
 func TestConfigureApp(t *testing.T) {
 	GlobalConfig := prepareConfigState()
-	GlobalConfig.ConfigureApp(state_configuration.AppConfiguration{
+	GlobalConfig.ConfigureApp(base.AppConfiguration{
 		"appname", base.APP_HTTP, "0.1", 1, 2,
 		[]base.OsCommand{
 			{
@@ -62,7 +62,7 @@ func TestConfigureApp(t *testing.T) {
 
 func TestConfigureHabitat(t *testing.T) {
 	GlobalConfig := prepareConfigState()
-	GlobalConfig.ConfigureHabitat(state_configuration.HabitatConfiguration{"habname", "0.1", []base.OsCommand{
+	GlobalConfig.ConfigureHabitat(base.HabitatConfiguration{"habname", "0.1", []base.OsCommand{
 		{
 			base.EXEC_COMMAND,
 			base.Command{
@@ -93,8 +93,8 @@ func TestConfigureHabitat(t *testing.T) {
 func TestAppConfigurationVersions_LatestVersion(t *testing.T) {
 	dict := state_configuration.AppConfigurationVersions{}
 
-	dict["0.1"] = state_configuration.AppConfiguration{}
-	dict["0.12"] = state_configuration.AppConfiguration{}
+	dict["0.1"] = base.AppConfiguration{}
+	dict["0.12"] = base.AppConfiguration{}
 
 	latest := dict.LatestVersion()
 
@@ -102,7 +102,7 @@ func TestAppConfigurationVersions_LatestVersion(t *testing.T) {
 		t.Error("wrong version")
 	}
 
-	dict["0.2"] = state_configuration.AppConfiguration{}
+	dict["0.2"] = base.AppConfiguration{}
 
 	latest2 := dict.LatestVersion()
 
@@ -113,7 +113,7 @@ func TestAppConfigurationVersions_LatestVersion(t *testing.T) {
 
 func TestAppConfigurationVersions_AllAppsLatestVersion(t *testing.T) {
 	GlobalConfig := prepareConfigState()
-	GlobalConfig.ConfigureApp(state_configuration.AppConfiguration{
+	GlobalConfig.ConfigureApp(base.AppConfiguration{
 		"appname", base.APP_HTTP, "0.1", 1, 2,
 		[]base.OsCommand{
 			{
@@ -136,7 +136,7 @@ func TestAppConfigurationVersions_AllAppsLatestVersion(t *testing.T) {
 			},
 		},
 	})
-	GlobalConfig.ConfigureApp(state_configuration.AppConfiguration{
+	GlobalConfig.ConfigureApp(base.AppConfiguration{
 		"appname", base.APP_HTTP, "1.1", 1, 2,
 		[]base.OsCommand{
 			{
@@ -159,7 +159,7 @@ func TestAppConfigurationVersions_AllAppsLatestVersion(t *testing.T) {
 			},
 		},
 	})
-	GlobalConfig.ConfigureApp(state_configuration.AppConfiguration{
+	GlobalConfig.ConfigureApp(base.AppConfiguration{
 		"appname2", base.APP_HTTP, "2.0", 1, 2,
 		[]base.OsCommand{
 			{

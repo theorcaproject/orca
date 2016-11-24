@@ -1,7 +1,7 @@
 package state_needs
 
 import (
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"sync"
 	"errors"
 	Logger "gatoor/orca/rewriteTrainer/log"

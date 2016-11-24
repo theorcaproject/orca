@@ -2,7 +2,7 @@ package cloud
 
 import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	Logger "gatoor/orca/rewriteTrainer/log"
 )
 

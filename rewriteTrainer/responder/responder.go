@@ -1,37 +1,31 @@
 package responder
 
 import (
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/planner"
 	"errors"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	Logger "gatoor/orca/rewriteTrainer/log"
-	"gatoor/orca/rewriteTrainer/metrics"
 	"gatoor/orca/rewriteTrainer/tracker"
 	"fmt"
 )
 
 var ResponderLogger = Logger.LoggerWithField(Logger.Logger, "module", "responder")
 
-type PushConfiguration struct {
-	DeploymentCount base.DeploymentCount
-	AppConfiguration state_configuration.AppConfiguration
-}
 
-
-func GetConfigForHost(hostId base.HostId) (PushConfiguration, error) {
+func GetConfigForHost(hostId base.HostId) (base.PushConfiguration, error) {
 	ResponderLogger.Infof("Getting config for host %s", hostId)
 	appName, elem, err := getQueueElement(hostId)
 	if err == nil {
 		config, err := state_configuration.GlobalConfigurationState.GetApp(appName, elem.Version.Version)
 		if err != nil {
 			ResponderLogger.Warnf("Getting config for host %s app %s failed %s", hostId, appName, err)
-			return PushConfiguration{}, errors.New("GlobalConfiguraitonState does not have this app")
+			return base.PushConfiguration{}, errors.New("GlobalConfiguraitonState does not have this app")
 		}
-		return PushConfiguration{DeploymentCount: elem.Version.DeploymentCount, AppConfiguration: config}, nil
+		return base.PushConfiguration{DeploymentCount: elem.Version.DeploymentCount, AppConfiguration: config}, nil
 	}
 	ResponderLogger.Warnf("Getting config for host %s failed %s", hostId, err)
-	return PushConfiguration{}, err
+	return base.PushConfiguration{}, err
 }
 
 
@@ -59,7 +53,7 @@ func getQueueElement(hostId base.HostId) (base.AppName, planner.AppsUpdateState,
 }
 
 
-func CheckAppState(hostInfo metrics.HostInfo) {
+func CheckAppState(hostInfo base.HostInfo) {
 	ResponderLogger.Infof("checking Apps state for host '%s'", hostInfo.HostId)
 	queued, _ := planner.Queue.Get(hostInfo.HostId)
 
@@ -78,7 +72,7 @@ func CheckAppState(hostInfo metrics.HostInfo) {
 }
 
 
-func simpleAppCheck(appObj metrics.AppInfo, hostId base.HostId) {
+func simpleAppCheck(appObj base.AppInfo, hostId base.HostId) {
 	if appObj.Status != base.STATUS_RUNNING {
 		ResponderLogger.Warnf("App '%s' - '%s' on host '%s' is not running. Adding it to GlobalAppCrashes", appObj.Name, appObj.Version, hostId)
 		tracker.GlobalAppsStatusTracker.Update(hostId, appObj.Name, appObj.Version, tracker.APP_EVENT_CRASH)
@@ -87,7 +81,7 @@ func simpleAppCheck(appObj metrics.AppInfo, hostId base.HostId) {
 	}
 }
 
-func checkAppUpdate(appObj metrics.AppInfo, hostId base.HostId, queuedState planner.AppsUpdateState) {
+func checkAppUpdate(appObj base.AppInfo, hostId base.HostId, queuedState planner.AppsUpdateState) {
 	ResponderLogger.Infof("Check update of App '%s' - '%s' on host '%s'", appObj.Name, appObj.Version, hostId)
 	if queuedState.State != planner.STATE_APPLYING {
 		ResponderLogger.Errorf("Got illegal state %s for update of App '%s' - '%s' on host '%s'", queuedState.State, appObj.Name, appObj.Version, hostId)

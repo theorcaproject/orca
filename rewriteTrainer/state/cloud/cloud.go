@@ -2,9 +2,8 @@ package state_cloud
 
 import (
 	"errors"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	Logger "gatoor/orca/rewriteTrainer/log"
-	"gatoor/orca/rewriteTrainer/metrics"
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"sync"
@@ -216,7 +215,7 @@ func (c *CloudLayout) AllNeeds() state_needs.AppNeeds {
 	return needs
 }
 
-func (c *CloudLayout) UpdateHost(hostInfo metrics.HostInfo) {
+func (c *CloudLayout) UpdateHost(hostInfo base.HostInfo) {
 	apps := make(map[base.AppName]AppsVersion)
 	appCounter := make(map[base.AppName]base.DeploymentCount)
 	runningVersions := make(map[base.AppName]base.Version)
@@ -321,7 +320,7 @@ func (a AvailableInstances) GlobalResourceConsumption() InstanceResources {
 	}
 }
 
-func UpdateCurrent(hostInfo metrics.HostInfo, time string) {
+func UpdateCurrent(hostInfo base.HostInfo, time string) {
 	StateCloudLogger.Infof("Updating current layout for host '%s': '%+v'", hostInfo.HostId, hostInfo)
 	GlobalCloudLayout.Current.UpdateHost(hostInfo)
 	db.Audit.Add(db.BUCKET_AUDIT_CURRENT_LAYOUT, time, GlobalCloudLayout.Snapshot().Current)

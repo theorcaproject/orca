@@ -2,10 +2,9 @@ package tracker
 
 import (
 	"time"
-	"gatoor/orca/rewriteTrainer/base"
+	"gatoor/orca/base"
 	"sync"
 	"errors"
-	"gatoor/orca/rewriteTrainer/metrics"
 )
 
 var GlobalAppsStatusTracker AppsStatusTracker
@@ -96,7 +95,7 @@ func (a *AppsStatusTracker) Update(hostId base.HostId, app base.AppName, version
 	(*a)[app][version] = newElem
 }
 
-func (a *AppsStatusTracker) UpdateAll(hostInfo metrics.HostInfo, time time.Time) {
+func (a *AppsStatusTracker) UpdateAll(hostInfo base.HostInfo, time time.Time) {
 	for _, appObj := range hostInfo.Apps {
 		if appObj.Status == base.STATUS_RUNNING {
 			a.Update(hostInfo.HostId, appObj.Name, appObj.Version, APP_EVENT_CHECKIN)
