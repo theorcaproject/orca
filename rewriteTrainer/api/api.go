@@ -10,12 +10,13 @@ import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/rewriteTrainer/metrics"
-	"gatoor/orca/rewriteTrainer/planner"
+	"gatoor/orca/rewriteTrainer/responder"
+	"gatoor/orca/rewriteTrainer/db"
+	"gatoor/orca/rewriteTrainer/tracker"
 )
 
 type Api struct{}
 var ApiLogger = Logger.LoggerWithField(Logger.Logger, "module", "api")
-var Sampler metrics.Sampler
 
 func (api Api) Init () {
 	ApiLogger.Infof("Initializing Api on Port %d", state_configuration.GlobalConfigurationState.Trainer.Port)
@@ -48,24 +49,52 @@ func returnJson(w http.ResponseWriter, obj interface{}) {
 }
 
 func pushHandler(w http.ResponseWriter, r *http.Request) {
-	hostInfo, stats, err := Sampler.ParsePush(r)
+	hostInfo, stats, err := metrics.ParsePush(r)
+	ApiLogger.Infof("Got metrics from host '%s'", hostInfo.HostId)
 	if err != nil {
 		json.NewEncoder(w).Encode(nil)
 		return
 	}
-	Sampler.RecordStats(hostInfo.HostId, stats)
-	Sampler.RecordHostInfo(hostInfo)
-	returnJson(w, planner.Config(hostInfo.HostId))
+
+	doHandlePush(hostInfo, stats)
+
+	config, err := responder.GetConfigForHost(hostInfo.HostId)
+
+	if err != nil {
+		ApiLogger.Infof("Sending empty response to host '%s'", hostInfo.HostId)
+		returnJson(w, nil)
+		return
+	}
+	ApiLogger.Infof("Sending new config to host '%s': '%+v'", hostInfo.HostId, config)
+	returnJson(w, config)
+}
+
+func doHandlePush(hostInfo metrics.HostInfo, stats metrics.StatsWrapper) {
+	timeString, time := db.GetNow()
+
+	metrics.RecordStats(hostInfo.HostId, stats, timeString)
+	metrics.RecordHostInfo(hostInfo, timeString)
+
+	state_cloud.UpdateCurrent(hostInfo, timeString)
+	responder.CheckAppState(hostInfo)
+	tracker.GlobalHostTracker.Update(hostInfo.HostId, time)
 }
 
 func getStateConfiguration(w http.ResponseWriter, r *http.Request) {
+	ApiLogger.Infof("Query to getStateConfiguration")
 	returnJson(w, state_configuration.GlobalConfigurationState.Snapshot())
 }
 
 func getStateCloud(w http.ResponseWriter, r *http.Request) {
+	ApiLogger.Infof("Query to getStateCloud")
 	returnJson(w, state_cloud.GlobalCloudLayout.Snapshot())
 }
 
 func getStateNeeds(w http.ResponseWriter, r *http.Request) {
+	ApiLogger.Infof("Query to getStateNeeds")
 	returnJson(w, state_needs.GlobalAppsNeedState.Snapshot())
+}
+
+func doHandleCloudEvent() {
+
 }

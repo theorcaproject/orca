@@ -262,8 +262,7 @@ func queryAppsState() {
         var AppLogger = log.LoggerWithField(AppInstallBaseLogger, "AppName", appName)
         tempApp := hostInfo.Apps[appName]
         if tempApp.Status == base.STATUS_DEAD || tempApp.Status == base.STATUS_RUNNING {
-            AppLogger.Info("Querying App state...")
-            AppLogger.Info(fmt.Printf("%+v", tempApp))
+            AppLogger.Infof("Querying App state: %+v", tempApp)
             res := executeCommand(tempApp.QueryStateCommand)
             if res {
                 tempApp.Status = base.STATUS_RUNNING
@@ -281,10 +280,10 @@ func removeApps(conf map[string]base.AppConfiguration) {
         _, exists := conf[appName]
         if !exists {
             var AppLogger = log.LoggerWithField(AppInstallBaseLogger, "AppName", appName)
-            AppLogger.Info(fmt.Sprintf("Removing App %s from Host...", appName))
+            AppLogger.Infof("Removing App %s from Host...", appName)
             executeCommand(hostInfo.Apps[appName].RemoveCommand)
             delete(hostInfo.Apps, appName)
-            AppLogger.Info(fmt.Sprintf("Removed App %s from Host.", appName))
+            AppLogger.Infof("Removed App %s from Host.", appName)
         }
     }
 }
@@ -307,7 +306,7 @@ type AppLayout struct {
 
 
 func logCurrentLayout() {
-    Logger.Info(fmt.Printf("Current Layout: %+v", getCurrentLayout()))
+    Logger.Infof("Current Layout: %+v", getCurrentLayout())
 }
 
 func getCurrentLayout() AppLayout {

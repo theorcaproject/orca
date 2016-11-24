@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"encoding/json"
 	"errors"
+	"gatoor/orca/rewriteTrainer/db"
 )
 
 var MetricsLogger = Logger.LoggerWithField(Logger.Logger, "module", "metrics")
 
-type Sampler struct {}
+
 
 type Usage float32
 
@@ -62,7 +63,7 @@ type PushWrapper struct {
 	Stats StatsWrapper
 }
 
-func (s Sampler) ParsePush(r *http.Request) (HostInfo, StatsWrapper, error) {
+func ParsePush(r *http.Request) (HostInfo, StatsWrapper, error) {
 	decoder := json.NewDecoder(r.Body)
 	var wrapper PushWrapper
 	err := decoder.Decode(&wrapper)
@@ -73,12 +74,14 @@ func (s Sampler) ParsePush(r *http.Request) (HostInfo, StatsWrapper, error) {
 	return wrapper.HostInfo, wrapper.Stats, nil
 }
 
-func (s Sampler) RecordStats(host base.HostId, stats StatsWrapper) {
-	MetricsLogger.WithField("host", host).Info("Got stats")
-	// save host and apps usage
+func RecordStats(host base.HostId, stats StatsWrapper, time string) {
+	MetricsLogger.WithField("host", host).Infof("Recording stats for host '%s'", host)
+	MetricsLogger.WithField("host", host).Infof("Stats: %+v", stats)
+	db.Audit.Add(db.BUCKET_AUDIT_RECEIVED_STATS, string(host) + "_" + time, stats)
 }
 
-func (s Sampler) RecordHostInfo(info HostInfo) {
-	MetricsLogger.WithField("host", info.HostId).Info("Got info")
-	//save to db
+func RecordHostInfo(info HostInfo, time string) {
+	MetricsLogger.WithField("host", info.HostId).Infof("Recording info for host %s", info.HostId)
+	MetricsLogger.WithField("host", info.HostId).Infof("Info: %+v", info)
+	db.Audit.Add(db.BUCKET_AUDIT_RECEIVED_HOST_INFO, string(info.HostId) + "_" + time, info)
 }

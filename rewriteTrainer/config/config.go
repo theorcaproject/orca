@@ -34,6 +34,8 @@ type AppJsonConfiguration struct {
 	Name base.AppName
 	Version base.Version
 	Type base.AppType
+	MinDeploymentCount base.DeploymentCount
+	MaxDeploymentCount base.DeploymentCount
 	InstallCommands []base.OsCommand
 	QueryStateCommand base.OsCommand
 	RemoveCommand base.OsCommand
@@ -82,6 +84,8 @@ func applyAppsConfig(appsConfs []AppJsonConfiguration) {
 			Name: aConf.Name,
 			Type: aConf.Type,
 			Version: aConf.Version,
+			MinDeploymentCount: aConf.MinDeploymentCount,
+			MaxDeploymentCount: aConf.MaxDeploymentCount,
 			InstallCommands: aConf.InstallCommands,
 			QueryStateCommand: aConf.QueryStateCommand,
 			RemoveCommand: aConf.RemoveCommand,
@@ -113,7 +117,7 @@ func applyNeeds(appConfs []AppJsonConfiguration) {
 func (j *JsonConfiguration) Serialize() string {
 	res, err := json.MarshalIndent(j, "", "  ")
 	if err != nil {
-		fmt.Println("error:", err)
+		Logger.InitLogger.Errorf("JsonConfiguration Derialize failed: %s; %+v", err, j)
 	}
 	return string(res)
 }

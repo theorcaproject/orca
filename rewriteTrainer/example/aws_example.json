@@ -1,0 +1,169 @@
+{
+  "Trainer": {
+    "Port": 5000
+  },
+  "Habitats": [
+    {
+      "Name": "dockerHabitat",
+      "Version": "0.1",
+      "InstallCommands": [
+        {
+          "Type": "EXEC_COMMAND",
+          "Command": {
+            "Path": "apt-get",
+            "Args": "update"
+          }
+        },
+        {
+          "Type": "EXEC_COMMAND",
+          "Command": {
+            "Path": "apt-get",
+            "Args": "-y install apt-transport-https ca-certificates"
+          }
+        },
+        {
+          "Type": "EXEC_COMMAND",
+          "Command": {
+            "Path": "apt-key",
+            "Args": "adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"
+          }
+        },
+        {
+          "Type": "FILE_COMMAND",
+          "Command": {
+            "Path": "/etc/apt/sources.list.d/docker.list",
+            "Args": "deb https://apt.dockerproject.org/repo ubuntu-xenial main"
+          }
+        },
+        {
+          "Type": "EXEC_COMMAND",
+          "Command": {
+            "Path": "apt-get",
+            "Args": "update"
+          }
+        },
+        {
+          "Type": "EXEC_COMMAND",
+          "Command": {
+            "Path": "apt-get",
+            "Args": "-y install docker-engine"
+          }
+        },
+        {
+          "Type": "EXEC_COMMAND",
+          "Command": {
+            "Path": "mkdir",
+            "Args": "/orca/apps"
+          }
+        },
+        {
+          "Type": "EXEC_COMMAND",
+          "Command": {
+            "Path": "chmod",
+            "Args": "777 /orca/apps"
+          }
+        }
+      ]
+    }
+  ],
+  "Apps": [
+    {
+      "Name": "nginx",
+      "Version": "0.1",
+      "Type": "http",
+      "MinDeploymentCount": 2,
+      "MaxDeploymentCount": 10,
+      "InstallCommands": [
+        {
+          "Type": "EXEC_COMMAND",
+          "Command": {
+            "Path": "mkdir",
+            "Args": "/orca/apps/nginx"
+          }
+        },
+        {
+          "Type": "FILE_COMMAND",
+          "Command": {
+            "Path": "/orca/apps/nginx/index.html",
+            "Args": "HELLO ORCA!"
+          }
+        },
+        {
+          "Type": "EXEC_COMMAND",
+          "Command": {
+            "Path": "docker",
+            "Args": "run --name orca-nginx -p 80:80 -v /orca/apps/nginx:/usr/share/nginx/html nginx"
+          }
+        }
+      ],
+      "QueryStateCommand": {
+        "Type": "EXEC_COMMAND",
+        "Command": {
+          "Path": "wget",
+          "Args": "http://localhost"
+        }
+      },
+      "RemoveCommand": {
+        "Type": "EXEC_COMMAND",
+        "Command": {
+          "Path": "docker",
+          "Args": "stop orca-nginx"
+        }
+      },
+      "Needs": {
+        "MemoryNeeds": 5,
+        "CpuNeeds": 5,
+        "NetworkNeeds": 5
+      }
+    },
+    {
+      "Name": "nginxworker",
+      "Version": "0.2",
+      "Type": "worker",
+      "MinDeploymentCount": 5,
+      "MaxDeploymentCount": 10,
+      "InstallCommands": [
+        {
+          "Type": "EXEC_COMMAND",
+          "Command": {
+            "Path": "mkdir",
+            "Args": "/orca/apps/nginxworker"
+          }
+        },
+        {
+          "Type": "FILE_COMMAND",
+          "Command": {
+            "Path": "/orca/apps/nginxworker/index.html",
+            "Args": "HELLO ORCA as worker!"
+          }
+        },
+        {
+          "Type": "EXEC_COMMAND",
+          "Command": {
+            "Path": "docker",
+            "Args": "run --name orca-nginxworker -v /orca/apps/nginxworker:/usr/share/nginx/html nginx"
+          }
+        }
+      ],
+      "QueryStateCommand": {
+        "Type": "EXEC_COMMAND",
+        "Command": {
+          "Path": "wget",
+          "Args": "http://localhost"
+        }
+      },
+      "RemoveCommand": {
+        "Type": "EXEC_COMMAND",
+        "Command": {
+          "Path": "docker",
+          "Args": "stop orca-nginxworker"
+        }
+      },
+      "Needs": {
+        "MemoryNeeds": 3,
+        "CpuNeeds": 3,
+        "NetworkNeeds": 3
+      }
+    }
+  ]
+}

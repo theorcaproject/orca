@@ -2,25 +2,44 @@ package metrics
 
 import (
 	"testing"
-	"fmt"
-	//"github.com/shirou/gopsutil/mem"
-	//"time"
-	//"github.com/shirou/gopsutil/cpu"
+	"gatoor/orca/rewriteTrainer/db"
+	"gatoor/orca/rewriteTrainer/base"
 )
 
-func TestSampler_sampleStats(t *testing.T) {
-	//fmt.Println(mem.VirtualMemory())
 
-	fmt.Println("....")
-	fmt.Println("....")
-	fmt.Println("....")
+func TestSampler_RecordStats(t *testing.T) {
+	db.Init("_test")
+	time := "sometimestamp"
+	stats :=  StatsWrapper{
+		HostStats{1.0, 2.0, 3.5}, make(map[base.AppName]AppStats),
+	}
+	RecordStats("host1", stats, time)
 
-	//fmt.Println(cpu.Percent(time.Millisecond * 5000, false))
+	res := db.Audit.Get(db.BUCKET_AUDIT_RECEIVED_STATS, "host1_sometimestamp")
 
-	fmt.Println("....")
-	fmt.Println("....")
-	fmt.Println("....")
+	if res != "{\"Host\":{\"MemoryUsage\":1,\"CpuUsage\":2,\"NetworkUsage\":3.5},\"Apps\":{}}" {
+		t.Error(res)
+	}
+	db.Close()
+}
 
-	sampleStats(nil)
 
+func TestSampler_RecordHostInfo(t *testing.T) {
+	db.Init("_test")
+	time := "sometimestamp"
+	info :=  HostInfo{
+		HostId: "host1",
+		IpAddr: "0.0.0.0",
+		OsInfo: OsInfo{},
+		HabitatInfo: HabitatInfo{},
+		Apps: []AppInfo{},
+	}
+	RecordHostInfo(info, time)
+
+	res := db.Audit.Get(db.BUCKET_AUDIT_RECEIVED_HOST_INFO, "host1_sometimestamp")
+
+	if res != "{\"HostId\":\"host1\",\"IpAddr\":\"0.0.0.0\",\"OsInfo\":{\"Os\":\"\",\"Arch\":\"\"},\"HabitatInfo\":{\"Version\":\"\",\"Name\":\"\",\"Status\":\"\"},\"Apps\":[]}" {
+		t.Error(res)
+	}
+	db.Close()
 }

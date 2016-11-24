@@ -21,6 +21,7 @@ type AppType string
 type IpAddr string
 type HabitatName string
 type Status string
+type DeploymentCount int
 
 
 type Command struct {

@@ -15,7 +15,7 @@ func prepareConfigState() state_configuration.ConfigurationState {
 func TestConfigureApp(t *testing.T) {
 	GlobalConfig := prepareConfigState()
 	GlobalConfig.ConfigureApp(state_configuration.AppConfiguration{
-		"appname", base.APP_HTTP, "0.1",
+		"appname", base.APP_HTTP, "0.1", 1, 2,
 		[]base.OsCommand{
 			{
 				base.EXEC_COMMAND,
@@ -89,3 +89,107 @@ func TestConfigureHabitat(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestAppConfigurationVersions_LatestVersion(t *testing.T) {
+	dict := state_configuration.AppConfigurationVersions{}
+
+	dict["0.1"] = state_configuration.AppConfiguration{}
+	dict["0.12"] = state_configuration.AppConfiguration{}
+
+	latest := dict.LatestVersion()
+
+	if latest != "0.12" {
+		t.Error("wrong version")
+	}
+
+	dict["0.2"] = state_configuration.AppConfiguration{}
+
+	latest2 := dict.LatestVersion()
+
+	if latest2 != "0.2" {
+		t.Error("wrong version")
+	}
+}
+
+func TestAppConfigurationVersions_AllAppsLatestVersion(t *testing.T) {
+	GlobalConfig := prepareConfigState()
+	GlobalConfig.ConfigureApp(state_configuration.AppConfiguration{
+		"appname", base.APP_HTTP, "0.1", 1, 2,
+		[]base.OsCommand{
+			{
+				base.EXEC_COMMAND,
+				base.Command{
+					":aa", "mmm",
+				},
+			},
+		},
+		base.OsCommand{
+			base.EXEC_COMMAND,
+			base.Command{
+				":bb", "uu",
+			},
+		},
+		base.OsCommand{
+			base.FILE_COMMAND,
+			base.Command{
+				":cc", "ii",
+			},
+		},
+	})
+	GlobalConfig.ConfigureApp(state_configuration.AppConfiguration{
+		"appname", base.APP_HTTP, "1.1", 1, 2,
+		[]base.OsCommand{
+			{
+				base.EXEC_COMMAND,
+				base.Command{
+					":aa", "mmm",
+				},
+			},
+		},
+		base.OsCommand{
+			base.EXEC_COMMAND,
+			base.Command{
+				":bb", "uu",
+			},
+		},
+		base.OsCommand{
+			base.FILE_COMMAND,
+			base.Command{
+				":cc", "ii",
+			},
+		},
+	})
+	GlobalConfig.ConfigureApp(state_configuration.AppConfiguration{
+		"appname2", base.APP_HTTP, "2.0", 1, 2,
+		[]base.OsCommand{
+			{
+				base.EXEC_COMMAND,
+				base.Command{
+					":aa", "mmm",
+				},
+			},
+		},
+		base.OsCommand{
+			base.EXEC_COMMAND,
+			base.Command{
+				":bb", "uu",
+			},
+		},
+		base.OsCommand{
+			base.FILE_COMMAND,
+			base.Command{
+				":cc", "ii",
+			},
+		},
+	})
+
+	latest := GlobalConfig.AllAppsLatest()
+
+	if latest["appname"].Version != "1.1" {
+		t.Error("wrong version")
+	}
+	if latest["appname2"].Version != "2.0" {
+		t.Error("wrong version")
+	}
+}
+

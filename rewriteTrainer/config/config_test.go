@@ -1,37 +1,41 @@
-package example
+package config
 
 import (
+	"testing"
+	"gatoor/orca/rewriteTrainer/state/configuration"
 	"gatoor/orca/rewriteTrainer/state/cloud"
-	"gatoor/orca/rewriteTrainer/config"
-	"gatoor/orca/rewriteTrainer/base"
 	"gatoor/orca/rewriteTrainer/state/needs"
+	"gatoor/orca/rewriteTrainer/base"
 )
 
-func ExampleCloudState() {
-	state := state_cloud.CloudLayoutAll{}
-	state.Init()
-	state.Current.AddEmptyHost("host1")
-	state.Current.AddEmptyHost("host2")
-	state.Current.AddEmptyHost("host3")
-	state.Current.AddApp("host1", "app1", "0.1", 1)
-	state.Current.AddApp("host1", "app11", "0.1", 2)
-	state.Current.AddApp("host2", "app2", "0.2", 10)
 
-	state.Desired.AddEmptyHost("host1")
-	state.Desired.AddEmptyHost("host2")
-	state.Desired.AddEmptyHost("host3")
-	state.Desired.AddApp("host1", "app1", "0.1", 1)
-	state.Desired.AddApp("host1", "app11", "0.1", 2)
-	state.Desired.AddApp("host2", "app2", "0.2", 5)
-	state.Desired.AddApp("host3", "app2", "0.2", 5)
-}
+func TestConfig_ApplyToState(t *testing.T) {
+	state_configuration.GlobalConfigurationState.Init()
+	state_cloud.GlobalCloudLayout.Init()
 
-func ExampleJsonConfig() config.JsonConfiguration {
-	conf := config.JsonConfiguration{}
+	if len(state_configuration.GlobalConfigurationState.Apps) != 0 {
+		t.Error("init state_config apps should be empty")
+	}
+	if len(state_configuration.GlobalConfigurationState.Habitats) != 0 {
+		t.Error("init state_config habitats should be empty")
+	}
+
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
+		t.Error("init state_cloud current should be empty")
+	}
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 0 {
+		t.Error("init state_cloud desired should be empty")
+	}
+
+	if len(state_needs.GlobalAppsNeedState) != 0 {
+		t.Error("init state_needs should be empty")
+	}
+
+	conf := JsonConfiguration{}
 
 	conf.Trainer.Port = 5000
 
-	conf.Habitats = []config.HabitatJsonConfiguration{
+	conf.Habitats = []HabitatJsonConfiguration{
 		{
 			Name: "habitat1",
 			Version: "0.1",
@@ -62,13 +66,11 @@ func ExampleJsonConfig() config.JsonConfiguration {
 		},
 	}
 
-	conf.Apps = []config.AppJsonConfiguration{
+	conf.Apps = []AppJsonConfiguration{
 		{
 			Name: "app1",
 			Version: "0.1",
 			Type: base.APP_WORKER,
-			MinDeploymentCount: 2,
-			MaxDeploymentCount: 10,
 			InstallCommands: []base.OsCommand{
 				{
 					Type: base.EXEC_COMMAND,
@@ -97,8 +99,6 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			Name: "app11",
 			Version: "0.1",
 			Type: base.APP_WORKER,
-			MinDeploymentCount: 2,
-			MaxDeploymentCount: 10,
 			InstallCommands: []base.OsCommand{
 				{
 					Type: base.EXEC_COMMAND,
@@ -127,8 +127,6 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			Name: "app2",
 			Version: "0.2",
 			Type: base.APP_WORKER,
-			MinDeploymentCount: 2,
-			MaxDeploymentCount: 10,
 			InstallCommands: []base.OsCommand{
 				{
 					Type: base.EXEC_COMMAND,
@@ -154,6 +152,26 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			},
 		},
 	}
-	return conf
-}
 
+	conf.ApplyToState()
+
+
+	if len(state_configuration.GlobalConfigurationState.Apps) != 3 {
+		t.Error("init state_config apps wrong len")
+	}
+	if len(state_configuration.GlobalConfigurationState.Habitats) != 2 {
+		t.Error("init state_config habitats wrong len")
+	}
+
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
+		t.Error("init state_cloud current should be empty")
+	}
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 0 {
+		t.Error("init state_cloud desired should be empty")
+	}
+
+	if len(state_needs.GlobalAppsNeedState) != 3 {
+		t.Error("init state_needs wrong len")
+	}
+
+}

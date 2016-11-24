@@ -4,11 +4,13 @@ import (
 	"sync"
 	"gatoor/orca/rewriteTrainer/base"
 	"errors"
+	"sort"
 )
 
 var GlobalConfigurationState ConfigurationState
 
 var configurationStateMutex = &sync.Mutex{}
+
 
 type ConfigurationState struct {
 	Trainer TrainerConfigurationState
@@ -21,6 +23,12 @@ func (c *ConfigurationState) Init() {
 	defer configurationStateMutex.Unlock()
 	c.Apps = AppsConfigurationState{}
 	c.Habitats = HabitatsConfigurationState{}
+	c.Trainer = TrainerConfigurationState{
+		Port: 5000,
+		Policies: TrainerPolicies{
+			TRY_TO_REMOVE_HOSTS: true,
+		},
+	}
 }
 
 func (c *ConfigurationState) Snapshot() ConfigurationState {
@@ -28,6 +36,20 @@ func (c *ConfigurationState) Snapshot() ConfigurationState {
 	defer configurationStateMutex.Unlock()
 	res := *c
 	return res
+}
+
+func (c * ConfigurationState) AllAppsLatest() map[base.AppName]AppConfiguration {
+	apps := make(map[base.AppName]AppConfiguration)
+	configurationStateMutex.Lock()
+	confApps := c.Apps
+	configurationStateMutex.Unlock()
+	for appName, appObj := range confApps {
+		elem, err := c.GetApp(appName, appObj.LatestVersion())
+		if err == nil {
+			apps[appName] = elem
+		}
+	}
+	return apps
 }
 
 func (c *ConfigurationState) GetApp (name base.AppName, version base.Version) (AppConfiguration, error) {
@@ -74,18 +96,37 @@ func (c *ConfigurationState) ConfigureHabitat (conf HabitatConfiguration) {
 	c.Habitats[conf.Name][conf.Version] = conf
 }
 
+type TrainerPolicies struct {
+	TRY_TO_REMOVE_HOSTS bool
+}
+
 type TrainerConfigurationState struct {
 	Port int
+	Policies TrainerPolicies
 }
 
 type AppsConfigurationState map[base.AppName]AppConfigurationVersions
 
 type AppConfigurationVersions map[base.Version]AppConfiguration
 
+func (a AppConfigurationVersions) LatestVersion() base.Version {
+	var keys []string
+	for k := range a {
+		keys = append(keys, string(k))
+	}
+	if len(keys) == 0 {
+		return ""
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
+	return base.Version(keys[0])
+}
+
 type AppConfiguration struct {
 	Name base.AppName
 	Type base.AppType
 	Version base.Version
+	MinDeploymentCount base.DeploymentCount
+	MaxDeploymentCount base.DeploymentCount
 	InstallCommands []base.OsCommand
 	QueryStateCommand base.OsCommand
 	RemoveCommand base.OsCommand

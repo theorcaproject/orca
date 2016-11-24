@@ -4,6 +4,10 @@ import log "github.com/Sirupsen/logrus"
 
 
 
+func SetLogLevel(lvl log.Level) {
+	log.SetLevel(lvl)
+}
+
 var Logger = log.WithFields(log.Fields {
 	"Orca": "Trainer",
 })

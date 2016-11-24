@@ -15,9 +15,9 @@ func TestAppsNeedState_GetNeeds(t *testing.T) {
 	needs := prepareNeedsState()
 
 	needs.UpdateNeeds("app1", "0.1", state_needs.AppNeeds{
-		CpuNeeds: state_needs.CpuNeeds(0.3),
-		MemoryNeeds: state_needs.MemoryNeeds(1.0),
-		NetworkNeeds: state_needs.NetworkNeeds(0.1),
+		CpuNeeds: state_needs.CpuNeeds(3),
+		MemoryNeeds: state_needs.MemoryNeeds(10),
+		NetworkNeeds: state_needs.NetworkNeeds(1),
 	})
 
 	_, err0 := needs.Get("unknown", "aa")
@@ -32,7 +32,7 @@ func TestAppsNeedState_GetNeeds(t *testing.T) {
 	if err2 != nil {
 		t.Error("did not find app/version")
 	}
-	if val.MemoryNeeds != 1.0 {
+	if val.MemoryNeeds != 10 {
 		t.Error("got wrong needs value")
 	}
 }
@@ -42,14 +42,14 @@ func TestAppsNeedState_GetAall(t *testing.T) {
 	needs := prepareNeedsState()
 
 	needs.UpdateNeeds("app1", "0.1", state_needs.AppNeeds{
-		CpuNeeds: state_needs.CpuNeeds(0.1),
-		MemoryNeeds: state_needs.MemoryNeeds(0.1),
-		NetworkNeeds: state_needs.NetworkNeeds(0.1),
+		CpuNeeds: state_needs.CpuNeeds(1),
+		MemoryNeeds: state_needs.MemoryNeeds(1),
+		NetworkNeeds: state_needs.NetworkNeeds(1),
 	})
 	needs.UpdateNeeds("app1", "0.2", state_needs.AppNeeds{
-		CpuNeeds: state_needs.CpuNeeds(0.2),
-		MemoryNeeds: state_needs.MemoryNeeds(0.2),
-		NetworkNeeds: state_needs.NetworkNeeds(0.2),
+		CpuNeeds: state_needs.CpuNeeds(2),
+		MemoryNeeds: state_needs.MemoryNeeds(2),
+		NetworkNeeds: state_needs.NetworkNeeds(2),
 	})
 
 	_, err0 := needs.GetAll("unknown")
@@ -64,7 +64,7 @@ func TestAppsNeedState_GetAall(t *testing.T) {
 	if len(val) != 2 {
 		t.Error("didn't get all versions")
 	}
-	if val["0.1"].MemoryNeeds != 0.1 {
+	if val["0.1"].MemoryNeeds != 1 {
 		t.Error("got wrong needs value")
 	}
 }
