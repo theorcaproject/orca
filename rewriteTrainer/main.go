@@ -17,7 +17,7 @@ import (
 func main() {
 	Logger.InitLogger.Info("Starting trainer...")
 	//scheduler.Start()
-	//initState()
+	initState()
 	initConfig()
 	//initApi()
 	installer.InstallNewInstance("host2", "172.31.23.39")

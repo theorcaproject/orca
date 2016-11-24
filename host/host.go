@@ -61,7 +61,7 @@ func getOsInfo() base.OsInfo {
 }
 
 func initHost() {
-    hostInfo.Id = configuration.HostId
+    hostInfo.HostId = configuration.HostId
     hostInfo.HabitatInfo.Version  = "0"
     hostInfo.HabitatInfo.Status = base.STATUS_INIT
     hostInfo.OsInfo = getOsInfo()
@@ -107,7 +107,7 @@ func handleUpdate(body []byte) {
     if err := json.Unmarshal(body, &trainerUpdate); err != nil {
         Logger.Error(fmt.Sprintf("Failed to parse response - %s HTTP_BODY: %s", err, string(body)))
     } else {
-        if trainerUpdate.TargetHostId != hostInfo.Id {
+        if trainerUpdate.TargetHostId != hostInfo.HostId {
             UpdateLogger.Error(fmt.Sprintf("Received incorrect update, HostId is %s but received TargetId %s", hostInfo.Id, trainerUpdate.TargetHostId))
             return
         }
@@ -141,26 +141,26 @@ func handleHabitatUpdate(target base.HabitatConfiguration) bool {
 }
 
 func handleAppUpdate(target base.AppConfiguration) bool {
-    AppInstallLogger := log.LoggerWithField(AppInstallBaseLogger, "AppName", target.AppName)
-    _, exists := hostInfo.Apps[target.AppName]
+    AppInstallLogger := log.LoggerWithField(AppInstallBaseLogger, "AppName", target.Name)
+    _, exists := hostInfo.Apps[target.Name]
     if !exists {
-        AppInstallLogger.Info(fmt.Sprintf("Received new App %s with AppVersion %s", target.AppName, target.Version))
+        AppInstallLogger.Info(fmt.Sprintf("Received new App %s with AppVersion %s", target.Name, target.Version))
         return installApp(target)
     }
-    if hostInfo.Apps[target.AppName].Status == base.STATUS_DEPLOYING {
+    if hostInfo.Apps[target.Name].Status == base.STATUS_DEPLOYING {
         AppInstallLogger.Info(fmt.Sprintf("App is in DEPLOYING state. Skipping.", target.Version))
         return false
     }
-    if target.Version == hostInfo.Apps[target.AppName].Version {
-        if hostInfo.Apps[target.AppName].Status == base.STATUS_DEAD {
+    if target.Version == hostInfo.Apps[target.Name].Version {
+        if hostInfo.Apps[target.Name].Status == base.STATUS_DEAD {
             AppInstallLogger.Info(fmt.Sprintf("Received same AppVersion %s. App is in DEAD state. Redeploying...", target.Version))
             return installApp(target)
         }
         AppInstallLogger.Info(fmt.Sprintf("Received same AppVersion %s. Nothing to do here", target.Version))
         return false
     }
-    if target.Version > hostInfo.Apps[target.AppName].Version {
-        AppInstallLogger.Info(fmt.Sprintf("Received new AppVersion %s. Current AppVersion is %s.", target.Version, hostInfo.Apps[target.AppName].Version))
+    if target.Version > hostInfo.Apps[target.Name].Version {
+        AppInstallLogger.Info(fmt.Sprintf("Received new AppVersion %s. Current AppVersion is %s.", target.Version, hostInfo.Apps[target.Name].Version))
         return installApp(target)
     }
     return false
@@ -188,31 +188,31 @@ func installHabitat(conf base.HabitatConfiguration) bool {
 }
 
 func installApp(conf base.AppConfiguration) bool {
-    AppInstallLogger := log.LoggerWithField(AppInstallBaseLogger, "AppName", conf.AppName)
-    if hostInfo.Apps[conf.AppName].Status == base.STATUS_DEPLOYING || hostInfo.Apps[conf.AppName].Status == base.STATUS_RUNNING {
-        AppInstallLogger.Info(fmt.Sprintf("App Status is %s, aborting install", hostInfo.Apps[conf.AppName].Status))
+    AppInstallLogger := log.LoggerWithField(AppInstallBaseLogger, "AppName", conf.Name)
+    if hostInfo.Apps[conf.Name].Status == base.STATUS_DEPLOYING || hostInfo.Apps[conf.Name].Status == base.STATUS_RUNNING {
+        AppInstallLogger.Info(fmt.Sprintf("App Status is %s, aborting install", hostInfo.Apps[conf.Name].Status))
     }
     AppInstallLogger.Info(fmt.Sprintf("Starting install of AppVersion %s", conf.Version))
-    tempApp := hostInfo.Apps[conf.AppName]
+    tempApp := hostInfo.Apps[conf.Name]
     tempApp.Status = base.STATUS_DEPLOYING
-    tempApp.Name = conf.AppName
-    tempApp.Type = conf.AppType
+    tempApp.Name = conf.Name
+    tempApp.Type = conf.Type
     tempApp.Version = conf.Version
     tempApp.QueryStateCommand = conf.QueryStateCommand
     tempApp.RemoveCommand = conf.RemoveCommand
-    hostInfo.Apps[conf.AppName] = tempApp
+    hostInfo.Apps[conf.Name] = tempApp
     for _, command := range conf.InstallCommands {
         res := executeCommand(command)
         if !res {
             AppInstallLogger.Error(fmt.Sprintf("Install of AppVersion %s failed", conf.Version))
             tempApp.Status = base.STATUS_DEAD
-            hostInfo.Apps[conf.AppName] = tempApp
+            hostInfo.Apps[conf.Name] = tempApp
             return false
         }
     }
     AppInstallLogger.Info(fmt.Sprintf("Install of AppVersion %s successful", conf.Version))
     tempApp.Status = base.STATUS_RUNNING
-    hostInfo.Apps[conf.AppName] = tempApp
+    hostInfo.Apps[conf.Name] = tempApp
     return true
 }
 
