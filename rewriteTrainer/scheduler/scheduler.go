@@ -20,10 +20,12 @@ var ticker *time.Ticker
 func Start() {
 	SchedulerLogger.Infof("Scheduler starting")
 	ticker = time.NewTicker(time.Second * 10)
-	for t := range ticker.C {
-		SchedulerLogger.Infof("Scheduler tick %s, starting goroutine", t)
-		go run()
-	}
+	go func () {
+		for {
+			<- ticker.C
+			run()
+		}
+	}()
 }
 
 func Stop() {

@@ -17,11 +17,11 @@ import (
 
 func main() {
 	Logger.InitLogger.Info("Starting trainer...")
-	scheduler.Start()
 	initState()
 	initConfig()
 	db.Init("")
 	installer.InstallNewInstance("host2", "172.31.23.39")
+	scheduler.Start()
 	initApi()
 	Logger.InitLogger.Info("Trainer started")
 }
