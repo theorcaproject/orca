@@ -105,8 +105,8 @@ func init() {
         Apps: []base.AppInfo{},
     }
     MetricsCache = base.MetricsWrapper{}
-    MetricsCache.HostMetrics = make(map[time.Time]base.HostStats)
-    MetricsCache.AppMetrics = make(map[base.AppName]map[time.Time]base.AppStats)
+    MetricsCache.HostMetrics = make(map[string]base.HostStats)
+    MetricsCache.AppMetrics = make(map[base.AppName]map[string]base.AppStats)
 }
 
 type pollingFunc func(conf base.AppConfiguration) bool
@@ -272,7 +272,7 @@ func sendToTrainer() {
     HostLogger.Infof("Sending data to trainer: %+v", wrapper)
     b := new(bytes.Buffer)
     jsonErr := json.NewEncoder(b).Encode(wrapper)
-    if jsonErr {
+    if jsonErr != nil {
         HostLogger.Errorf("Could not encode Metrics: %+v", jsonErr)
     }
     res, err := http.Post(configuration.TrainerUrl, "application/json; charset=utf-8", b)

@@ -93,8 +93,8 @@ type TrainerPushWrapper struct {
 }
 
 type MetricsWrapper struct {
-    HostMetrics map[time.Time]HostStats
-    AppMetrics map[AppName]map[time.Time]AppStats
+    HostMetrics map[string]HostStats
+    AppMetrics map[AppName]map[string]AppStats
 }
 
 var metricsMutex = &sync.Mutex{}
@@ -102,8 +102,8 @@ var metricsMutex = &sync.Mutex{}
 func (m MetricsWrapper) Wipe() {
     metricsMutex.Lock()
     defer metricsMutex.Unlock()
-    m.HostMetrics = make(map[time.Time]HostStats)
-    m.AppMetrics = make(map[AppName]map[time.Time]AppStats)
+    m.HostMetrics = make(map[string]HostStats)
+    m.AppMetrics = make(map[AppName]map[string]AppStats)
 }
 
 func (m MetricsWrapper) Get() MetricsWrapper{
@@ -116,13 +116,13 @@ func (m MetricsWrapper) Get() MetricsWrapper{
 func (m MetricsWrapper) AddHostMetrics(hostMetrics HostStats) {
     metricsMutex.Lock()
     defer metricsMutex.Unlock()
-    m.HostMetrics[time.Now().UTC()] = hostMetrics
+    m.HostMetrics[time.Now().UTC().Format(time.RFC3339)] = hostMetrics
 }
 
 func (m MetricsWrapper) AddAppMetrics(appName AppName, appMetrics AppStats) {
     metricsMutex.Lock()
     defer metricsMutex.Unlock()
-    m.AppMetrics[appName][time.Now().UTC()] = appMetrics
+    m.AppMetrics[appName][time.Now().UTC().Format(time.RFC3339)] = appMetrics
 }
 
 

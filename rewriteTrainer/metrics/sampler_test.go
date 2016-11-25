@@ -12,9 +12,9 @@ func TestSampler_RecordStats(t *testing.T) {
 	db.Init("_test")
 	tim := "sometimestamp"
 	stats :=  base.MetricsWrapper{}
-	stats.HostMetrics = make(map[time.Time]base.HostStats)
-	stats.AppMetrics = make(map[base.AppName]map[time.Time]base.AppStats)
-	stats.HostMetrics[time.Unix(0,0)] = base.HostStats{3, 2, 1}
+	stats.HostMetrics = make(map[string]base.HostStats)
+	stats.AppMetrics = make(map[base.AppName]map[string]base.AppStats)
+	stats.HostMetrics[time.Unix(0,0).Format(time.RFC3339)] = base.HostStats{3, 2, 1}
 	RecordStats("host1", stats, tim)
 
 	res := db.Audit.Get(db.BUCKET_AUDIT_RECEIVED_STATS, "host1_sometimestamp")
