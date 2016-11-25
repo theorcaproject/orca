@@ -310,7 +310,6 @@ func TestUpdateHost(t *testing.T) {
 		HostId: "hostId1",
 		IpAddr: "1.1.1.1",
 		OsInfo: base.OsInfo{},
-		HabitatInfo: base.HabitatInfo{},
 		Apps: []base.AppInfo{appInfo1, appInfo2, appInfo3, appInfo4},
 	}
 

@@ -31,14 +31,13 @@ func TestSampler_RecordHostInfo(t *testing.T) {
 		HostId: "host1",
 		IpAddr: "0.0.0.0",
 		OsInfo: base.OsInfo{},
-		HabitatInfo: base.HabitatInfo{},
 		Apps: []base.AppInfo{},
 	}
 	RecordHostInfo(info, time)
 
 	res := db.Audit.Get(db.BUCKET_AUDIT_RECEIVED_HOST_INFO, "host1_sometimestamp")
 
-	if res != "{\"HostId\":\"host1\",\"IpAddr\":\"0.0.0.0\",\"OsInfo\":{\"Os\":\"\",\"Arch\":\"\"},\"HabitatInfo\":{\"Version\":\"\",\"Name\":\"\",\"Status\":\"\"},\"Apps\":[]}" {
+	if res != "{\"HostId\":\"host1\",\"IpAddr\":\"0.0.0.0\",\"OsInfo\":{\"Os\":\"\",\"Arch\":\"\"},\"Apps\":[]}" {
 		t.Error(res)
 	}
 	db.Close()

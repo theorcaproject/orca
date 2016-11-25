@@ -12,6 +12,7 @@ const (
     STATUS_RUNNING = "running"
     STATUS_DEPLOYING = "deploying"
     STATUS_DEAD = "dead"
+    STATUS_UNKNOWN = "unknown"
 
     FILE_COMMAND = "FILE_COMMAND"
     EXEC_COMMAND = "EXEC_COMMAND"
@@ -56,7 +57,6 @@ type HostInfo struct {
     HostId HostId
     IpAddr IpAddr
     OsInfo OsInfo
-    HabitatInfo HabitatInfo
     Apps []AppInfo
 }
 
@@ -89,10 +89,10 @@ type PushWrapper struct {
 }
 
 type PushConfiguration struct {
-    TargetHostId HostId
+    //TargetHostId HostId
     DeploymentCount DeploymentCount
     AppConfiguration AppConfiguration
-    HabitatConfiguration HabitatConfiguration
+    //HabitatConfiguration HabitatConfiguration
 }
 
 type HabitatConfiguration struct {
@@ -108,6 +108,7 @@ type AppConfiguration struct {
     MinDeploymentCount DeploymentCount
     MaxDeploymentCount DeploymentCount
     InstallCommands []OsCommand
+    RunCommand OsCommand
     QueryStateCommand OsCommand
     RemoveCommand OsCommand
 }

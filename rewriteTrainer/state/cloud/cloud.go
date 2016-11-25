@@ -240,7 +240,6 @@ func (c *CloudLayout) UpdateHost(hostInfo base.HostInfo) {
 	elem := CloudLayoutElement{
 		HostId: hostInfo.HostId,
 		IpAddress: hostInfo.IpAddr,
-		HabitatVersion: hostInfo.HabitatInfo.Version,
 		Apps: apps,
 	}
 	StateCloudLogger.WithField("type", c.Type).Debugf("UpdateHost for host '%s': %+v", hostInfo.HostId, hostInfo)
