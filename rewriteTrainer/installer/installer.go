@@ -23,7 +23,7 @@ func ubuntu1604(trainerIp base.IpAddr, hostId base.HostId) []string {
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/util && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/host && go install'",
 		"echo orca | sudo -S sh -c \"echo '{\\\"PollInterval\\\": 10, \\\"TrainerUrl\\\": \\\"http://orcatrainer:5000/stats\\\", \\\"HostId\\\":\\\"" + string(hostId) + "\\\"}' > /etc/orca/host.conf\"",
-		"echo orca | sudo -S sh -c 'nohup /orca/bin/host >> /orca/log'",
+		//"echo orca | sudo -S sh -c 'nohup /orca/bin/host >> /orca/log'",
 	}
 }
 
@@ -35,7 +35,7 @@ func InstallNewInstance(hostId base.HostId, ipAddr base.IpAddr) bool {
 		InstallerLogger.Infof("Install on host %s:%s failed: No session", hostId, ipAddr)
 		return false
 	}
-	instance := ubuntu1604(ipAddr, hostId)
+	instance := ubuntu1604("172.31.30.107", hostId)
 	for _, cmd := range instance {
 		res := orcaSSh.ExecuteSshCommand(session, addr, cmd)
 		if !res {
