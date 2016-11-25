@@ -56,6 +56,7 @@ var CurrentProviderConfig ProviderConfiguration
 var CurrentProvider Provider
 
 func Init() {
+	AWSLogger.Infof("Initializing CloudProvider of type %s", CurrentProviderConfig.Type)
 	if CurrentProviderConfig.Type == PROVIDER_AWS {
 		CurrentProvider = AWSProvider{}
 	} else {
@@ -71,6 +72,8 @@ func spawnToMinInstances() {
 		for i := len(state_cloud.GlobalAvailableInstances); i <= int(CurrentProviderConfig.MinInstances); i++ {
 			CurrentProvider.SpawnInstance(CurrentProviderConfig.FundamentalInstanceType)
 		}
+	} else {
+		AWSLogger.Infof("Enough instances available, going on")
 	}
 }
 
