@@ -23,8 +23,8 @@ func main() {
 	db.Init("")
 	//installer.InstallNewInstance("host2", "172.31.23.39")
 	scheduler.Start()
-	initApi()
 	planner.InitialPlan()
+	initApi()
 	Logger.InitLogger.Info("Trainer started")
 }
 

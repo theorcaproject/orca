@@ -48,7 +48,7 @@ func Init(postfix string) {
 				DbLogger.Errorf("Bucket %s could not be created in audit.db", bucketName)
 				return nil
 			}
-			DbLogger.Info("Created DB Bucket %s", bucketName)
+			DbLogger.Infof("Created DB Bucket %s", bucketName)
 			return nil
 		})
 	}
