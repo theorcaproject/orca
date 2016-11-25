@@ -45,6 +45,7 @@ type ProviderConfiguration struct {
 type Provider interface {
 	SpawnInstances([]InstanceType)
 	SpawnInstance(InstanceType)
+	SpawnInstanceSync(InstanceType)
 	SpawnInstanceLike(base.HostId) base.HostId
 	GetIp(InstanceType) base.IpAddr
 	GetResources(InstanceType) state_cloud.InstanceResources
@@ -70,7 +71,7 @@ func spawnToMinInstances() {
 	if len(state_cloud.GlobalAvailableInstances) < int(CurrentProviderConfig.MinInstances) {
 		AWSLogger.Infof("Not enough instances available. Spawning more, available:%d min:%d", len(state_cloud.GlobalAvailableInstances), CurrentProviderConfig.MinInstances)
 		for i := len(state_cloud.GlobalAvailableInstances); i < int(CurrentProviderConfig.MinInstances); i++ {
-			CurrentProvider.SpawnInstance(CurrentProviderConfig.FundamentalInstanceType)
+			CurrentProvider.SpawnInstanceSync(CurrentProviderConfig.FundamentalInstanceType)
 		}
 	} else {
 		AWSLogger.Infof("Enough instances available, going on")

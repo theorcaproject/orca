@@ -4,6 +4,7 @@ import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/base"
 	Logger "gatoor/orca/rewriteTrainer/log"
+	"time"
 )
 
 var AWSLogger = Logger.LoggerWithField(Logger.Logger, "module", "aws")
@@ -37,6 +38,13 @@ func (a AWSProvider) SpawnInstance(ty InstanceType) {
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
+}
+
+func (a AWSProvider) SpawnInstanceSync(ty InstanceType) {
+	AWSLogger.Infof("Trying to spawn a single instance of type '%s' syncronously", ty)
+	AWSLogger.Errorf("NOT IMPLEMENTED WAITING")
+	time.Sleep(3000 * time.Millisecond)
+	AWSLogger.Errorf("NOT IMPLEMENTED DONE")
 }
 
 func (a AWSProvider) SpawnInstanceLike(hostId base.HostId) base.HostId{
