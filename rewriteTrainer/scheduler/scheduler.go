@@ -8,6 +8,9 @@ import (
 	"time"
 	"gatoor/orca/rewriteTrainer/planner"
 	"gatoor/orca/rewriteTrainer/state/cloud"
+	"fmt"
+	"gatoor/orca/rewriteTrainer/state/needs"
+	"gatoor/orca/rewriteTrainer/state/configuration"
 )
 
 var SchedulerLogger = Logger.LoggerWithField(Logger.Logger, "module", "scheduler")
@@ -44,12 +47,27 @@ func run() {
 	//}
 	//planner.\
 
-	diff := planner.Diff(state_cloud.GlobalCloudLayout.Desired, state_cloud.GlobalCloudLayout.Current)
-	planner.Queue.Apply(diff)
+	fmt.Println(".........")
+	fmt.Printf("%+v", state_cloud.GlobalCloudLayout)
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Printf("%+v", state_cloud.GlobalAvailableInstances)
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Printf("%+v", state_needs.GlobalAppsNeedState)
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Printf("%+v", state_configuration.GlobalConfigurationState)
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println(".........")
 
-	//analyzer.DoStuff
-
-	planner.Plan()
+	//diff := planner.Diff(state_cloud.GlobalCloudLayout.Desired, state_cloud.GlobalCloudLayout.Current)
+	//planner.Queue.Apply(diff)
+	//
+	////analyzer.DoStuff
+	//
+	//planner.Plan()
 
 	SchedulerLogger.Info("Finished run()")
 }

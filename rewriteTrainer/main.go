@@ -10,13 +10,14 @@ import (
 	"gatoor/orca/rewriteTrainer/api"
 	"gatoor/orca/rewriteTrainer/installer"
 	"gatoor/orca/rewriteTrainer/db"
+	"gatoor/orca/rewriteTrainer/scheduler"
 )
 
 
 
 func main() {
 	Logger.InitLogger.Info("Starting trainer...")
-	//scheduler.Start()
+	scheduler.Start()
 	initState()
 	initConfig()
 	db.Init("")

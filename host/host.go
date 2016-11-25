@@ -91,7 +91,22 @@ var MetricsCache base.MetricsWrapper
 
 
 func parseConfig() {
-    configuration.HostId = "somehost"
+    file, err := os.Open("/etc/orca/host.conf")
+    if err != nil {
+        HostLogger.Fatal(err)
+    }
+
+    decoder := json.NewDecoder(file)
+    if err := decoder.Decode(&configuration); err != nil {
+        extra := ""
+        if serr, ok := err.(*json.SyntaxError); ok {
+            line, col, highlight := util.HighlightBytePosition(file, serr.Offset)
+            extra = fmt.Sprintf(":\nError at line %d, column %d (file offset %d):\n%s",
+                line, col, serr.Offset, highlight)
+        }
+        HostLogger.Fatal("error parsing JSON object in config file %s%s\n%v",
+            file.Name(), extra, err)
+    }
 }
 
 func init() {
@@ -216,22 +231,6 @@ func getAppStatus(appName base.AppName, version base.Version) base.Status {
 }
 
 func main() {
-    file, err := os.Open("/etc/orca/host.conf")
-    if err != nil {
-        HostLogger.Fatal(err)
-    }
-
-    decoder := json.NewDecoder(file)
-    if err := decoder.Decode(&configuration); err != nil {
-        extra := ""
-        if serr, ok := err.(*json.SyntaxError); ok {
-            line, col, highlight := util.HighlightBytePosition(file, serr.Offset)
-            extra = fmt.Sprintf(":\nError at line %d, column %d (file offset %d):\n%s",
-                line, col, serr.Offset, highlight)
-        }
-        HostLogger.Fatal("error parsing JSON object in config file %s%s\n%v",
-            file.Name(), extra, err)
-    }
     HostLogger.Info("Host initialized.")
     startSchedule()
 }

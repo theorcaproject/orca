@@ -7,6 +7,7 @@ import (
 	"sync"
 	"errors"
 	"gatoor/orca/rewriteTrainer/cloud"
+	"gatoor/orca/rewriteTrainer/state/cloud"
 )
 
 var GlobalHostTracker HostTracker
@@ -68,7 +69,6 @@ func (h *HostTracker) Update(hostId base.HostId, checkin time.Time) {
 	elem := (*h)[hostId]
 	elem.LastCheckin = checkin
 	(*h)[hostId] = elem
-	GlobalHostCrashHandler.checkinHost(hostId)
 }
 
 func (h *HostTracker) Get(hostId base.HostId) (HostTrackingInfo, error) {
@@ -87,6 +87,7 @@ func (h *HostTracker) CheckCheckinTimeout() {
 	for hostId, hostInfo := range (*h) {
 		if hostInfo.LastCheckin.Before(time.Now().UTC().Add(-HOST_CHECKIN_TIMEOUT)) {
 			TrackerLogger.Warnf("Host '%s' checking timed out, last checkin was at '%s'", hostId, hostInfo.LastCheckin)
+			state_cloud.GlobalCloudLayout.Current.RemoveHost(hostId)
 			GlobalHostCrashHandler.spawnHost(hostId)
 		}
 	}
@@ -145,9 +146,6 @@ func (h *HostCrashHandler) checkinHost(hostId base.HostId) {
 	hostCrashHandlerMutex.Lock()
 	defer hostCrashHandlerMutex.Unlock()
 	var delHost base.HostId
-	TrackerLogger.Error("OOOO")
-	TrackerLogger.Error((*h))
-	TrackerLogger.Error("OOOO")
 	for oldHost, obj := range (*h) {
 		if obj.NewHostId == hostId {
 			TrackerLogger.Infof("New host '%s' checked in. It replaced host '%s', spawning was triggered at %s", hostId, obj.OldHostId, obj.InitiatedTime)
