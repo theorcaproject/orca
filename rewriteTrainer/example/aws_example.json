@@ -5,6 +5,12 @@
   "AvailableInstances": [
     "host2"
   ],
+  "ProviderConfiguration": {
+    "Type": "AWS",
+    "MinInstances": 2,
+    "MaxInstances": 3,
+    "AllowedInstanceTypes": ["t2.nano"]
+  },
   "Habitats": [
     {
       "Name": "dockerHabitat",
@@ -123,7 +129,7 @@
       "Name": "nginxworker",
       "Version": "0.2",
       "Type": "worker",
-      "MinDeploymentCount": 5,
+      "MinDeploymentCount": 7,
       "MaxDeploymentCount": 10,
       "InstallCommands": [
         {

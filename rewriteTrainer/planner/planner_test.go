@@ -9,6 +9,7 @@ import (
 	"gatoor/orca/rewriteTrainer/example"
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/rewriteTrainer/config"
+	"gatoor/orca/rewriteTrainer/cloud"
 )
 
 func TestPlannerQueue_AllEmpty(t *testing.T) {
@@ -586,6 +587,7 @@ func TestPlanner_initialPlan(t *testing.T) {
 
 	config := example.ExampleJsonConfig()
 	config.ApplyToState()
+	cloud.Init()
 
 	if len(state_configuration.GlobalConfigurationState.Apps) != 3 {
 		t.Error("init state_config apps wrong len")

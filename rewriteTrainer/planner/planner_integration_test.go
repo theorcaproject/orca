@@ -6,6 +6,7 @@ import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/rewriteTrainer/config"
+	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/base"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"fmt"
@@ -283,6 +284,7 @@ func initTrainer() {
 	state_needs.GlobalAppsNeedState = state_needs.AppsNeedState{}
 	applySampleConfig()
 	initCloudProvider()
+	cloud.Init()
 }
 
 func initCloudProvider() {

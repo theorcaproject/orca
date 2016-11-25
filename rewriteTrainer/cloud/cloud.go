@@ -7,6 +7,7 @@ import (
 
 type ProviderType string
 type InstanceType string
+type InstanceCount int
 
 const (
 	PROVIDER_TEST = "TEST"
@@ -33,6 +34,14 @@ type ProviderEvent struct {
 	Type ProviderEventType
 }
 
+type ProviderConfiguration struct {
+	Type ProviderType
+	MinInstances InstanceCount
+	MaxInstances InstanceCount
+	AllowedInstanceTypes []InstanceType
+	FundamentalInstanceType InstanceType
+}
+
 type Provider interface {
 	SpawnInstances([]InstanceType)
 	SpawnInstance(InstanceType)
@@ -43,13 +52,27 @@ type Provider interface {
 	CheckInstance(base.HostId) InstanceStatus
 }
 
+var CurrentProviderConfig ProviderConfiguration
 var CurrentProvider Provider
 
-func init() {
-	CurrentProvider = TestProvider{}
+func Init() {
+	if CurrentProviderConfig.Type == PROVIDER_AWS {
+		CurrentProvider = AWSProvider{}
+	} else {
+		CurrentProvider = TestProvider{}
+	}
+
+	spawnToMinInstances()
 }
 
-
+func spawnToMinInstances() {
+	if len(state_cloud.GlobalAvailableInstances) < CurrentProviderConfig.MinInstances {
+		AWSLogger.Infof("Not enough instances available. Spawning more, available:%d min:%d", len(state_cloud.GlobalAvailableInstances), CurrentProviderConfig.MinInstances)
+		for i := len(state_cloud.GlobalAvailableInstances); i <= CurrentProviderConfig.MinInstances; i++ {
+			CurrentProvider.SpawnInstance(CurrentProviderConfig.FundamentalInstanceType)
+		}
+	}
+}
 
 
 type TestProvider struct {

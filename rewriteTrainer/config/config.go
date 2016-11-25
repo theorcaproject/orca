@@ -20,6 +20,7 @@ type JsonConfiguration struct {
 	AvailableInstances []base.HostId
 	Habitats []HabitatJsonConfiguration
 	Apps []AppJsonConfiguration
+	CloudProvider cloud.ProviderConfiguration
 }
 
 type TrainerJsonConfiguration struct {
@@ -78,6 +79,7 @@ func (j *JsonConfiguration)  ApplyToState() {
 	applyAppsConfig(j.Apps)
 	applyNeeds(j.Apps)
 	applyAvailableInstances(j.AvailableInstances)
+	applyCloudProviderConfiguration(j.CloudProvider)
 	Logger.InitLogger.Infof("Config was applied to State")
 }
 
@@ -85,6 +87,13 @@ func applyAvailableInstances(instances []base.HostId) {
 	for _, hostId := range instances {
 		state_cloud.GlobalAvailableInstances.Update(hostId, state_cloud.InstanceResources{UsedCpuResource:0, UsedMemoryResource:0, UsedNetworkResource:0, TotalCpuResource: 20, TotalMemoryResource: 20, TotalNetworkResource: 20})
 	}
+}
+
+func applyCloudProviderConfiguration(conf cloud.ProviderConfiguration) {
+	cloud.CurrentProviderConfig.Type = conf.Type
+	cloud.CurrentProviderConfig.AllowedInstanceTypes = conf.AllowedInstanceTypes
+	cloud.CurrentProviderConfig.MaxInstances = conf.MaxInstances
+	cloud.CurrentProviderConfig.MinInstances = conf.MinInstances
 }
 
 func applyAppsConfig(appsConfs []AppJsonConfiguration) {

@@ -12,6 +12,7 @@ import (
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/scheduler"
 	"gatoor/orca/rewriteTrainer/planner"
+	"gatoor/orca/rewriteTrainer/cloud"
 )
 
 
@@ -20,6 +21,7 @@ func main() {
 	Logger.InitLogger.Info("Starting trainer...")
 	initState()
 	initConfig()
+	cloud.Init()
 	db.Init("")
 	//installer.InstallNewInstance("host2", "172.31.23.39")
 	scheduler.Start()

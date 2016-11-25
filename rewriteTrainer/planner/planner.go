@@ -350,7 +350,7 @@ func doPlanInternal() {
 		wg.Add(len(chunk))
 		for _, appName := range chunk {
 			appObj := apps[appName]
-			PlannerLogger.Infof("Assigning HttpApp '%s' - '%s'. Need to do this %s times", appObj.Name, appObj.Version, appObj.MinDeploymentCount)
+			PlannerLogger.Infof("Assigning HttpApp '%s' - '%s'. Need to do this %d times", appObj.Name, appObj.Version, appObj.MinDeploymentCount)
 			go func () {
 				defer wg.Done()
 				planHttp(appObj, findHttpHostWithResources, false)
@@ -362,7 +362,7 @@ func doPlanInternal() {
 
 	for _, appName := range workerOrder {
 		appObj := apps[appName]
-		PlannerLogger.Infof("Assigning WorkerApp '%s' - '%s'. Need to do this %s times", appObj.Name, appObj.Version, appObj.MinDeploymentCount)
+		PlannerLogger.Infof("Assigning WorkerApp '%s' - '%s'. Need to do this %d times", appObj.Name, appObj.Version, appObj.MinDeploymentCount)
 		planWorker(appObj, findHostWithResources, false)
 
 	}
@@ -504,7 +504,7 @@ func findHostWithResources(needs state_needs.AppNeeds, app base.AppName, sortedH
 			return hostId
 		}
 	}
-	PlannerLogger.Infof("Found no suitable host with has app '%s' installed. Returning backup host '%s'", app, backUpHost)
+	PlannerLogger.Infof("Found no suitable host which has app '%s' installed. Returning backup host '%s'", app, backUpHost)
 	return backUpHost
 }
 
