@@ -314,7 +314,7 @@ func TestApi_doHandlePush_NoChanges(t *testing.T) {
 	      HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := base.StatsWrapper{}
+	stats := base.MetricsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -380,7 +380,7 @@ func TestApi_doHandlePush_AppShouldBeUpdated(t *testing.T) {
 		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := base.StatsWrapper{}
+	stats := base.MetricsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -478,7 +478,7 @@ func TestApi_doHandlePush_AppStillUpdating(t *testing.T) {
 		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := base.StatsWrapper{}
+	stats := base.MetricsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -543,7 +543,7 @@ func TestApi_doHandlePush_AppUpdate(t *testing.T) {
 		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := base.StatsWrapper{}
+	stats := base.MetricsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -608,7 +608,7 @@ func TestApi_doHandlePush_AppRollback(t *testing.T) {
 		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := base.StatsWrapper{}
+	stats := base.MetricsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -670,7 +670,7 @@ func TestApi_doHandlePush_AppShouldBeRemovedFromHost(t *testing.T) {
 		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := base.StatsWrapper{}
+	stats := base.MetricsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -733,7 +733,7 @@ func TestApi_doHandlePush_AppShouldBeScaled(t *testing.T) {
 		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := base.StatsWrapper{}
+	stats := base.MetricsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -788,7 +788,7 @@ func TestApi_doHandlePush_NewInstance(t *testing.T) {
 		HostId: "new_host", Apps: []base.AppInfo{},
 	}
 
-	stats := base.StatsWrapper{}
+	stats := base.MetricsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 1 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
@@ -836,7 +836,7 @@ func TestApi_doHandlePush_AppDied(t *testing.T) {
 		HostId: "host1", Apps: []base.AppInfo{app1, app2, app2},
 	}
 
-	stats := base.StatsWrapper{}
+	stats := base.MetricsWrapper{}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error(state_cloud.GlobalCloudLayout.Current)

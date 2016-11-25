@@ -70,7 +70,7 @@ func pushHandler(w http.ResponseWriter, r *http.Request) {
 	returnJson(w, config)
 }
 
-func doHandlePush(hostInfo base.HostInfo, stats base.StatsWrapper) {
+func doHandlePush(hostInfo base.HostInfo, stats base.MetricsWrapper) {
 	timeString, time := db.GetNow()
 
 	metrics.RecordStats(hostInfo.HostId, stats, timeString)
