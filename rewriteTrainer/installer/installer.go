@@ -14,7 +14,6 @@ func ubuntu1604(trainerIp base.IpAddr, hostId base.HostId) []string {
 		"echo orca | sudo -S apt-get install -y git golang supervisor",
 		"echo orca | sudo -S mkdir -p /orca",
 		"echo orca | sudo -S chmod -R 777 /orca",
-		"echo orca | sudo -S mkdir -p /orca/data",
 		"echo orca | sudo -S mkdir -p /etc/orca",
 		//"echo orca | sudo -S sh -c \"echo '" + string(trainerIp) + " orcatrainer' >> /etc/hosts\"",
 		"rm -rf /orca/src/gatoor && mkdir -p /orca/src/gatoor && cd /orca/src/gatoor && git clone -b awstest https://github.com/gatoor/orca.git",

@@ -21,16 +21,19 @@ const (
 	BUCKET_AUDIT_RECEIVED_STATS = "StatsReceived"
 	BUCKET_AUDIT_RECEIVED_HOST_INFO = "HostInfoReceived"
 	BUCKET_AUDIT_SENT = "PushSent"
+
+
+	DB_PATH = "/orca/data/audit.db"
 )
 
 
 var Audit OrcaDb
 
 func Init(postfix string) {
-	audit, err := bolt.Open("/orca/data/audit.db" + postfix, 0600, nil)
+	audit, err := bolt.Open(DB_PATH + postfix, 0600, nil)
 
 	if err != nil {
-		DbLogger.Error("Cannot open database audit.db")
+		DbLogger.Panicf("Cannot open database %s", DB_PATH)
 	}
 	Audit = OrcaDb{
 		"audit.db" + postfix, audit,
