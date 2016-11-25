@@ -7,11 +7,23 @@ import (
 	"encoding/json"
 	"errors"
 	"gatoor/orca/rewriteTrainer/db"
+	"io/ioutil"
+	"fmt"
+	"os"
 )
 
 var MetricsLogger = Logger.LoggerWithField(Logger.Logger, "module", "metrics")
 
 func ParsePush(r *http.Request) (base.HostInfo, base.MetricsWrapper, error) {
+	htmlData, err0 := ioutil.ReadAll(r.Body)
+	if err0 != nil {
+		fmt.Println(err0)
+		os.Exit(1)
+	}
+
+	// print out
+	fmt.Println(os.Stdout, string(htmlData))
+
 	decoder := json.NewDecoder(r.Body)
 	var wrapper base.TrainerPushWrapper
 	err := decoder.Decode(&wrapper)
