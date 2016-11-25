@@ -6,7 +6,6 @@ import (
 	//"gatoor/orca/rewriteTrainer/state/cloud"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"time"
-	"gatoor/orca/rewriteTrainer/planner"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"fmt"
 	"gatoor/orca/rewriteTrainer/state/needs"
