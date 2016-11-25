@@ -84,16 +84,19 @@ func (j *JsonConfiguration)  ApplyToState() {
 }
 
 func applyAvailableInstances(instances []base.HostId) {
+	Logger.InitLogger.Infof("Applying AvailableInstances config: %+v", instances)
 	for _, hostId := range instances {
 		state_cloud.GlobalAvailableInstances.Update(hostId, state_cloud.InstanceResources{UsedCpuResource:0, UsedMemoryResource:0, UsedNetworkResource:0, TotalCpuResource: 20, TotalMemoryResource: 20, TotalNetworkResource: 20})
 	}
 }
 
 func applyCloudProviderConfiguration(conf cloud.ProviderConfiguration) {
+	Logger.InitLogger.Infof("Applying CloudProvider config: %+v", conf)
 	cloud.CurrentProviderConfig.Type = conf.Type
 	cloud.CurrentProviderConfig.AllowedInstanceTypes = conf.AllowedInstanceTypes
 	cloud.CurrentProviderConfig.MaxInstances = conf.MaxInstances
 	cloud.CurrentProviderConfig.MinInstances = conf.MinInstances
+	cloud.CurrentProviderConfig.FundamentalInstanceType = conf.FundamentalInstanceType
 }
 
 func applyAppsConfig(appsConfs []AppJsonConfiguration) {
