@@ -276,9 +276,6 @@ func sendToTrainer() {
         HostLogger.Errorf("Could not encode Metrics: %+v", jsonErr)
     }
     res, err := http.Post(configuration.TrainerUrl, "application/json; charset=utf-8", b)
-    fmt.Println(".....")
-    fmt.Println(b.String())
-    fmt.Println(".....")
     if err != nil {
         HostLogger.Errorf("Could not send data to trainer: %+v", err)
     } else {

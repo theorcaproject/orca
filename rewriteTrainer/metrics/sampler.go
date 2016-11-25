@@ -15,20 +15,21 @@ import (
 var MetricsLogger = Logger.LoggerWithField(Logger.Logger, "module", "metrics")
 
 func ParsePush(r *http.Request) (base.HostInfo, base.MetricsWrapper, error) {
-	htmlData, err0 := ioutil.ReadAll(r.Body)
-	if err0 != nil {
-		fmt.Println(err0)
-		os.Exit(1)
-	}
-
-	// print out
-	fmt.Println(os.Stdout, string(htmlData))
-
 	decoder := json.NewDecoder(r.Body)
 	var wrapper base.TrainerPushWrapper
 	err := decoder.Decode(&wrapper)
 	if err != nil {
 		MetricsLogger.Errorf("TrainerPushWrapper parsing failed - %s", err)
+		htmlData, err0 := ioutil.ReadAll(r.Body)
+		if err0 != nil {
+			fmt.Println(err0)
+			os.Exit(1)
+		}
+		fmt.Println(">>>")
+		fmt.Println(os.Stdout, string(htmlData))
+		fmt.Println(">>>")
+
+
 		return base.HostInfo{}, base.MetricsWrapper{}, errors.New("Parsing failed")
 	}
 	return wrapper.HostInfo, wrapper.Stats, nil
