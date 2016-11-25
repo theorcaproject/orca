@@ -10,12 +10,14 @@ import (
 	"gatoor/orca/util"
 	"fmt"
 	"gatoor/orca/rewriteTrainer/state/configuration"
+	"gatoor/orca/rewriteTrainer/state/cloud"
 )
 
 const CONFIGURATION_FILE = "/tmp/example.json"
 
 type JsonConfiguration struct {
 	Trainer TrainerJsonConfiguration
+	AvailableInstances []base.HostId
 	Habitats []HabitatJsonConfiguration
 	Apps []AppJsonConfiguration
 }
@@ -75,7 +77,14 @@ func (j *JsonConfiguration)  ApplyToState() {
 	applyTrainerConfig(j.Trainer)
 	applyAppsConfig(j.Apps)
 	applyNeeds(j.Apps)
+	applyAvailableInstances(j.AvailableInstances)
 	Logger.InitLogger.Infof("Config was applied to State")
+}
+
+func applyAvailableInstances(instances []base.HostId) {
+	for _, hostId := range instances {
+		state_cloud.GlobalAvailableInstances.Update(hostId, state_cloud.InstanceResources{UsedCpuResource:0, UsedMemoryResource:0, UsedNetworkResource:0, TotalCpuResource: 20, TotalMemoryResource: 20, TotalNetworkResource: 20})
+	}
 }
 
 func applyAppsConfig(appsConfs []AppJsonConfiguration) {

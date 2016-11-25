@@ -247,14 +247,20 @@ func InitialPlan() {
 	if int(neededCpu) > int(availableCpu) {
 		PlannerLogger.Warnf("Not enough Cpu resources available (needed=%d - available=%d) - spawning new instance TODO", neededCpu, availableCpu)
 		cloud.CurrentProvider.SpawnInstances(cloud.CurrentProvider.SuitableInstanceTypes(getGlobalMissingResources()))
+		doPlan()
+		return
 	}
 	if int(neededMem) > int(availableMem) {
 		PlannerLogger.Warnf("Not enough Memory resources available (needed=%d - available=%d) - spawning new instance TODO", neededMem, availableMem)
 		cloud.CurrentProvider.SpawnInstances(cloud.CurrentProvider.SuitableInstanceTypes(getGlobalMissingResources()))
+		doPlan()
+		return
 	}
 	if int(neededNet) > int(availableNet) {
 		PlannerLogger.Warnf("Not enough Network resources available (needed=%d - available=%d) - spawning new instance TODO", neededNet, availableNet)
 		cloud.CurrentProvider.SpawnInstances(cloud.CurrentProvider.SuitableInstanceTypes(getGlobalMissingResources()))
+		doPlan()
+		return
 	}
 
 	doPlan()

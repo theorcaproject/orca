@@ -2,6 +2,9 @@
   "Trainer": {
     "Port": 5000
   },
+  "AvailableInstances": [
+    "host2"
+  ],
   "Habitats": [
     {
       "Name": "dockerHabitat",
