@@ -31,6 +31,12 @@ func TestConfigureApp(t *testing.T) {
 			},
 		},
 		base.OsCommand{
+			base.EXEC_COMMAND,
+			base.Command{
+				":bb", "uu",
+			},
+		},
+		base.OsCommand{
 			base.FILE_COMMAND,
 			base.Command{
 				":cc", "ii",
@@ -130,6 +136,12 @@ func TestAppConfigurationVersions_AllAppsLatestVersion(t *testing.T) {
 			},
 		},
 		base.OsCommand{
+			base.EXEC_COMMAND,
+			base.Command{
+				":bb", "uu",
+			},
+		},
+		base.OsCommand{
 			base.FILE_COMMAND,
 			base.Command{
 				":cc", "ii",
@@ -158,6 +170,12 @@ func TestAppConfigurationVersions_AllAppsLatestVersion(t *testing.T) {
 				":cc", "ii",
 			},
 		},
+		base.OsCommand{
+			base.FILE_COMMAND,
+			base.Command{
+				":cc", "ii",
+			},
+		},
 	})
 	GlobalConfig.ConfigureApp(base.AppConfiguration{
 		"appname2", base.APP_HTTP, "2.0", 1, 2,
@@ -167,6 +185,12 @@ func TestAppConfigurationVersions_AllAppsLatestVersion(t *testing.T) {
 				base.Command{
 					":aa", "mmm",
 				},
+			},
+		},
+		base.OsCommand{
+			base.EXEC_COMMAND,
+			base.Command{
+				":bb", "uu",
 			},
 		},
 		base.OsCommand{

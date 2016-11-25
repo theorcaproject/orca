@@ -87,40 +87,7 @@ type LocalAppStatus map[base.AppName]map[base.Version]base.AppStatus
 var StableAppVersionsCache StableAppVersions
 var AppConfigCache AppConfig
 
-type MetricsWrapper struct {
-    HostMetrics map[time.Time]base.HostStats
-    AppMetrics map[base.AppName]map[time.Time]base.AppStats
-}
-
-var MetricsCache MetricsWrapper
-var metricsMutex = &sync.Mutex{}
-
-func (m MetricsWrapper) Wipe() {
-    metricsMutex.Lock()
-    defer metricsMutex.Unlock()
-    m.HostMetrics = make(map[time.Time]base.HostStats)
-    m.AppMetrics = make(map[base.AppName]map[time.Time]base.AppStats)
-}
-
-func (m MetricsWrapper) Get() MetricsWrapper{
-    metricsMutex.Lock()
-    defer metricsMutex.Unlock()
-    metrics := m
-    return metrics
-}
-
-func (m MetricsWrapper) AddHostMetrics(hostMetrics base.HostStats) {
-    metricsMutex.Lock()
-    defer metricsMutex.Unlock()
-    m.HostMetrics[time.Now().UTC()] = hostMetrics
-}
-
-func (m MetricsWrapper) AddAppMetrics(appName base.AppName, appMetrics base.AppStats) {
-    metricsMutex.Lock()
-    defer metricsMutex.Unlock()
-    m.AppMetrics[appName][time.Now().UTC()] = appMetrics
-}
-
+var MetricsCache base.MetricsWrapper
 
 
 func parseConfig() {
@@ -137,7 +104,7 @@ func init() {
         OsInfo: getOsInfo(),
         Apps: []base.AppInfo{},
     }
-    MetricsCache = MetricsWrapper{}
+    MetricsCache = base.MetricsWrapper{}
     MetricsCache.HostMetrics = make(map[time.Time]base.HostStats)
     MetricsCache.AppMetrics = make(map[base.AppName]map[time.Time]base.AppStats)
 }
@@ -296,15 +263,12 @@ func startSchedule() {
     }()
 }
 
-type TrainerPushWrapper struct {
-    HostInfo base.HostInfo
-    Stats MetricsWrapper
-}
+
 
 func sendToTrainer() {
     metrics := MetricsCache.Get()
     MetricsCache.Wipe()
-    wrapper := TrainerPushWrapper{hostInfo, metrics}
+    wrapper := base.TrainerPushWrapper{hostInfo, metrics}
     HostLogger.Info("Sending data to trainer: %+v", wrapper)
     b := new(bytes.Buffer)
     json.NewEncoder(b).Encode(wrapper)
@@ -334,6 +298,9 @@ func handleTrainerResponse(body []byte) {
 
 
 func installApp(conf base.AppConfiguration, deploymentCount base.DeploymentCount) {
+    if string(conf.Name) == "" || string(conf.Version) == "" {
+        return
+    }
     HostLogger.Infof("Installing App %s:%s", conf.Name, conf.Version)
     status := getAppStatus(conf.Name, conf.Version)
     if status == base.STATUS_DEPLOYING {

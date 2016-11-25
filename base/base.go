@@ -3,6 +3,10 @@ package base
 import (
     //linuxproc "github.com/c9s/goprocinfo/linux"
 )
+import (
+    "time"
+    "sync"
+)
 
 const (
     APP_HTTP = "http"
@@ -82,6 +86,45 @@ type StatsWrapper struct {
     Host HostStats
     Apps map[AppName]AppStats
 }
+
+type TrainerPushWrapper struct {
+    HostInfo HostInfo
+    Stats MetricsWrapper
+}
+
+type MetricsWrapper struct {
+    HostMetrics map[time.Time]HostStats
+    AppMetrics map[AppName]map[time.Time]AppStats
+}
+
+var metricsMutex = &sync.Mutex{}
+
+func (m MetricsWrapper) Wipe() {
+    metricsMutex.Lock()
+    defer metricsMutex.Unlock()
+    m.HostMetrics = make(map[time.Time]HostStats)
+    m.AppMetrics = make(map[AppName]map[time.Time]AppStats)
+}
+
+func (m MetricsWrapper) Get() MetricsWrapper{
+    metricsMutex.Lock()
+    defer metricsMutex.Unlock()
+    metrics := m
+    return metrics
+}
+
+func (m MetricsWrapper) AddHostMetrics(hostMetrics HostStats) {
+    metricsMutex.Lock()
+    defer metricsMutex.Unlock()
+    m.HostMetrics[time.Now().UTC()] = hostMetrics
+}
+
+func (m MetricsWrapper) AddAppMetrics(appName AppName, appMetrics AppStats) {
+    metricsMutex.Lock()
+    defer metricsMutex.Unlock()
+    m.AppMetrics[appName][time.Now().UTC()] = appMetrics
+}
+
 
 type PushWrapper struct {
     HostInfo HostInfo
