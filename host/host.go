@@ -269,10 +269,13 @@ func sendToTrainer() {
     metrics := MetricsCache.Get()
     MetricsCache.Wipe()
     wrapper := base.TrainerPushWrapper{hostInfo, metrics}
-    HostLogger.Info("Sending data to trainer: %+v", wrapper)
+    HostLogger.Infof("Sending data to trainer: %+v", wrapper)
     b := new(bytes.Buffer)
     json.NewEncoder(b).Encode(wrapper)
     res, err := http.Post(configuration.TrainerUrl, "application/json; charset=utf-8", b)
+    fmt.Println(".....")
+    fmt.Println(b.String())
+    fmt.Println(".....")
     if err != nil {
         HostLogger.Errorf("Could not send data to trainer: %+v", err)
     } else {
