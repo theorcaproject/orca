@@ -8,7 +8,7 @@ import (
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/rewriteTrainer/config"
 	"gatoor/orca/rewriteTrainer/api"
-	"gatoor/orca/rewriteTrainer/installer"
+	//"gatoor/orca/rewriteTrainer/installer"
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/scheduler"
 )
