@@ -27,7 +27,7 @@ const (
 var Audit OrcaDb
 
 func Init(postfix string) {
-	audit, err := bolt.Open("audit.db" + postfix, 0600, nil)
+	audit, err := bolt.Open("/orca/data/audit.db" + postfix, 0600, nil)
 
 	if err != nil {
 		DbLogger.Error("Cannot open database audit.db")
@@ -45,6 +45,7 @@ func Init(postfix string) {
 				DbLogger.Errorf("Bucket %s could not be created in audit.db", bucketName)
 				return nil
 			}
+			DbLogger.Info("Created DB Bucket %s", bucketName)
 			return nil
 		})
 	}
