@@ -69,7 +69,7 @@ func Init() {
 func spawnToMinInstances() {
 	if len(state_cloud.GlobalAvailableInstances) < int(CurrentProviderConfig.MinInstances) {
 		AWSLogger.Infof("Not enough instances available. Spawning more, available:%d min:%d", len(state_cloud.GlobalAvailableInstances), CurrentProviderConfig.MinInstances)
-		for i := len(state_cloud.GlobalAvailableInstances); i <= int(CurrentProviderConfig.MinInstances); i++ {
+		for i := len(state_cloud.GlobalAvailableInstances); i < int(CurrentProviderConfig.MinInstances); i++ {
 			CurrentProvider.SpawnInstance(CurrentProviderConfig.FundamentalInstanceType)
 		}
 	} else {
