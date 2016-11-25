@@ -22,7 +22,7 @@ func ubuntu1604(trainerIp base.IpAddr, hostId base.HostId) []string {
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/base/log && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/util && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/host && go install'",
-		"echo orca | sudo -S sh -c \"echo '{\\\"PollInterval\\\": 10, \\\"TrainerUrl\\\": \\\"http://" + string(trainerIp) + ":5000/stats\\\", \\\"HostId\\\":\\\"" + string(hostId) + "\\\"}' > /etc/orca/host.conf\"",
+		"echo orca | sudo -S sh -c \"echo '{\\\"PollInterval\\\": 10, \\\"TrainerUrl\\\": \\\"http://" + string(trainerIp) + ":5000/push\\\", \\\"HostId\\\":\\\"" + string(hostId) + "\\\"}' > /etc/orca/host.conf\"",
 		//"echo orca | sudo -S sh -c 'nohup /orca/bin/host >> /orca/log'",
 	}
 }
