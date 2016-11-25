@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/rewriteTrainer/state/configuration"
+	"gatoor/orca/rewriteTrainer/cloud"
 )
 
 var SchedulerLogger = Logger.LoggerWithField(Logger.Logger, "module", "scheduler")
@@ -59,6 +60,9 @@ func run() {
 	fmt.Println("")
 	fmt.Println("")
 	fmt.Printf("Config: %+v", state_configuration.GlobalConfigurationState)
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Printf("CloudProvider: %+v", cloud.CurrentProviderConfig)
 	fmt.Println("")
 	fmt.Println("")
 	fmt.Println(".........")
