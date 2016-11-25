@@ -111,6 +111,13 @@ func (a TestProvider) SpawnInstance(ty InstanceType) {
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 }
 
+func (a TestProvider) SpawnInstanceSync(ty InstanceType) {
+	AWSLogger.Infof("Trying to spawn a single instance of type '%s'", ty)
+	AWSLogger.Errorf("NOT IMPLEMENTED")
+	AWSLogger.Errorf("NOT IMPLEMENTED")
+	AWSLogger.Errorf("NOT IMPLEMENTED")
+}
+
 func (a TestProvider) SpawnInstanceLike(hostId base.HostId) base.HostId{
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
