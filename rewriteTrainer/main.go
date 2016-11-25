@@ -19,8 +19,8 @@ func main() {
 	//scheduler.Start()
 	initState()
 	initConfig()
-	//initApi()
 	installer.InstallNewInstance("host2", "172.31.23.39")
+	initApi()
 	Logger.InitLogger.Info("Trainer started")
 }
 
