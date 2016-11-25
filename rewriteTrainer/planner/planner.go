@@ -181,10 +181,9 @@ func (p PlannerQueue) RemoveHost(hostId base.HostId) {
 
 
 func init() {
-	PlannerLogger.Info("Initializing")
+	PlannerLogger.Info("Initializing Planner")
 	Queue = *NewPlannerQueue()
-	InitialPlan()
-	PlannerLogger.Info("Initialized")
+	PlannerLogger.Info("Initialized Planner")
 }
 
 func Diff(master state_cloud.CloudLayout, slave state_cloud.CloudLayout) LayoutDiff {

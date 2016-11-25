@@ -11,18 +11,20 @@ import (
 	//"gatoor/orca/rewriteTrainer/installer"
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/scheduler"
+	"gatoor/orca/rewriteTrainer/planner"
 )
 
 
 
 func main() {
 	Logger.InitLogger.Info("Starting trainer...")
+	initState()
 	initConfig()
 	db.Init("")
-	initState()
 	//installer.InstallNewInstance("host2", "172.31.23.39")
 	scheduler.Start()
 	initApi()
+	planner.InitialPlan()
 	Logger.InitLogger.Info("Trainer started")
 }
 
