@@ -210,9 +210,9 @@ func commandPollingFunc (conf base.AppConfiguration) bool {
 }
 
 func pollAppsStatus() {
-    HostLogger.Info("Polling Statuses...")
+    HostLogger.Debug("Polling Statuses...")
     for _, app := range hostInfo.Apps {
-        HostLogger.Infof("Polling status for app %s:%s", app.Name, app.Version)
+        HostLogger.Debugf("Polling status for app %s:%s", app.Name, app.Version)
         pollAppStatus(app, commandPollingFunc)
     }
 }
@@ -235,10 +235,10 @@ func pollAppStatus(app base.AppInfo, pollingFunc pollingFunc) {
 }
 
 func pollAppsMetrics() {
-    HostLogger.Info("Polling Metrics...")
+    HostLogger.Debug("Polling Metrics...")
     pollHostMetrics()
     for _, app := range hostInfo.Apps {
-        HostLogger.Infof("Polling metrics for app %s:%s", app.Name, app.Version)
+        HostLogger.Debugf("Polling metrics for app %s:%s", app.Name, app.Version)
         pollAppMetrics(app)
     }
 }
@@ -398,7 +398,7 @@ func handleTrainerResponse(body []byte) {
     if err := json.Unmarshal(body, &config); err != nil {
         HostLogger.Errorf("Failed to parse response - %s HTTP_BODY: %s", err, string(body))
     } else {
-        HostLogger.Infof("Got Config with OrcaVersion %s", config.OrcaVersion)
+        HostLogger.Infof("Got Config with OrcaVersion %s: %+v", config.OrcaVersion, config)
         installApp(config.AppConfiguration, config.DeploymentCount)
     }
 }
