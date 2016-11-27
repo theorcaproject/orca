@@ -26,12 +26,12 @@ func Test_pollMetrics(t *testing.T) {
 }
 
 func Test_pollApp_deployingApp (t *testing.T) {
-	appInfo := base.AppInfo{base.APP_HTTP, "app1", "1.0", base.STATUS_DEPLOYING}
+	appInfo := base.AppInfo{base.APP_HTTP, "app1", "1.0", base.STATUS_DEPLOYING, "app1_1"}
 	hostInfo.Apps = []base.AppInfo{
 		appInfo,
 	}
 
-	before := getAppStatus("app1", "1.0")
+	before := getAllAppStatus("app1", "1.0")
 	if before != base.STATUS_DEPLOYING {
 		t.Error(before)
 	}
@@ -39,7 +39,7 @@ func Test_pollApp_deployingApp (t *testing.T) {
 	appConf := base.AppConfiguration{Name: "app1", Version: "1.0"}
 	AppConfigCache.Set(appConf)
 	pollAppStatus(appInfo, pollFalse)
-	after := getAppStatus("app1", "1.0")
+	after := getAllAppStatus("app1", "1.0")
 	if after != base.STATUS_DEPLOYING {
 		t.Error(before)
 	}
@@ -53,12 +53,12 @@ func Test_pollApp_deployingApp (t *testing.T) {
 }
 
 func Test_pollApp_runningAppFromDeploying (t *testing.T) {
-	appInfo := base.AppInfo{base.APP_HTTP, "app1", "1.0", base.STATUS_DEPLOYING}
+	appInfo := base.AppInfo{base.APP_HTTP, "app1", "1.0", base.STATUS_DEPLOYING, "app1_1"}
 	hostInfo.Apps = []base.AppInfo{
 		appInfo,
 	}
 
-	before := getAppStatus("app1", "1.0")
+	before := getAllAppStatus("app1", "1.0")
 	if before != base.STATUS_DEPLOYING {
 		t.Error(before)
 	}
@@ -66,7 +66,7 @@ func Test_pollApp_runningAppFromDeploying (t *testing.T) {
 	appConf := base.AppConfiguration{Name: "app1", Version: "1.0"}
 	AppConfigCache.Set(appConf)
 	pollAppStatus(appInfo, pollTrue)
-	after := getAppStatus("app1", "1.0")
+	after := getAllAppStatus("app1", "1.0")
 	if after != base.STATUS_RUNNING {
 		t.Error(before)
 	}
@@ -77,13 +77,13 @@ func Test_pollApp_runningAppFromDeploying (t *testing.T) {
 }
 
 func Test_pollApp_runningApp (t *testing.T) {
-	appInfo := base.AppInfo{base.APP_HTTP, "app1", "1.0", base.STATUS_DEAD}
+	appInfo := base.AppInfo{base.APP_HTTP, "app1", "1.0", base.STATUS_DEAD, "app1_1"}
 	StableAppVersionsCache.Set("app1", "0.1", true)
 	hostInfo.Apps = []base.AppInfo{
 		appInfo,
 	}
 
-	before := getAppStatus("app1", "1.0")
+	before := getAllAppStatus("app1", "1.0")
 	if before != base.STATUS_DEAD {
 		t.Error(before)
 	}
@@ -91,7 +91,7 @@ func Test_pollApp_runningApp (t *testing.T) {
 	appConf := base.AppConfiguration{Name: "app1", Version: "1.0"}
 	AppConfigCache.Set(appConf)
 	pollAppStatus(appInfo, pollTrue)
-	after := getAppStatus("app1", "1.0")
+	after := getAllAppStatus("app1", "1.0")
 	if after != base.STATUS_RUNNING {
 		t.Error(before)
 	}
@@ -106,12 +106,12 @@ func Test_pollApp_runningApp (t *testing.T) {
 
 func Test_pollApp_deadApp (t *testing.T) {
 	StableAppVersionsCache.Set("app1", "0.1", true)
-	appInfo := base.AppInfo{base.APP_HTTP, "app1", "1.0", base.STATUS_RUNNING}
+	appInfo := base.AppInfo{base.APP_HTTP, "app1", "1.0", base.STATUS_RUNNING, "app1_1"}
 	hostInfo.Apps = []base.AppInfo{
 		appInfo,
 	}
 
-	before := getAppStatus("app1", "1.0")
+	before := getAllAppStatus("app1", "1.0")
 	if before != base.STATUS_RUNNING {
 		t.Error(before)
 	}
@@ -119,7 +119,7 @@ func Test_pollApp_deadApp (t *testing.T) {
 	appConf := base.AppConfiguration{Name: "app1", Version: "1.0"}
 	AppConfigCache.Set(appConf)
 	pollAppStatus(appInfo, pollFalse)
-	after := getAppStatus("app1", "1.0")
+	after := getAllAppStatus("app1", "1.0")
 	if after != base.STATUS_DEAD {
 		t.Error(before)
 	}
@@ -462,4 +462,37 @@ func Test_installApp_integration_scaleUp(t *testing.T) {
 		t.Error(hostInfo)
 	}
 
+}
+
+
+func Test_saveState(t *testing.T) {
+	hostInfo = base.HostInfo{
+		HostId: "somehost",
+		IpAddr: "1.2.3.4",
+		OsInfo: base.OsInfo{},
+		Apps: []base.AppInfo{{
+			Type: base.APP_HTTP,
+			Name: "app1",
+			Version: "1.0",
+			Status: base.STATUS_RUNNING,
+			Id: "app1_123"}},
+	}
+
+	AppConfigCache.Set(base.AppConfiguration{Name: "app1", Type: base.APP_HTTP, Version: "1.0"})
+	saveState()
+	hostInfo = base.HostInfo{}
+	AppConfigCache = AppConfig{}
+	if hostInfo.HostId != "" {
+		t.Error(hostInfo)
+	}
+	if AppConfigCache.Get("app1", "1.0").Name != "" {
+		t.Error(AppConfigCache)
+	}
+	loadLastState()
+	if hostInfo.HostId != "somehost" {
+		t.Error(hostInfo)
+	}
+	if AppConfigCache.Get("app1", "1.0").Name != "app1" {
+		t.Error(AppConfigCache)
+	}
 }

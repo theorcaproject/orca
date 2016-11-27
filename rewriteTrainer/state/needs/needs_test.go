@@ -3,6 +3,7 @@ package state_needs_test
 import (
 	"testing"
 	"gatoor/orca/rewriteTrainer/state/needs"
+	"gatoor/orca/rewriteTrainer/needs"
 )
 
 
@@ -12,23 +13,23 @@ func prepareNeedsState() state_needs.AppsNeedState {
 
 
 func TestAppsNeedState_GetNeeds(t *testing.T) {
-	needs := prepareNeedsState()
+	ns := prepareNeedsState()
 
-	needs.UpdateNeeds("app1", "0.1", state_needs.AppNeeds{
-		CpuNeeds: state_needs.CpuNeeds(3),
-		MemoryNeeds: state_needs.MemoryNeeds(10),
-		NetworkNeeds: state_needs.NetworkNeeds(1),
+	ns.UpdateNeeds("app1", "0.1", needs.AppNeeds{
+		CpuNeeds: needs.CpuNeeds(3),
+		MemoryNeeds: needs.MemoryNeeds(10),
+		NetworkNeeds: needs.NetworkNeeds(1),
 	})
 
-	_, err0 := needs.Get("unknown", "aa")
+	_, err0 := ns.Get("unknown", "aa")
 	if err0 == nil {
 		t.Error("found an app that's not there")
 	}
-	_, err1 := needs.Get("app1", "aa")
+	_, err1 := ns.Get("app1", "aa")
 	if err1 == nil {
 		t.Error("found a version that's not there")
 	}
-	val, err2 := needs.Get("app1", "0.1")
+	val, err2 := ns.Get("app1", "0.1")
 	if err2 != nil {
 		t.Error("did not find app/version")
 	}
@@ -39,25 +40,25 @@ func TestAppsNeedState_GetNeeds(t *testing.T) {
 
 
 func TestAppsNeedState_GetAall(t *testing.T) {
-	needs := prepareNeedsState()
+	ns := prepareNeedsState()
 
-	needs.UpdateNeeds("app1", "0.1", state_needs.AppNeeds{
-		CpuNeeds: state_needs.CpuNeeds(1),
-		MemoryNeeds: state_needs.MemoryNeeds(1),
-		NetworkNeeds: state_needs.NetworkNeeds(1),
+	ns.UpdateNeeds("app1", "0.1", needs.AppNeeds{
+		CpuNeeds: needs.CpuNeeds(1),
+		MemoryNeeds: needs.MemoryNeeds(1),
+		NetworkNeeds: needs.NetworkNeeds(1),
 	})
-	needs.UpdateNeeds("app1", "0.2", state_needs.AppNeeds{
-		CpuNeeds: state_needs.CpuNeeds(2),
-		MemoryNeeds: state_needs.MemoryNeeds(2),
-		NetworkNeeds: state_needs.NetworkNeeds(2),
+	ns.UpdateNeeds("app1", "0.2", needs.AppNeeds{
+		CpuNeeds: needs.CpuNeeds(2),
+		MemoryNeeds: needs.MemoryNeeds(2),
+		NetworkNeeds: needs.NetworkNeeds(2),
 	})
 
-	_, err0 := needs.GetAll("unknown")
+	_, err0 := ns.GetAll("unknown")
 	if err0 == nil {
 		t.Error("found an app that's not there")
 	}
 
-	val, err2 := needs.GetAll("app1")
+	val, err2 := ns.GetAll("app1")
 	if err2 != nil {
 		t.Error("did not find app")
 	}

@@ -7,11 +7,12 @@ import (
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"gatoor/orca/rewriteTrainer/config"
-	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/rewriteTrainer/tracker"
 	"time"
 	"gatoor/orca/rewriteTrainer/responder"
 	"gatoor/orca/rewriteTrainer/planner"
+	"gatoor/orca/rewriteTrainer/needs"
+	"gatoor/orca/rewriteTrainer/cloud"
 )
 
 
@@ -75,10 +76,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			MemoryNeeds: state_needs.MemoryNeeds(1),
-			CpuNeeds: state_needs.CpuNeeds(1),
-			NetworkNeeds: state_needs.NetworkNeeds(1),
+		Needs: needs.AppNeeds{
+			MemoryNeeds: needs.MemoryNeeds(1),
+			CpuNeeds: needs.CpuNeeds(1),
+			NetworkNeeds: needs.NetworkNeeds(1),
 		},
 	}
 
@@ -106,10 +107,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			MemoryNeeds: state_needs.MemoryNeeds(2),
-			CpuNeeds: state_needs.CpuNeeds(2),
-			NetworkNeeds: state_needs.NetworkNeeds(5),
+		Needs: needs.AppNeeds{
+			MemoryNeeds: needs.MemoryNeeds(2),
+			CpuNeeds: needs.CpuNeeds(2),
+			NetworkNeeds: needs.NetworkNeeds(5),
 		},
 	}
 
@@ -137,10 +138,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			MemoryNeeds: state_needs.MemoryNeeds(1),
-			CpuNeeds: state_needs.CpuNeeds(1),
-			NetworkNeeds: state_needs.NetworkNeeds(1),
+		Needs: needs.AppNeeds{
+			MemoryNeeds: needs.MemoryNeeds(1),
+			CpuNeeds: needs.CpuNeeds(1),
+			NetworkNeeds: needs.NetworkNeeds(1),
 		},
 	}
 
@@ -168,10 +169,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			CpuNeeds: state_needs.CpuNeeds(50),
-			MemoryNeeds: state_needs.MemoryNeeds(10),
-			NetworkNeeds: state_needs.NetworkNeeds(10),
+		Needs: needs.AppNeeds{
+			CpuNeeds: needs.CpuNeeds(50),
+			MemoryNeeds: needs.MemoryNeeds(10),
+			NetworkNeeds: needs.NetworkNeeds(10),
 		},
 	}
 
@@ -199,10 +200,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			CpuNeeds: state_needs.CpuNeeds(70),
-			MemoryNeeds: state_needs.MemoryNeeds(40),
-			NetworkNeeds: state_needs.NetworkNeeds(30),
+		Needs: needs.AppNeeds{
+			CpuNeeds: needs.CpuNeeds(70),
+			MemoryNeeds: needs.MemoryNeeds(40),
+			NetworkNeeds: needs.NetworkNeeds(30),
 		},
 	}
 
@@ -230,10 +231,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			CpuNeeds: state_needs.CpuNeeds(23),
-			MemoryNeeds: state_needs.MemoryNeeds(23),
-			NetworkNeeds: state_needs.NetworkNeeds(23),
+		Needs: needs.AppNeeds{
+			CpuNeeds: needs.CpuNeeds(23),
+			MemoryNeeds: needs.MemoryNeeds(23),
+			NetworkNeeds: needs.NetworkNeeds(23),
 		},
 	}
 
@@ -261,10 +262,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			CpuNeeds: state_needs.CpuNeeds(7),
-			MemoryNeeds: state_needs.MemoryNeeds(2),
-			NetworkNeeds: state_needs.NetworkNeeds(1),
+		Needs: needs.AppNeeds{
+			CpuNeeds: needs.CpuNeeds(7),
+			MemoryNeeds: needs.MemoryNeeds(2),
+			NetworkNeeds: needs.NetworkNeeds(1),
 		},
 	}
 
@@ -288,6 +289,7 @@ func prepare() {
 	tracker.GlobalAppsStatusTracker = tracker.AppsStatusTracker{}
 	planner.Queue = *planner.NewPlannerQueue()
 	applySampleConfig()
+	cloud.Init()
 }
 
 func after() {

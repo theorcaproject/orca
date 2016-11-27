@@ -8,6 +8,8 @@ import (
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/rewriteTrainer/tracker"
 	"fmt"
+	"gatoor/orca/rewriteTrainer/cloud"
+	"gatoor/orca/rewriteTrainer/state/cloud"
 )
 
 var ResponderLogger = Logger.LoggerWithField(Logger.Logger, "module", "responder")
@@ -57,12 +59,15 @@ func CheckAppState(hostInfo base.HostInfo) {
 	ResponderLogger.Infof("checking Apps state for host '%s'", hostInfo.HostId)
 	queued, _ := planner.Queue.Get(hostInfo.HostId)
 
+	if len(hostInfo.Apps) == 0 {
+		handleEmptyHost(hostInfo)
+		return
+	}
 	for _, appObj := range hostInfo.Apps {
 		if queuedState, exists := queued[appObj.Name]; exists { //the app is queued for an update
 			if queuedState.State == planner.STATE_QUEUED { //the update is waiting for other updates, perform simple check
 				simpleAppCheck(appObj, hostInfo.HostId)
 			} else {
-				fmt.Println("CHECK APP STATE")
 				checkAppUpdate(appObj, hostInfo.HostId, queuedState)
 			}
 		} else { //no updates, just check if its running
@@ -71,6 +76,20 @@ func CheckAppState(hostInfo base.HostInfo) {
 	}
 }
 
+
+func handleEmptyHost(hostInfo base.HostInfo) {
+	isNew := false
+	for _, hostId := range cloud.CurrentProvider.GetSpawnLog() {
+		if hostId == hostInfo.HostId {
+			isNew = true
+			cloud.CurrentProvider.RemoveFromSpawnLog(hostId)
+			state_cloud.GlobalAvailableInstances.Update(hostId, cloud.CurrentProvider.GetResources(cloud.CurrentProvider.GetInstanceType(hostId)))
+		}
+	}
+	if !isNew {
+		cloud.CurrentProvider.TerminateInstance(hostInfo.HostId)
+	}
+}
 
 func simpleAppCheck(appObj base.AppInfo, hostId base.HostId) {
 	if appObj.Status != base.STATUS_RUNNING {
@@ -92,7 +111,7 @@ func checkAppUpdate(appObj base.AppInfo, hostId base.HostId, queuedState planner
 			ResponderLogger.Infof("Update of App '%s' - '%s' on host '%s' successful", appObj.Name, appObj.Version, hostId)
 			handleSuccessfulUpdate(appObj.Name, appObj.Version)
 		} else {
-			ResponderLogger.Warnf("Update of App '%s' - '%s' on host '%s' rolled back to version %s", appObj.Name, queuedState.Version, hostId, appObj.Version)
+			ResponderLogger.Warnf("Update of App '%s' - '%s' on host '%s' rolled back to version %s", appObj.Name, queuedState.Version.Version, hostId, appObj.Version)
 			handleRollback(hostId, appObj.Name, queuedState.Version.Version)
 		}
 	}

@@ -4,6 +4,8 @@ import (
 	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"testing"
+	"gatoor/orca/rewriteTrainer/needs"
+	"gatoor/orca/rewriteTrainer/state/needs"
 )
 
 func prepareLayoutState() state_cloud.CloudLayoutAll {
@@ -339,4 +341,68 @@ func TestUpdateHost(t *testing.T) {
 	}
 }
 
+func Test_HostHasResourcesForApp(t *testing.T) {
+	available := state_cloud.AvailableInstances{}
+	available.Update("host1", state_cloud.InstanceResources{
+		TotalCpuResource: 100, TotalNetworkResource: 100, TotalMemoryResource: 100,
+		UsedCpuResource: 50, UsedMemoryResource: 50, UsedNetworkResource: 50,
+	})
+	if available.HostHasResourcesForApp("host1", needs.AppNeeds{CpuNeeds: 60, MemoryNeeds: 30, NetworkNeeds: 30}) {
+		t.Error()
+	}
+	if available.HostHasResourcesForApp("host1", needs.AppNeeds{CpuNeeds: 30, MemoryNeeds: 70, NetworkNeeds: 30}) {
+		t.Error()
+	}
+	if available.HostHasResourcesForApp("host1", needs.AppNeeds{CpuNeeds: 30, MemoryNeeds: 0, NetworkNeeds: 51}) {
+		t.Error()
+	}
+	if !available.HostHasResourcesForApp("host1", needs.AppNeeds{CpuNeeds: 30, MemoryNeeds: 0, NetworkNeeds: 30}) {
+		t.Error()
+	}
+}
 
+func TestAvailableInstances_GlobalResourceConsumption(t *testing.T) {
+	available := state_cloud.AvailableInstances{}
+	available.Update("host1", state_cloud.InstanceResources{
+		TotalCpuResource: 100, TotalNetworkResource: 100, TotalMemoryResource: 100,
+		UsedCpuResource: 50, UsedMemoryResource: 50, UsedNetworkResource: 50,
+	})
+	available.Update("host12", state_cloud.InstanceResources{
+		TotalCpuResource: 100, TotalNetworkResource: 100, TotalMemoryResource: 100,
+		UsedCpuResource: 20, UsedMemoryResource: 30, UsedNetworkResource: 40,
+	})
+	total := available.GlobalResourceConsumption()
+	if total.TotalCpuResource != 200 || total.UsedCpuResource != 70 || total.UsedMemoryResource!= 80 || total.UsedNetworkResource != 90 {
+		t.Error(total)
+	}
+}
+
+func TestCloudLayout_AllNeeds(t *testing.T) {
+	layout := state_cloud.CloudLayout{}
+	layout.Wipe()
+	apps := make(map[base.AppName]state_cloud.AppsVersion)
+	apps["app1"] = state_cloud.AppsVersion{"1.0", 2}
+	apps["app2"] = state_cloud.AppsVersion{"1.0", 5}
+	layout.AddHost("host1", state_cloud.CloudLayoutElement{HostId: "host1", Apps: apps})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds:10, MemoryNeeds:5, NetworkNeeds:1})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app2", "1.0", needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1})
+	ns := layout.AllNeeds()
+	if ns.CpuNeeds != 25 || ns.MemoryNeeds != 15 || ns.NetworkNeeds != 7 {
+		t.Error(ns)
+	}
+}
+
+func TestCloudLayout_Needs(t *testing.T) {
+	layout := state_cloud.CloudLayout{}
+	layout.Wipe()
+	apps := make(map[base.AppName]state_cloud.AppsVersion)
+	apps["app1"] = state_cloud.AppsVersion{"1.0", 2}
+	apps["app2"] = state_cloud.AppsVersion{"1.0", 5}
+	layout.AddHost("host1", state_cloud.CloudLayoutElement{HostId: "host1", Apps: apps})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds:10, MemoryNeeds:5, NetworkNeeds:1})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app2", "1.0", needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1})
+	ns := layout.Needs("app1")
+	if ns.CpuNeeds != 20 || ns.MemoryNeeds != 10 || ns.NetworkNeeds != 2 {
+		t.Error(ns)
+	}
+}

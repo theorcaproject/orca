@@ -80,6 +80,7 @@ type AppInfo struct {
     Name AppName
     Version Version
     Status Status
+    Id AppId
 }
 
 type StatsWrapper struct {

@@ -8,6 +8,7 @@ import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"gatoor/orca/rewriteTrainer/tracker"
+	"gatoor/orca/rewriteTrainer/cloud"
 )
 
 
@@ -204,6 +205,19 @@ func TestResponder_checkAppUpdate(t *testing.T) {
 
 	// app update was successful
 
+	updated := before2["app1"]
+	updated.Version.Version = "1.1"
+	checkAppUpdate(base.AppInfo{Name: "app1", Version:"1.1", Status:base.STATUS_RUNNING}, "host1", updated)
+
+	if len(tracker.GlobalAppsStatusTracker) != 1 {
+		t.Error(tracker.GlobalAppsStatusTracker)
+	}
+	if len(tracker.GlobalAppsStatusTracker["app1"]["1.1"].CrashDetails) != 0 {
+		t.Error(tracker.GlobalAppsStatusTracker["app1"]["1.1"])
+	}
+	if tracker.GlobalAppsStatusTracker["app1"]["1.1"].Rating != tracker.RATING_STABLE {
+		t.Error(tracker.GlobalAppsStatusTracker["app1"]["1.1"])
+	}
 
 	// app is dead - the update crashed the app and no rollback
 
@@ -219,5 +233,47 @@ func TestResponder_checkAppUpdate(t *testing.T) {
 		t.Error(tracker.GlobalAppsStatusTracker["app1"]["1.0"])
 	}
 
+	//app will be rolled back
+	tracker.GlobalAppsStatusTracker = tracker.AppsStatusTracker{}
+	updated = before2["app1"]
+	updated.Version.Version = "2.0"
+	checkAppUpdate(base.AppInfo{Name: "app1", Version:"1.0", Status:base.STATUS_RUNNING}, "host1", updated)
 
+	if len(tracker.GlobalAppsStatusTracker) != 1 {
+		t.Error(tracker.GlobalAppsStatusTracker)
+	}
+	if len(tracker.GlobalAppsStatusTracker["app1"]["1.0"].CrashDetails) != 0 {
+		t.Error(tracker.GlobalAppsStatusTracker["app1"]["1.0"])
+	}
+	if tracker.GlobalAppsStatusTracker["app1"]["2.0"].Rating != tracker.RATING_CRASHED || tracker.GlobalAppsStatusTracker["app1"]["2.0"].CrashDetails[0].Cause != tracker.APP_EVENT_ROLLBACK {
+		t.Error(tracker.GlobalAppsStatusTracker["app1"]["2.0"])
+	}
+}
+
+func Test_handleEmptyHost_RecentlySpawned(t *testing.T) {
+	cloud.Init()
+	provider := cloud.CurrentProvider.(*cloud.TestProvider)
+	provider.SpawnInstance("host1")
+	if len(provider.GetSpawnLog()) != 1 {
+		t.Error(provider)
+	}
+	handleEmptyHost(base.HostInfo{"host1", "", base.OsInfo{}, []base.AppInfo{}})
+	if len(provider.GetSpawnLog()) != 1 || provider.GetSpawnLog()[0] != "host1" {
+		t.Errorf("%+v", cloud.CurrentProvider)
+	}
+	if len(provider.KillList) != 0 {
+		t.Errorf("%+v", provider)
+	}
+}
+
+func Test_handleEmptyHost_NotRecentlySpawned(t *testing.T) {
+	cloud.Init()
+	provider := cloud.CurrentProvider.(*cloud.TestProvider)
+	if len(provider.GetSpawnLog()) != 0 {
+		t.Error(provider)
+	}
+	handleEmptyHost(base.HostInfo{"host1", "", base.OsInfo{}, []base.AppInfo{}})
+	if len(provider.KillList) != 1 {
+		t.Errorf("%+v", provider)
+	}
 }

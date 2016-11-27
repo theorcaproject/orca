@@ -9,6 +9,7 @@ import (
 	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/config"
+	"gatoor/orca/rewriteTrainer/needs"
 )
 
 func initTrainer() {
@@ -26,36 +27,6 @@ func applySampleConfig() {
 
 	conf.Trainer.Port = 5000
 
-	conf.Habitats = []config.HabitatJsonConfiguration{
-		{
-			Name: "habitat1",
-			Version: "0.1",
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ls", "/home"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/etc/orca.conf", "somefilecontent as a string"},
-				},
-			},
-		},
-		{
-			Name: "habitat2",
-			Version: "0.1",
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ps", "aux"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/etc/orca.conf", "different config"},
-				},
-			},
-		},
-	}
 
 	httpApp1 := config.AppJsonConfiguration{
 		Name: "httpApp_1",
@@ -81,10 +52,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			MemoryNeeds: state_needs.MemoryNeeds(1),
-			CpuNeeds: state_needs.CpuNeeds(1),
-			NetworkNeeds: state_needs.NetworkNeeds(1),
+		Needs: needs.AppNeeds{
+			MemoryNeeds: needs.MemoryNeeds(1),
+			CpuNeeds: needs.CpuNeeds(1),
+			NetworkNeeds: needs.NetworkNeeds(1),
 		},
 	}
 
@@ -112,10 +83,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			MemoryNeeds: state_needs.MemoryNeeds(2),
-			CpuNeeds: state_needs.CpuNeeds(2),
-			NetworkNeeds: state_needs.NetworkNeeds(5),
+		Needs: needs.AppNeeds{
+			MemoryNeeds: needs.MemoryNeeds(2),
+			CpuNeeds: needs.CpuNeeds(2),
+			NetworkNeeds: needs.NetworkNeeds(5),
 		},
 	}
 
@@ -143,10 +114,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			MemoryNeeds: state_needs.MemoryNeeds(1),
-			CpuNeeds: state_needs.CpuNeeds(1),
-			NetworkNeeds: state_needs.NetworkNeeds(1),
+		Needs: needs.AppNeeds{
+			MemoryNeeds: needs.MemoryNeeds(1),
+			CpuNeeds: needs.CpuNeeds(1),
+			NetworkNeeds: needs.NetworkNeeds(1),
 		},
 	}
 
@@ -174,10 +145,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			CpuNeeds: state_needs.CpuNeeds(50),
-			MemoryNeeds: state_needs.MemoryNeeds(10),
-			NetworkNeeds: state_needs.NetworkNeeds(10),
+		Needs: needs.AppNeeds{
+			CpuNeeds: needs.CpuNeeds(50),
+			MemoryNeeds: needs.MemoryNeeds(10),
+			NetworkNeeds: needs.NetworkNeeds(10),
 		},
 	}
 
@@ -205,10 +176,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			CpuNeeds: state_needs.CpuNeeds(70),
-			MemoryNeeds: state_needs.MemoryNeeds(40),
-			NetworkNeeds: state_needs.NetworkNeeds(30),
+		Needs: needs.AppNeeds{
+			CpuNeeds: needs.CpuNeeds(70),
+			MemoryNeeds: needs.MemoryNeeds(40),
+			NetworkNeeds: needs.NetworkNeeds(30),
 		},
 	}
 
@@ -236,10 +207,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			CpuNeeds: state_needs.CpuNeeds(23),
-			MemoryNeeds: state_needs.MemoryNeeds(23),
-			NetworkNeeds: state_needs.NetworkNeeds(23),
+		Needs: needs.AppNeeds{
+			CpuNeeds: needs.CpuNeeds(23),
+			MemoryNeeds: needs.MemoryNeeds(23),
+			NetworkNeeds: needs.NetworkNeeds(23),
 		},
 	}
 
@@ -267,10 +238,10 @@ func applySampleConfig() {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-		Needs: state_needs.AppNeeds{
-			CpuNeeds: state_needs.CpuNeeds(7),
-			MemoryNeeds: state_needs.MemoryNeeds(2),
-			NetworkNeeds: state_needs.NetworkNeeds(1),
+		Needs: needs.AppNeeds{
+			CpuNeeds: needs.CpuNeeds(7),
+			MemoryNeeds: needs.MemoryNeeds(2),
+			NetworkNeeds: needs.NetworkNeeds(1),
 		},
 	}
 

@@ -7,7 +7,7 @@ import (
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"sync"
-	"fmt"
+	"gatoor/orca/rewriteTrainer/needs"
 )
 
 var StateCloudLogger = Logger.LoggerWithField(Logger.Logger, "module", "state_cloud")
@@ -183,39 +183,49 @@ func (c *CloudLayout) RemoveApp(host base.HostId, app base.AppName) {
 	}
 }
 
-func (c *CloudLayout) Needs(app base.AppName) state_needs.AppNeeds {
-	needs := state_needs.AppNeeds{}
+func (c *CloudLayout) Needs(app base.AppName) needs.AppNeeds {
+	cloudLayoutMutex.Lock()
+	defer cloudLayoutMutex.Unlock()
+	ns := needs.AppNeeds{}
 	for _, elem := range (*c).Layout {
 		if appObj, exists := elem.Apps[app]; exists {
 			currentNeeds, err := state_needs.GlobalAppsNeedState.Get(app, appObj.Version)
 			if err == nil {
-				needs.CpuNeeds += state_needs.CpuNeeds(int(appObj.DeploymentCount) * int(currentNeeds.CpuNeeds))
-				needs.MemoryNeeds += state_needs.MemoryNeeds(int(appObj.DeploymentCount) * int(currentNeeds.MemoryNeeds))
-				needs.NetworkNeeds += state_needs.NetworkNeeds(int(appObj.DeploymentCount) * int(currentNeeds.NetworkNeeds))
+				ns.CpuNeeds += needs.CpuNeeds(int(appObj.DeploymentCount) * int(currentNeeds.CpuNeeds))
+				ns.MemoryNeeds += needs.MemoryNeeds(int(appObj.DeploymentCount) * int(currentNeeds.MemoryNeeds))
+				ns.NetworkNeeds += needs.NetworkNeeds(int(appObj.DeploymentCount) * int(currentNeeds.NetworkNeeds))
 			}
 		}
 	}
-	return needs
+	return ns
 }
 
-func (c *CloudLayout) AllNeeds() state_needs.AppNeeds {
-	needs := state_needs.AppNeeds{}
+func (c *CloudLayout) AllNeeds() needs.AppNeeds {
+	cloudLayoutMutex.Lock()
+	defer cloudLayoutMutex.Unlock()
+	ns := needs.AppNeeds{}
 	for _, elem := range (*c).Layout {
 		for appName, appObj := range elem.Apps {
-			fmt.Println(elem.HostId, appName)
 			currentNeeds, err := state_needs.GlobalAppsNeedState.Get(appName, appObj.Version)
 			if err == nil {
-				fmt.Println(appObj.DeploymentCount, currentNeeds.CpuNeeds)
-				needs.CpuNeeds += state_needs.CpuNeeds(int(appObj.DeploymentCount) * int(currentNeeds.CpuNeeds))
-				needs.MemoryNeeds += state_needs.MemoryNeeds(int(appObj.DeploymentCount) * int(currentNeeds.MemoryNeeds))
-				needs.NetworkNeeds += state_needs.NetworkNeeds(int(appObj.DeploymentCount) * int(currentNeeds.NetworkNeeds))
+				ns.CpuNeeds += needs.CpuNeeds(int(appObj.DeploymentCount) * int(currentNeeds.CpuNeeds))
+				ns.MemoryNeeds += needs.MemoryNeeds(int(appObj.DeploymentCount) * int(currentNeeds.MemoryNeeds))
+				ns.NetworkNeeds += needs.NetworkNeeds(int(appObj.DeploymentCount) * int(currentNeeds.NetworkNeeds))
 			}
 		}
 	}
-	return needs
+	return ns
+}
+
+func handleHostWithoutApps(hostIndo base.HostInfo) {
+	//TODO check cloudprovider spawnlog if it is in there remove it from there
+	// else: the host was cleaned of apps to shut it down. Do this
 }
 
 func (c *CloudLayout) UpdateHost(hostInfo base.HostInfo) {
+	if len(hostInfo.Apps) == 0 {
+		handleHostWithoutApps(hostInfo)
+	}
 	apps := make(map[base.AppName]AppsVersion)
 	appCounter := make(map[base.AppName]base.DeploymentCount)
 	runningVersions := make(map[base.AppName]base.Version)
@@ -248,12 +258,12 @@ func (c *CloudLayout) UpdateHost(hostInfo base.HostInfo) {
 
 var AvailableInstancesLogger = StateCloudLogger.WithField("type", "AvailableInstances")
 
-func (a AvailableInstances) HostHasResourcesForApp (hostId base.HostId, needs state_needs.AppNeeds) bool{
+func (a AvailableInstances) HostHasResourcesForApp (hostId base.HostId, ns needs.AppNeeds) bool{
 	availableInstancesMutex.Lock()
 	res := a[hostId]
-	if int(res.TotalCpuResource - res.UsedCpuResource) > int(needs.CpuNeeds) &&
-		int(res.TotalMemoryResource - res.UsedMemoryResource) > int(needs.MemoryNeeds) &&
-		int(res.TotalNetworkResource - res.UsedNetworkResource) > int(needs.NetworkNeeds) {
+	if int(res.TotalCpuResource - res.UsedCpuResource) > int(ns.CpuNeeds) &&
+		int(res.TotalMemoryResource - res.UsedMemoryResource) > int(ns.MemoryNeeds) &&
+		int(res.TotalNetworkResource - res.UsedNetworkResource) > int(ns.NetworkNeeds) {
 		availableInstancesMutex.Unlock()
 		return true
 	}
@@ -316,6 +326,18 @@ func (a AvailableInstances) GlobalResourceConsumption() InstanceResources {
 		UsedCpuResource: CpuResource(usedCpu),
 		UsedMemoryResource: MemoryResource(usedMemory),
 		UsedNetworkResource: NetworkResource(usedNetwork),
+	}
+}
+
+func (a *AvailableInstances) WipeUsage() {
+	StateCloudLogger.Info("Wiping usage state of available instances")
+	availableInstancesMutex.Lock()
+	defer availableInstancesMutex.Unlock()
+	for key, elem := range *a {
+		elem.UsedCpuResource = 0
+		elem.UsedNetworkResource = 0
+		elem.UsedMemoryResource = 0
+		(*a)[key] = elem
 	}
 }
 

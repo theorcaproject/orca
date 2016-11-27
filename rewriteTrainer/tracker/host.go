@@ -69,6 +69,12 @@ func (h *HostTracker) Update(hostId base.HostId, checkin time.Time) {
 	elem := (*h)[hostId]
 	elem.LastCheckin = checkin
 	(*h)[hostId] = elem
+	addAvailableInstance(hostId)
+}
+
+func addAvailableInstance(hostId base.HostId) {
+	resources := cloud.CurrentProvider.GetResources(cloud.CurrentProvider.GetInstanceType(hostId))
+	state_cloud.GlobalAvailableInstances.Update(hostId, resources)
 }
 
 func (h *HostTracker) Get(hostId base.HostId) (HostTrackingInfo, error) {
@@ -82,13 +88,14 @@ func (h *HostTracker) Get(hostId base.HostId) (HostTrackingInfo, error) {
 }
 
 func (h *HostTracker) CheckCheckinTimeout() {
+	TrackerLogger.Info("Checking for timed out hosts")
 	hostTrackerMutex.Lock()
 	defer hostTrackerMutex.Unlock()
 	for hostId, hostInfo := range (*h) {
 		if hostInfo.LastCheckin.Before(time.Now().UTC().Add(-HOST_CHECKIN_TIMEOUT)) {
 			TrackerLogger.Warnf("Host '%s' checking timed out, last checkin was at '%s'", hostId, hostInfo.LastCheckin)
-			state_cloud.GlobalCloudLayout.Current.RemoveHost(hostId)
 			GlobalHostCrashHandler.spawnHost(hostId)
+			removeHostFromState(hostId)
 		}
 	}
 
@@ -112,6 +119,7 @@ func (h *HostTracker) HandleCloudProviderEvent(providerEvent cloud.ProviderEvent
 		if providerEvent.Type == cloud.PROVIDER_EVENT_KILLED {
 			TrackerLogger.Warnf("Cloud Provider killed host '%s', spawning new host", providerEvent.HostId)
 			GlobalHostCrashHandler.spawnHost(providerEvent.HostId)
+			removeHostFromState(providerEvent.HostId)
 		}
 	}
 	TrackerLogger.Info(providerEvent)
@@ -121,6 +129,13 @@ func (h *HostTracker) HandleCloudProviderEvent(providerEvent cloud.ProviderEvent
 		TrackerLogger.Warnf("CloudProvider Event for already handled host: %+v", elem)
 	}
 }
+
+func removeHostFromState(hostId base.HostId) {
+	TrackerLogger.Infof("Host %s has died. Removing it from all state objects", hostId)
+	state_cloud.GlobalAvailableInstances.Remove(hostId)
+	state_cloud.GlobalCloudLayout.Current.RemoveHost(hostId)
+}
+
 
 func (h *HostCrashHandler) spawnHost(hostId base.HostId) {
 	hostCrashHandlerMutex.Lock()

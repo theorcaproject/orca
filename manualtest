@@ -1,0 +1,24 @@
+
+Basics:
+ -correct configuration on hosts
+ -apps start on host
+ -trainer Layout is updated properly
+ -planning is working
+
+Start:
+ -aws instances are spawned
+ -orca is installed there
+ -started properly
+ -checkin in trainer works
+
+
+Running:
+ -kill aws instance => new instance is spawned with appropriate config via timeout and event
+ -kill host daemon => restarted by supervisor and loads last state properly
+ -terminate host daemon => checkin timeout works
+ -apps scale when response metric is too slow(NOT IMPLEMENTED)
+ -scheduled scaling (SOME MISSING IMPLEMENTATION)
+
+Changes in config:
+ -update app
+ -scale app manually

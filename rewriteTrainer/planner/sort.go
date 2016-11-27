@@ -6,6 +6,7 @@ import (
 	"gatoor/orca/base"
 	"sort"
 	"gatoor/orca/rewriteTrainer/state/needs"
+	"gatoor/orca/rewriteTrainer/needs"
 )
 
 
@@ -89,7 +90,7 @@ func sortByAvailableResources() []base.HostId {
 
 type ConfPair struct {
 	Key base.AppName
-	Val state_needs.AppNeeds
+	Val needs.AppNeeds
 }
 
 type ConfList []ConfPair

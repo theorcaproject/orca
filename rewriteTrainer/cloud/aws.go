@@ -65,6 +65,10 @@ func (a AWSProvider) GetIp(ty InstanceType) base.IpAddr {
 	return ""
 }
 
+func (a AWSProvider) GetInstanceType(hostId base.HostId) InstanceType{
+	return ""
+}
+
 func (a AWSProvider) SuitableInstanceTypes(resources state_cloud.InstanceResources) []InstanceType {
 	res := []InstanceType{}
 	return res
@@ -72,4 +76,17 @@ func (a AWSProvider) SuitableInstanceTypes(resources state_cloud.InstanceResourc
 
 func (a AWSProvider) CheckInstance(hostId base.HostId) InstanceStatus {
 	return INSTANCE_STATUS_DEAD
+}
+
+func (a AWSProvider) TerminateInstance(hostId base.HostId)  {
+	AWSLogger.Errorf("NOT IMPLEMENTED")
+	AWSLogger.Errorf("NOT IMPLEMENTED")
+	AWSLogger.Errorf("NOT IMPLEMENTED")
+}
+
+func (a AWSProvider) GetSpawnLog() []base.HostId {
+	return []base.HostId{}
+}
+
+func (a AWSProvider) RemoveFromSpawnLog(hostId base.HostId) {
 }

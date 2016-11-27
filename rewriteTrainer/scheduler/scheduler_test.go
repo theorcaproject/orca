@@ -5,6 +5,7 @@ import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"gatoor/orca/rewriteTrainer/planner"
+	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/base"
 )
 
@@ -12,6 +13,7 @@ import (
 func initAll() {
 	state_cloud.GlobalCloudLayout.Init()
 	state_configuration.GlobalConfigurationState.Init()
+	cloud.Init()
 }
 
 

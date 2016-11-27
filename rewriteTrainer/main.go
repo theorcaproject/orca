@@ -4,15 +4,15 @@ import (
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/state/configuration"
-	"gatoor/orca/base"
+	//"gatoor/orca/base"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/rewriteTrainer/config"
 	"gatoor/orca/rewriteTrainer/api"
-	//"gatoor/orca/rewriteTrainer/installer"
+	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/db"
+	"gatoor/orca/rewriteTrainer/installer"
 	"gatoor/orca/rewriteTrainer/scheduler"
 	"gatoor/orca/rewriteTrainer/planner"
-	"gatoor/orca/rewriteTrainer/cloud"
 )
 
 
@@ -23,7 +23,7 @@ func main() {
 	initConfig()
 	cloud.Init()
 	db.Init("")
-	//installer.InstallNewInstance("host2", "172.31.23.39")
+	installer.InstallNewInstance("vm1", "172.16.147.189")
 	scheduler.Start()
 	planner.InitialPlan()
 	initApi()
@@ -79,8 +79,8 @@ func initApi() {
 //	//		Version: "1.0",
 //	//		MinDeploymentCount: base.DeploymentCount(c),
 //	//	})
-//	//	state_needs.GlobalAppsNeedState.UpdateNeeds(base.AppName("fillerHttp_" + fmt.Sprint(i)), "1.0", state_needs.AppNeeds{
-//	//		CpuNeeds: state_needs.CpuNeeds(rand.Intn(10) + 1), MemoryNeeds: state_needs.MemoryNeeds(rand.Intn(10) + 1), NetworkNeeds: state_needs.NetworkNeeds(rand.Intn(10) + 1),
+//	//	state_needs.GlobalAppsNeedState.UpdateNeeds(base.AppName("fillerHttp_" + fmt.Sprint(i)), "1.0", needs.AppNeeds{
+//	//		CpuNeeds: needs.CpuNeeds(rand.Intn(10) + 1), MemoryNeeds: needs.MemoryNeeds(rand.Intn(10) + 1), NetworkNeeds: needs.NetworkNeeds(rand.Intn(10) + 1),
 //	//	})
 //	//}
 //	//for i:= 1; i <= 0; i++ {
@@ -92,8 +92,8 @@ func initApi() {
 //	//		Version: "1.0",
 //	//		MinDeploymentCount: base.DeploymentCount(d),
 //	//	})
-//	//	state_needs.GlobalAppsNeedState.UpdateNeeds(base.AppName("fillerWorker_" + fmt.Sprint(i)), "1.0", state_needs.AppNeeds{
-//	//		CpuNeeds: state_needs.CpuNeeds(rand.Intn(10) + 1), MemoryNeeds: state_needs.MemoryNeeds(rand.Intn(10) + 1), NetworkNeeds: state_needs.NetworkNeeds(rand.Intn(10) + 1),
+//	//	state_needs.GlobalAppsNeedState.UpdateNeeds(base.AppName("fillerWorker_" + fmt.Sprint(i)), "1.0", needs.AppNeeds{
+//	//		CpuNeeds: needs.CpuNeeds(rand.Intn(10) + 1), MemoryNeeds: needs.MemoryNeeds(rand.Intn(10) + 1), NetworkNeeds: needs.NetworkNeeds(rand.Intn(10) + 1),
 //	//	})
 //	//}
 //	//
@@ -147,36 +147,36 @@ func applySampleConfig() {
 
 	conf.Trainer.Port = 5000
 
-	conf.Habitats = []config.HabitatJsonConfiguration{
-		{
-			Name: "habitat1",
-			Version: "0.1",
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ls", "/home"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/etc/orca.conf", "somefilecontent as a string"},
-				},
-			},
-		},
-		{
-			Name: "habitat2",
-			Version: "0.1",
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ps", "aux"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/etc/orca.conf", "different config"},
-				},
-			},
-		},
-	}
+	//conf.Habitats = []config.HabitatJsonConfiguration{
+	//	{
+	//		Name: "habitat1",
+	//		Version: "0.1",
+	//		InstallCommands: []base.OsCommand{
+	//			{
+	//				Type: base.EXEC_COMMAND,
+	//				Command: base.Command{"ls", "/home"},
+	//			},
+	//			{
+	//				Type: base.FILE_COMMAND,
+	//				Command: base.Command{"/etc/orca.conf", "somefilecontent as a string"},
+	//			},
+	//		},
+	//	},
+	//	{
+	//		Name: "habitat2",
+	//		Version: "0.1",
+	//		InstallCommands: []base.OsCommand{
+	//			{
+	//				Type: base.EXEC_COMMAND,
+	//				Command: base.Command{"ps", "aux"},
+	//			},
+	//			{
+	//				Type: base.FILE_COMMAND,
+	//				Command: base.Command{"/etc/orca.conf", "different config"},
+	//			},
+	//		},
+	//	},
+	//}
 
 	//httpApp1 := config.AppJsonConfiguration{
 	//	Name: "httpApp_1",
@@ -202,10 +202,10 @@ func applySampleConfig() {
 	//		Type: base.EXEC_COMMAND,
 	//		Command: base.Command{"rm", "-rf /server/app1"},
 	//	},
-	//	Needs: state_needs.AppNeeds{
-	//		MemoryNeeds: state_needs.MemoryNeeds(1),
-	//		CpuNeeds: state_needs.CpuNeeds(1),
-	//		NetworkNeeds: state_needs.NetworkNeeds(1),
+	//	Needs: needs.AppNeeds{
+	//		MemoryNeeds: needs.MemoryNeeds(1),
+	//		CpuNeeds: needs.CpuNeeds(1),
+	//		NetworkNeeds: needs.NetworkNeeds(1),
 	//	},
 	//}
 	//
@@ -233,10 +233,10 @@ func applySampleConfig() {
 	//		Type: base.EXEC_COMMAND,
 	//		Command: base.Command{"rm", "-rf /server/app1"},
 	//	},
-	//	Needs: state_needs.AppNeeds{
-	//		MemoryNeeds: state_needs.MemoryNeeds(2),
-	//		CpuNeeds: state_needs.CpuNeeds(2),
-	//		NetworkNeeds: state_needs.NetworkNeeds(5),
+	//	Needs: needs.AppNeeds{
+	//		MemoryNeeds: needs.MemoryNeeds(2),
+	//		CpuNeeds: needs.CpuNeeds(2),
+	//		NetworkNeeds: needs.NetworkNeeds(5),
 	//	},
 	//}
 	//
@@ -264,10 +264,10 @@ func applySampleConfig() {
 	//		Type: base.EXEC_COMMAND,
 	//		Command: base.Command{"rm", "-rf /server/app1"},
 	//	},
-	//	Needs: state_needs.AppNeeds{
-	//		MemoryNeeds: state_needs.MemoryNeeds(1),
-	//		CpuNeeds: state_needs.CpuNeeds(1),
-	//		NetworkNeeds: state_needs.NetworkNeeds(1),
+	//	Needs: needs.AppNeeds{
+	//		MemoryNeeds: needs.MemoryNeeds(1),
+	//		CpuNeeds: needs.CpuNeeds(1),
+	//		NetworkNeeds: needs.NetworkNeeds(1),
 	//	},
 	//}
 	//
@@ -295,10 +295,10 @@ func applySampleConfig() {
 	//		Type: base.EXEC_COMMAND,
 	//		Command: base.Command{"rm", "-rf /server/app1"},
 	//	},
-	//	Needs: state_needs.AppNeeds{
-	//		CpuNeeds: state_needs.CpuNeeds(50),
-	//		MemoryNeeds: state_needs.MemoryNeeds(10),
-	//		NetworkNeeds: state_needs.NetworkNeeds(10),
+	//	Needs: needs.AppNeeds{
+	//		CpuNeeds: needs.CpuNeeds(50),
+	//		MemoryNeeds: needs.MemoryNeeds(10),
+	//		NetworkNeeds: needs.NetworkNeeds(10),
 	//	},
 	//}
 	//
@@ -326,10 +326,10 @@ func applySampleConfig() {
 	//		Type: base.EXEC_COMMAND,
 	//		Command: base.Command{"rm", "-rf /server/app1"},
 	//	},
-	//	Needs: state_needs.AppNeeds{
-	//		CpuNeeds: state_needs.CpuNeeds(70),
-	//		MemoryNeeds: state_needs.MemoryNeeds(40),
-	//		NetworkNeeds: state_needs.NetworkNeeds(30),
+	//	Needs: needs.AppNeeds{
+	//		CpuNeeds: needs.CpuNeeds(70),
+	//		MemoryNeeds: needs.MemoryNeeds(40),
+	//		NetworkNeeds: needs.NetworkNeeds(30),
 	//	},
 	//}
 	//
@@ -357,10 +357,10 @@ func applySampleConfig() {
 	//		Type: base.EXEC_COMMAND,
 	//		Command: base.Command{"rm", "-rf /server/app1"},
 	//	},
-	//	Needs: state_needs.AppNeeds{
-	//		CpuNeeds: state_needs.CpuNeeds(23),
-	//		MemoryNeeds: state_needs.MemoryNeeds(23),
-	//		NetworkNeeds: state_needs.NetworkNeeds(23),
+	//	Needs: needs.AppNeeds{
+	//		CpuNeeds: needs.CpuNeeds(23),
+	//		MemoryNeeds: needs.MemoryNeeds(23),
+	//		NetworkNeeds: needs.NetworkNeeds(23),
 	//	},
 	//}
 	//
@@ -388,10 +388,10 @@ func applySampleConfig() {
 	//		Type: base.EXEC_COMMAND,
 	//		Command: base.Command{"rm", "-rf /server/app1"},
 	//	},
-	//	Needs: state_needs.AppNeeds{
-	//		CpuNeeds: state_needs.CpuNeeds(7),
-	//		MemoryNeeds: state_needs.MemoryNeeds(2),
-	//		NetworkNeeds: state_needs.NetworkNeeds(1),
+	//	Needs: needs.AppNeeds{
+	//		CpuNeeds: needs.CpuNeeds(7),
+	//		MemoryNeeds: needs.MemoryNeeds(2),
+	//		NetworkNeeds: needs.NetworkNeeds(1),
 	//	},
 	//}
 	//

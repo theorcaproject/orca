@@ -11,20 +11,27 @@ import (
 	"fmt"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"gatoor/orca/rewriteTrainer/state/cloud"
+	"gatoor/orca/rewriteTrainer/needs"
 )
 
-const CONFIGURATION_FILE = "/tmp/example.json"
+const (
+	TRAINER_CONFIGURATION_FILE = "/orca/config/trainer/trainer.json"
+	APPS_CONFIGURATION_FILE = "/orca/config/trainer/apps.json"
+	AVAILABLE_INSTANCES_CONFIGURATION_FILE = "/orca/config/trainer/available_instances.json"
+	CLOUD_PROVIDER_CONFIGURATION_FILE = "/orca/config/trainer/cloud_provider.json"
+)
 
 type JsonConfiguration struct {
 	Trainer TrainerJsonConfiguration
 	AvailableInstances []base.HostId
-	Habitats []HabitatJsonConfiguration
+	//Habitats []HabitatJsonConfiguration
 	Apps []AppJsonConfiguration
 	CloudProvider cloud.ProviderConfiguration
 }
 
 type TrainerJsonConfiguration struct {
 	Port int
+	Ip base.IpAddr
 }
 
 type HabitatJsonConfiguration struct {
@@ -42,7 +49,7 @@ type AppJsonConfiguration struct {
 	InstallCommands []base.OsCommand
 	QueryStateCommand base.OsCommand
 	RemoveCommand base.OsCommand
-	Needs state_needs.AppNeeds
+	Needs needs.AppNeeds
 }
 
 type CloudJsonConfiguration struct {
@@ -52,14 +59,11 @@ type CloudJsonConfiguration struct {
 	MaxInstanceCount cloud.MaxInstanceCount
 }
 
-func (j *JsonConfiguration) Load() {
-	Logger.InitLogger.Infof("Loading config file from %s", CONFIGURATION_FILE)
-	file, err := os.Open(CONFIGURATION_FILE)
-	if err != nil {
-		Logger.InitLogger.Fatalf("Could not open config file %s - %s", CONFIGURATION_FILE, err)
-	}
+
+
+func loadConfigFromFile(file *os.File, conf interface{}) {
 	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&j); err != nil {
+	if err := decoder.Decode(conf); err != nil {
 		extra := ""
 		if serr, ok := err.(*json.SyntaxError); ok {
 			line, col, highlight := util.HighlightBytePosition(file, serr.Offset)
@@ -71,10 +75,27 @@ func (j *JsonConfiguration) Load() {
 	}
 }
 
+func (j *JsonConfiguration) Load() {
+	configFiles := make(map[string]interface{})
+	configFiles[TRAINER_CONFIGURATION_FILE] = &j.Trainer
+	configFiles[APPS_CONFIGURATION_FILE] = &j.Apps
+	configFiles[AVAILABLE_INSTANCES_CONFIGURATION_FILE] = &j.AvailableInstances
+	configFiles[CLOUD_PROVIDER_CONFIGURATION_FILE] = &j.CloudProvider
+	for key, interf := range configFiles {
+		Logger.InitLogger.Infof("Loading config file from %s", key)
+		file, err := os.Open(key)
+		if err != nil {
+			Logger.InitLogger.Fatalf("Could not open config file %s - %s", key, err)
+		}
+		loadConfigFromFile(file, interf)
+		file.Close()
+	}
+}
+
 
 func (j *JsonConfiguration)  ApplyToState() {
 	Logger.InitLogger.Infof("Applying config to State")
-	applyHabitatConfig(j.Habitats)
+	//applyHabitatConfig(j.Habitats)
 	applyTrainerConfig(j.Trainer)
 	applyAppsConfig(j.Apps)
 	applyNeeds(j.Apps)
@@ -126,8 +147,10 @@ func applyHabitatConfig (habitatConfs []HabitatJsonConfiguration) {
 
 func applyTrainerConfig (trainerConf TrainerJsonConfiguration) {
 	state_configuration.GlobalConfigurationState.Trainer.Port = trainerConf.Port
+	state_configuration.GlobalConfigurationState.Trainer.Ip = trainerConf.Ip
 }
 
+//TODO use WeeklyNeeds
 func applyNeeds(appConfs []AppJsonConfiguration) {
 	for _, aNeeds := range appConfs {
 		state_needs.GlobalAppsNeedState.UpdateNeeds(aNeeds.Name, aNeeds.Version, aNeeds.Needs)

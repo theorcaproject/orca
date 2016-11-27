@@ -2,8 +2,8 @@ package example
 
 import (
 	"gatoor/orca/rewriteTrainer/config"
-	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/base"
+	"gatoor/orca/rewriteTrainer/needs"
 )
 
 func AwsJsonConfig() config.JsonConfiguration {
@@ -11,22 +11,22 @@ func AwsJsonConfig() config.JsonConfiguration {
 
 	conf.Trainer.Port = 5000
 
-	conf.Habitats = []config.HabitatJsonConfiguration{
-		{
-			Name: "dockerHabitat",
-			Version: "0.1",
-			InstallCommands: []base.OsCommand{
-				{base.EXEC_COMMAND, base.Command{"apt-get", "update"},},
-				{base.EXEC_COMMAND, base.Command{"apt-get", "-y install apt-transport-https ca-certificates"},},
-				{base.EXEC_COMMAND, base.Command{"apt-key", "adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"},},
-				{base.FILE_COMMAND, base.Command{"/etc/apt/sources.list.d/docker.list", "deb https://apt.dockerproject.org/repo ubuntu-xenial main"},},
-				{base.EXEC_COMMAND, base.Command{"apt-get", "update"},},
-				{base.EXEC_COMMAND, base.Command{"apt-get", "-y install docker-engine"},},
-				{base.EXEC_COMMAND, base.Command{"mkdir", "/orca/apps"},},
-				{base.EXEC_COMMAND, base.Command{"chmod", "777 /orca/apps"},},
-			},
-		},
-	}
+	//conf.Habitats = []config.HabitatJsonConfiguration{
+	//	{
+	//		Name: "dockerHabitat",
+	//		Version: "0.1",
+	//		InstallCommands: []base.OsCommand{
+	//			{base.EXEC_COMMAND, base.Command{"apt-get", "update"},},
+	//			{base.EXEC_COMMAND, base.Command{"apt-get", "-y install apt-transport-https ca-certificates"},},
+	//			{base.EXEC_COMMAND, base.Command{"apt-key", "adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"},},
+	//			{base.FILE_COMMAND, base.Command{"/etc/apt/sources.list.d/docker.list", "deb https://apt.dockerproject.org/repo ubuntu-xenial main"},},
+	//			{base.EXEC_COMMAND, base.Command{"apt-get", "update"},},
+	//			{base.EXEC_COMMAND, base.Command{"apt-get", "-y install docker-engine"},},
+	//			{base.EXEC_COMMAND, base.Command{"mkdir", "/orca/apps"},},
+	//			{base.EXEC_COMMAND, base.Command{"chmod", "777 /orca/apps"},},
+	//		},
+	//	},
+	//}
 
 	conf.Apps = []config.AppJsonConfiguration{
 		{
@@ -48,10 +48,10 @@ func AwsJsonConfig() config.JsonConfiguration {
 				Type: base.EXEC_COMMAND,
 				Command: base.Command{"docker", "stop orca-nginx"},
 			},
-			Needs: state_needs.AppNeeds{
-				MemoryNeeds: state_needs.MemoryNeeds(5),
-				CpuNeeds: state_needs.CpuNeeds(5),
-				NetworkNeeds: state_needs.NetworkNeeds(5),
+			Needs: needs.AppNeeds{
+				MemoryNeeds: needs.MemoryNeeds(5),
+				CpuNeeds: needs.CpuNeeds(5),
+				NetworkNeeds: needs.NetworkNeeds(5),
 			},
 		},
 		{
@@ -73,10 +73,10 @@ func AwsJsonConfig() config.JsonConfiguration {
 				Type: base.EXEC_COMMAND,
 				Command: base.Command{"docker", "stop orca-nginxworker"},
 			},
-			Needs: state_needs.AppNeeds{
-				MemoryNeeds: state_needs.MemoryNeeds(3),
-				CpuNeeds: state_needs.CpuNeeds(3),
-				NetworkNeeds: state_needs.NetworkNeeds(3),
+			Needs: needs.AppNeeds{
+				MemoryNeeds: needs.MemoryNeeds(3),
+				CpuNeeds: needs.CpuNeeds(3),
+				NetworkNeeds: needs.NetworkNeeds(3),
 			},
 		},
 	}

@@ -77,8 +77,9 @@ func doHandlePush(hostInfo base.HostInfo, stats base.MetricsWrapper) {
 	metrics.RecordHostInfo(hostInfo, timeString)
 
 	state_cloud.UpdateCurrent(hostInfo, timeString)
-	responder.CheckAppState(hostInfo)
 	tracker.GlobalHostTracker.Update(hostInfo.HostId, time)
+
+	responder.CheckAppState(hostInfo)
 }
 
 func getStateConfiguration(w http.ResponseWriter, r *http.Request) {

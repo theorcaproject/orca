@@ -103,6 +103,7 @@ type TrainerPolicies struct {
 type TrainerConfigurationState struct {
 	Port int
 	Policies TrainerPolicies
+	Ip base.IpAddr
 }
 
 type AppsConfigurationState map[base.AppName]AppConfigurationVersions

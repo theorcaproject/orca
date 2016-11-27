@@ -2,35 +2,43 @@ package scheduler
 
 
 import (
-	//"gatoor/orca/rewriteTrainer/planner"
-	//"gatoor/orca/rewriteTrainer/state/cloud"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"time"
 	"gatoor/orca/rewriteTrainer/state/cloud"
+	"gatoor/orca/rewriteTrainer/planner"
+	"gatoor/orca/rewriteTrainer/tracker"
 	"fmt"
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/rewriteTrainer/state/configuration"
-	"gatoor/orca/rewriteTrainer/cloud"
 )
 
 var SchedulerLogger = Logger.LoggerWithField(Logger.Logger, "module", "scheduler")
 
 var ticker *time.Ticker
+var trackerTicker *time.Ticker
 
 
 func Start() {
 	SchedulerLogger.Infof("Scheduler starting")
-	ticker = time.NewTicker(time.Second * 10)
+	ticker := time.NewTicker(time.Second * 10)
+	trackerTicker = time.NewTicker(time.Second * 13)
 	go func () {
 		for {
 			<- ticker.C
 			run()
 		}
 	}()
+	go func () {
+	       for {
+		       <- trackerTicker.C
+		       tracker.GlobalHostTracker.CheckCheckinTimeout()
+	       }
+	}()
 }
 
 func Stop() {
 	ticker.Stop()
+	trackerTicker.Stop()
 	SchedulerLogger.Infof("Scheduler stopped")
 }
 
@@ -62,17 +70,35 @@ func run() {
 	fmt.Printf("Config: %+v", state_configuration.GlobalConfigurationState)
 	fmt.Println("")
 	fmt.Println("")
-	fmt.Printf("CloudProvider: %+v", cloud.CurrentProviderConfig)
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println(".........")
+	//fmt.Printf("CloudProvider: %+v", cloud.CurrentProviderConfig)
+	//fmt.Println("")
+	//fmt.Println("")
 
-	//diff := planner.Diff(state_cloud.GlobalCloudLayout.Desired, state_cloud.GlobalCloudLayout.Current)
-	//planner.Queue.Apply(diff)
+	diff := planner.Diff(state_cloud.GlobalCloudLayout.Desired, state_cloud.GlobalCloudLayout.Current)
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Printf("Diff: %+v", diff)
+	fmt.Println("")
+	fmt.Println("")
+
+	planner.Queue.Apply(diff)
+
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Printf("Queue: %+v", planner.Queue.Queue)
+	fmt.Println("")
+	fmt.Println("")
 	//
 	////analyzer.DoStuff
 	//
-	//planner.Plan()
+	planner.Plan()
 
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Printf("Planned Layout: %+v", state_cloud.GlobalCloudLayout)
+	fmt.Println("")
+	fmt.Println("")
+
+	fmt.Println(".........")
 	SchedulerLogger.Info("Finished run()")
 }

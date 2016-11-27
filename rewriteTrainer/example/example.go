@@ -4,7 +4,7 @@ import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/config"
 	"gatoor/orca/base"
-	"gatoor/orca/rewriteTrainer/state/needs"
+	"gatoor/orca/rewriteTrainer/needs"
 )
 
 func ExampleCloudState() {
@@ -31,10 +31,44 @@ func ExampleJsonConfig() config.JsonConfiguration {
 
 	conf.Trainer.Port = 5000
 
-	conf.Habitats = []config.HabitatJsonConfiguration{
+	//conf.Habitats = []config.HabitatJsonConfiguration{
+	//	{
+	//		Name: "habitat1",
+	//		Version: "0.1",
+	//		InstallCommands: []base.OsCommand{
+	//			{
+	//				Type: base.EXEC_COMMAND,
+	//				Command: base.Command{"ls", "/home"},
+	//			},
+	//			{
+	//				Type: base.FILE_COMMAND,
+	//				Command: base.Command{"/etc/orca.conf", "somefilecontent as a string"},
+	//			},
+	//		},
+	//	},
+	//	{
+	//		Name: "habitat2",
+	//		Version: "0.1",
+	//		InstallCommands: []base.OsCommand{
+	//			{
+	//				Type: base.EXEC_COMMAND,
+	//				Command: base.Command{"ps", "aux"},
+	//			},
+	//			{
+	//				Type: base.FILE_COMMAND,
+	//				Command: base.Command{"/etc/orca.conf", "different config"},
+	//			},
+	//		},
+	//	},
+	//}
+
+	conf.Apps = []config.AppJsonConfiguration{
 		{
-			Name: "habitat1",
+			Name: "http1",
 			Version: "0.1",
+			Type: base.APP_HTTP,
+			MinDeploymentCount: 2,
+			MaxDeploymentCount: 10,
 			InstallCommands: []base.OsCommand{
 				{
 					Type: base.EXEC_COMMAND,
@@ -42,28 +76,23 @@ func ExampleJsonConfig() config.JsonConfiguration {
 				},
 				{
 					Type: base.FILE_COMMAND,
-					Command: base.Command{"/etc/orca.conf", "somefilecontent as a string"},
+					Command: base.Command{"/server/http1/app1.conf", "somefilecontent as a string"},
 				},
 			},
-		},
-		{
-			Name: "habitat2",
-			Version: "0.1",
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ps", "aux"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/etc/orca.conf", "different config"},
-				},
+			QueryStateCommand: base.OsCommand{
+				Type: base.EXEC_COMMAND,
+				Command: base.Command{"wget", "http://localhost:1234/check"},
 			},
-		},
-	}
-
-	conf.Apps = []config.AppJsonConfiguration{
-		{
+			RemoveCommand: base.OsCommand{
+				Type: base.EXEC_COMMAND,
+				Command: base.Command{"rm", "-rf /server/http1"},
+			},
+			Needs: needs.AppNeeds{
+				MemoryNeeds: needs.MemoryNeeds(5),
+				CpuNeeds: needs.CpuNeeds(5),
+				NetworkNeeds: needs.NetworkNeeds(5),
+			},
+		},{
 			Name: "app1",
 			Version: "0.1",
 			Type: base.APP_WORKER,
@@ -87,10 +116,10 @@ func ExampleJsonConfig() config.JsonConfiguration {
 				Type: base.EXEC_COMMAND,
 				Command: base.Command{"rm", "-rf /server/app1"},
 			},
-			Needs: state_needs.AppNeeds{
-				MemoryNeeds: state_needs.MemoryNeeds(5),
-				CpuNeeds: state_needs.CpuNeeds(5),
-				NetworkNeeds: state_needs.NetworkNeeds(5),
+			Needs: needs.AppNeeds{
+				MemoryNeeds: needs.MemoryNeeds(5),
+				CpuNeeds: needs.CpuNeeds(5),
+				NetworkNeeds: needs.NetworkNeeds(5),
 			},
 		},
 		{
@@ -117,10 +146,10 @@ func ExampleJsonConfig() config.JsonConfiguration {
 				Type: base.EXEC_COMMAND,
 				Command: base.Command{"rm", "-rf /server/app11"},
 			},
-			Needs: state_needs.AppNeeds{
-				MemoryNeeds: state_needs.MemoryNeeds(5),
-				CpuNeeds: state_needs.CpuNeeds(5),
-				NetworkNeeds: state_needs.NetworkNeeds(5),
+			Needs: needs.AppNeeds{
+				MemoryNeeds: needs.MemoryNeeds(5),
+				CpuNeeds: needs.CpuNeeds(5),
+				NetworkNeeds: needs.NetworkNeeds(5),
 			},
 		},
 		{
@@ -147,10 +176,10 @@ func ExampleJsonConfig() config.JsonConfiguration {
 				Type: base.EXEC_COMMAND,
 				Command: base.Command{"rm", "-rf /server/app2"},
 			},
-			Needs: state_needs.AppNeeds{
-				MemoryNeeds: state_needs.MemoryNeeds(5),
-				CpuNeeds: state_needs.CpuNeeds(5),
-				NetworkNeeds: state_needs.NetworkNeeds(5),
+			Needs: needs.AppNeeds{
+				MemoryNeeds: needs.MemoryNeeds(5),
+				CpuNeeds: needs.CpuNeeds(5),
+				NetworkNeeds: needs.NetworkNeeds(5),
 			},
 		},
 	}

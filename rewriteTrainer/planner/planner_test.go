@@ -10,6 +10,9 @@ import (
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/rewriteTrainer/config"
 	"gatoor/orca/rewriteTrainer/cloud"
+	"gatoor/orca/rewriteTrainer/needs"
+	"gatoor/orca/rewriteTrainer/tracker"
+	"time"
 )
 
 func TestPlannerQueue_AllEmpty(t *testing.T) {
@@ -589,12 +592,12 @@ func TestPlanner_initialPlan(t *testing.T) {
 	config.ApplyToState()
 	cloud.Init()
 
-	if len(state_configuration.GlobalConfigurationState.Apps) != 3 {
+	if len(state_configuration.GlobalConfigurationState.Apps) != 4 {
 		t.Error("init state_config apps wrong len")
 	}
-	if len(state_configuration.GlobalConfigurationState.Habitats) != 2 {
-		t.Error("init state_config habitats wrong len")
-	}
+	//if len(state_configuration.GlobalConfigurationState.Habitats) != 2 {
+	//	t.Error("init state_config habitats wrong len")
+	//}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error("init state_cloud current should be empty")
@@ -603,7 +606,7 @@ func TestPlanner_initialPlan(t *testing.T) {
 		t.Error("init state_cloud desired should be empty")
 	}
 
-	if len(state_needs.GlobalAppsNeedState) != 3 {
+	if len(state_needs.GlobalAppsNeedState) != 4 {
 		t.Error(state_needs.GlobalAppsNeedState)
 	}
 
@@ -613,9 +616,9 @@ func TestPlanner_initialPlan(t *testing.T) {
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error("init state_cloud current should be empty")
 	}
-	//if len(state_cloud.GlobalCloudLayout.Desired) == 0 {
-	//	t.Error("init state_cloud desired should have elements")
-	//}
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) == 0 {
+		t.Error("init state_cloud desired should have elements")
+	}
 
 }
 
@@ -666,10 +669,10 @@ func TestPlanner_getGlobalMinNeeds(t *testing.T) {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-			Needs: state_needs.AppNeeds{
-			CpuNeeds: state_needs.CpuNeeds(11),
-			MemoryNeeds: state_needs.MemoryNeeds(22),
-			NetworkNeeds: state_needs.NetworkNeeds(33),
+			Needs: needs.AppNeeds{
+			CpuNeeds: needs.CpuNeeds(11),
+			MemoryNeeds: needs.MemoryNeeds(22),
+			NetworkNeeds: needs.NetworkNeeds(33),
 		},
 	},)
 
@@ -677,13 +680,13 @@ func TestPlanner_getGlobalMinNeeds(t *testing.T) {
 
 	cpu, mem, net := getGlobalMinNeeds()
 
-	if cpu != 42 {
-		t.Error("wrong cpu resources")
+	if cpu != 52 {
+		t.Error(cpu)
 	}
-	if mem != 64 {
+	if mem != 74 {
 		t.Error("wrong mem resources")
 	}
-	if net != 86 {
+	if net != 96 {
 		t.Error("wrong net resources")
 	}
 }
@@ -717,10 +720,10 @@ func TestPlanner_getGlobalCurrentNeeds(t *testing.T) {
 			Type: base.EXEC_COMMAND,
 			Command: base.Command{"rm", "-rf /server/app1"},
 		},
-			Needs: state_needs.AppNeeds{
-			CpuNeeds: state_needs.CpuNeeds(11),
-			MemoryNeeds: state_needs.MemoryNeeds(22),
-			NetworkNeeds: state_needs.NetworkNeeds(33),
+			Needs: needs.AppNeeds{
+			CpuNeeds: needs.CpuNeeds(11),
+			MemoryNeeds: needs.MemoryNeeds(22),
+			NetworkNeeds: needs.NetworkNeeds(33),
 		},
 	},)
 
@@ -803,7 +806,7 @@ func TestPlanner_updateInstanceResources(t *testing.T) {
 		t.Error(res.UsedCpuResource)
 	}
 
-	updateInstanceResources("host1", state_needs.AppNeeds{CpuNeeds: 1, MemoryNeeds: 2, NetworkNeeds: 3})
+	updateInstanceResources("host1", needs.AppNeeds{CpuNeeds: 1, MemoryNeeds: 2, NetworkNeeds: 3})
 
 	res2, _ := state_cloud.GlobalAvailableInstances.GetResources("host1")
 
@@ -831,7 +834,7 @@ func TestPlanner_assignAppToHost(t *testing.T) {
 	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
 		TotalCpuResource: 100, TotalMemoryResource: 200, TotalNetworkResource: 300, UsedCpuResource: 10, UsedMemoryResource: 20, UsedNetworkResource: 30,
 	})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 50, MemoryNeeds: 60, NetworkNeeds: 70})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 50, MemoryNeeds: 60, NetworkNeeds: 70})
 
 	appConf := base.AppConfiguration{Name: "app1", Version: "1.0",}
 
@@ -862,7 +865,7 @@ func TestPlanner_assignAppToHost(t *testing.T) {
 		t.Error(res.UsedNetworkResource)
 	}
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 550, MemoryNeeds: 60, NetworkNeeds: 70})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 550, MemoryNeeds: 60, NetworkNeeds: 70})
 	assignAppToHost("host1", appConf, 2)
 
 	if FailedAssigned[0].AppName != "app1" {
@@ -880,13 +883,13 @@ func TestPlanner_findHostWithResources_NoCurrent(t *testing.T) {
 		TotalCpuResource: 100, TotalMemoryResource: 200, TotalNetworkResource: 300, UsedCpuResource: 10, UsedMemoryResource: 20, UsedNetworkResource: 30,
 	})
 
-	res := findHostWithResources(state_needs.AppNeeds{CpuNeeds: 20, MemoryNeeds:10, NetworkNeeds: 10}, "", []base.HostId{"host1", "host2"}, nil)
+	res := findHostWithResources(needs.AppNeeds{CpuNeeds: 20, MemoryNeeds:10, NetworkNeeds: 10}, "", []base.HostId{"host1", "host2"}, nil)
 
 	if res != "host2" {
 		t.Error("wrong host")
 	}
 
-	res2 := findHostWithResources(state_needs.AppNeeds{CpuNeeds: 20, MemoryNeeds:10, NetworkNeeds: 10000}, "", []base.HostId{"host1", "host2"}, nil)
+	res2 := findHostWithResources(needs.AppNeeds{CpuNeeds: 20, MemoryNeeds:10, NetworkNeeds: 10000}, "", []base.HostId{"host1", "host2"}, nil)
 
 	if res2 != "" {
 		t.Error("wrong host")
@@ -913,18 +916,18 @@ func TestPlanner_findHostWithResources_WithCurrent(t *testing.T) {
 		TotalCpuResource: 1000.0, TotalMemoryResource: 2000.0, TotalNetworkResource: 3000.0, UsedCpuResource: 1.0, UsedMemoryResource: 2.0, UsedNetworkResource: 3.0,
 	})
 
-	res := findHostWithResources(state_needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds:1.0, NetworkNeeds: 1.0}, "app1", []base.HostId{"host1", "host2", "host3"}, state_cloud.GlobalCloudLayout.Current.FindHostsWithApp("app1"))
+	res := findHostWithResources(needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds:1.0, NetworkNeeds: 1.0}, "app1", []base.HostId{"host1", "host2", "host3"}, state_cloud.GlobalCloudLayout.Current.FindHostsWithApp("app1"))
 
 	if res != "host1" {
 		t.Error("wrong host")
 	}
 
-	res2 := findHostWithResources(state_needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds:1.0, NetworkNeeds: 1.0}, "app2", []base.HostId{"host1", "host2", "host3"}, state_cloud.GlobalCloudLayout.Current.FindHostsWithApp("app2"))
+	res2 := findHostWithResources(needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds:1.0, NetworkNeeds: 1.0}, "app2", []base.HostId{"host1", "host2", "host3"}, state_cloud.GlobalCloudLayout.Current.FindHostsWithApp("app2"))
 
 	if res2 != "host2" {
 		t.Error("wrong host")
 	}
-	res3 := findHostWithResources(state_needs.AppNeeds{CpuNeeds: 200.0, MemoryNeeds:100.0, NetworkNeeds: 100.0}, "unkown", []base.HostId{"host1", "host2", "host3"}, state_cloud.GlobalCloudLayout.Current.FindHostsWithApp("unkown"))
+	res3 := findHostWithResources(needs.AppNeeds{CpuNeeds: 200.0, MemoryNeeds:100.0, NetworkNeeds: 100.0}, "unkown", []base.HostId{"host1", "host2", "host3"}, state_cloud.GlobalCloudLayout.Current.FindHostsWithApp("unkown"))
 
 	if res3 != "host3" {
 		t.Error("wrong host")
@@ -945,13 +948,13 @@ func TestPlanner_findHttpHostWithResources_NoCurrent(t *testing.T) {
 		TotalCpuResource: 10.0, TotalMemoryResource: 20.0, TotalNetworkResource: 30.0, UsedCpuResource: 1.0, UsedMemoryResource: 2.0, UsedNetworkResource: 3.0,
 	})
 
-	res := findHttpHostWithResources(state_needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds:1.0, NetworkNeeds: 1.0}, "app1", []base.HostId{"host1", "host2", "host3"}, nil)
+	res := findHttpHostWithResources(needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds:1.0, NetworkNeeds: 1.0}, "app1", []base.HostId{"host1", "host2", "host3"}, nil)
 
 	if res != "host2" {
 		t.Error(res)
 	}
 
-	res2 := findHttpHostWithResources(state_needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds:1.0, NetworkNeeds: 1000.0}, "app1", []base.HostId{"host1", "host2", "host3"}, nil)
+	res2 := findHttpHostWithResources(needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds:1.0, NetworkNeeds: 1000.0}, "app1", []base.HostId{"host1", "host2", "host3"}, nil)
 
 	if res2 != "" {
 		t.Error("wrong host")
@@ -984,18 +987,18 @@ func TestPlanner_findHttpHostWithResources_WithCurrent(t *testing.T) {
 		TotalCpuResource: 1000.0, TotalMemoryResource: 2000.0, TotalNetworkResource: 3000.0, UsedCpuResource: 1.0, UsedMemoryResource: 2.0, UsedNetworkResource: 3.0,
 	})
 
-	res := findHttpHostWithResources(state_needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds:1.0, NetworkNeeds: 1.0}, "app1", []base.HostId{"host1", "host2", "host3"}, state_cloud.GlobalCloudLayout.Current.FindHostsWithApp("app1"))
+	res := findHttpHostWithResources(needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds:1.0, NetworkNeeds: 1.0}, "app1", []base.HostId{"host1", "host2", "host3"}, state_cloud.GlobalCloudLayout.Current.FindHostsWithApp("app1"))
 
 	if res == "host1" {
 		t.Error("wrong host")
 	}
 
-	res2 := findHttpHostWithResources(state_needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds:1.0, NetworkNeeds: 1.0}, "app2", []base.HostId{"host1", "host2", "host3"}, state_cloud.GlobalCloudLayout.Current.FindHostsWithApp("app2"))
+	res2 := findHttpHostWithResources(needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds:1.0, NetworkNeeds: 1.0}, "app2", []base.HostId{"host1", "host2", "host3"}, state_cloud.GlobalCloudLayout.Current.FindHostsWithApp("app2"))
 
 	if res2 != "host2" {
 		t.Error(res2)
 	}
-	res3 := findHttpHostWithResources(state_needs.AppNeeds{CpuNeeds: 200.0, MemoryNeeds:100.0, NetworkNeeds: 100.0}, "unkown", []base.HostId{"host1", "host2", "host3"}, state_cloud.GlobalCloudLayout.Current.FindHostsWithApp("unkown"))
+	res3 := findHttpHostWithResources(needs.AppNeeds{CpuNeeds: 200.0, MemoryNeeds:100.0, NetworkNeeds: 100.0}, "unkown", []base.HostId{"host1", "host2", "host3"}, state_cloud.GlobalCloudLayout.Current.FindHostsWithApp("unkown"))
 
 	if res3 != "host3" {
 		t.Error(res3)
@@ -1008,30 +1011,30 @@ func TestPlanner_maxDeploymentOnHost(t *testing.T) {
 		TotalCpuResource: 10.0, TotalNetworkResource: 10.0, TotalMemoryResource: 10.0,
 		UsedCpuResource: 1.0, UsedNetworkResource: 1.0, UsedMemoryResource: 1.0,
 	}
-	needs := state_needs.AppNeeds{CpuNeeds:1.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0}
+	ns := needs.AppNeeds{CpuNeeds:1.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0}
 
-	res := maxDeploymentOnHost(resources, needs)
+	res := maxDeploymentOnHost(resources, ns)
 	if res != 9 {
 		t.Error("wrong res")
 	}
 
-	needs2 := state_needs.AppNeeds{CpuNeeds:6.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0}
+	needs2 := needs.AppNeeds{CpuNeeds:6.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0}
 	res2 := maxDeploymentOnHost(resources, needs2)
 	if res2 != 1 {
 		t.Error("wrong res")
 	}
 
-	needs3 := state_needs.AppNeeds{CpuNeeds:60.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0}
+	needs3 := needs.AppNeeds{CpuNeeds:60.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0}
 	res3 := maxDeploymentOnHost(resources, needs3)
 	if res3 != 0 {
 		t.Error("wrong res")
 	}
-	needs4 := state_needs.AppNeeds{CpuNeeds:1.0, MemoryNeeds: 4.0, NetworkNeeds: 1.0}
+	needs4 := needs.AppNeeds{CpuNeeds:1.0, MemoryNeeds: 4.0, NetworkNeeds: 1.0}
 	res4 := maxDeploymentOnHost(resources, needs4)
 	if res4 != 2 {
 		t.Error(res4)
 	}
-	needs5 := state_needs.AppNeeds{CpuNeeds:1.0, MemoryNeeds: 1.0, NetworkNeeds: 2.0}
+	needs5 := needs.AppNeeds{CpuNeeds:1.0, MemoryNeeds: 1.0, NetworkNeeds: 2.0}
 	res5 := maxDeploymentOnHost(resources, needs5)
 	if res5 != 4 {
 		t.Error(res5)
@@ -1051,14 +1054,14 @@ func TestPlanner_planHttp_moreInstancesThanNeeded(t *testing.T) {
 	state_cloud.GlobalAvailableInstances.Update("host2", resources)
 	state_cloud.GlobalAvailableInstances.Update("host3", resources)
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	appObj := base.AppConfiguration{
 		Name: "app1", Version: "1.0", MinDeploymentCount: 2,
 	}
 
 	called := 0
-	hostF := func (needs state_needs.AppNeeds, app base.AppName, hosts []base.HostId, g map[base.HostId]bool) base.HostId {
+	hostF := func (needs needs.AppNeeds, app base.AppName, hosts []base.HostId, g map[base.HostId]bool) base.HostId {
 		if called == 1{
 			called += 1
 			return "host2"
@@ -1130,14 +1133,14 @@ func TestPlanner_planHttp_lessInstancesThanNeeded(t *testing.T) {
 
 	state_cloud.GlobalAvailableInstances.Update("host1", resources)
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	appObj := base.AppConfiguration{
 		Name: "app1", Version: "1.0", MinDeploymentCount: 8,
 	}
 
 	called := 0
-	hostF := func (needs state_needs.AppNeeds, app base.AppName, hosts []base.HostId, g map[base.HostId]bool) base.HostId {
+	hostF := func (ns needs.AppNeeds, app base.AppName, hosts []base.HostId, g map[base.HostId]bool) base.HostId {
 		if called == 0 {
 			called += 1
 			return "host1"
@@ -1188,14 +1191,14 @@ func TestPlanner_planWorker_moreInstancesThanNeeded(t *testing.T) {
 	state_cloud.GlobalAvailableInstances.Update("host2", resources)
 	state_cloud.GlobalAvailableInstances.Update("host3", resources)
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	appObj := base.AppConfiguration{
 		Name: "app1", Version: "1.0", MinDeploymentCount: 5,
 	}
 
 	called := false
-	hostF := func (needs state_needs.AppNeeds, app base.AppName, hosts []base.HostId, g map[base.HostId]bool) base.HostId {
+	hostF := func (ns needs.AppNeeds, app base.AppName, hosts []base.HostId, g map[base.HostId]bool) base.HostId {
 		if called {
 			return "host2"
 		}
@@ -1262,14 +1265,14 @@ func TestPlanner_planWorker_lessInstancesThanNeeded(t *testing.T) {
 
 	state_cloud.GlobalAvailableInstances.Update("host1", resources)
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	appObj := base.AppConfiguration{
 		Name: "app1", Version: "1.0", MinDeploymentCount: 20,
 	}
 
 	called := false
-	hostF := func (needs state_needs.AppNeeds, app base.AppName, hosts []base.HostId, g map[base.HostId]bool) base.HostId {
+	hostF := func (ns needs.AppNeeds, app base.AppName, hosts []base.HostId, g map[base.HostId]bool) base.HostId {
 		if called {
 			return "host2"
 		}
@@ -1309,10 +1312,10 @@ func TestPlanner_planWorker_lessInstancesThanNeeded(t *testing.T) {
 
 
 func TestPlanner_sortByTotalNeeds(t *testing.T) {
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app2", "2.0", state_needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app3", "3.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app4", "4.0", state_needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app2", "2.0", needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app3", "3.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app4", "4.0", needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
 
 	apps := make(map[base.AppName]base.AppConfiguration)
 
@@ -1334,14 +1337,14 @@ func TestPlanner_sortByTotalNeeds(t *testing.T) {
 
 
 func TestPlanner_appPlanningOrder(t *testing.T) {
-	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp2", "2.0", state_needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp3", "3.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp4", "4.0", state_needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp1", "1.0", state_needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 10.0, NetworkNeeds: 10.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp2", "2.0", state_needs.AppNeeds{CpuNeeds: 20.0, MemoryNeeds: 20.0, NetworkNeeds: 20.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp3", "3.0", state_needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 20.0, NetworkNeeds: 20.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp4", "4.0", state_needs.AppNeeds{CpuNeeds: 100.0, MemoryNeeds: 10.0, NetworkNeeds: 10.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp2", "2.0", needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp3", "3.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp4", "4.0", needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp1", "1.0", needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 10.0, NetworkNeeds: 10.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp2", "2.0", needs.AppNeeds{CpuNeeds: 20.0, MemoryNeeds: 20.0, NetworkNeeds: 20.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp3", "3.0", needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 20.0, NetworkNeeds: 20.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp4", "4.0", needs.AppNeeds{CpuNeeds: 100.0, MemoryNeeds: 10.0, NetworkNeeds: 10.0,})
 
 	apps := make(map[base.AppName]base.AppConfiguration)
 
@@ -1530,7 +1533,7 @@ func TestPlanner_handleFailedAssign_http(t *testing.T) {
 		TotalCpuResource: 10.0, TotalNetworkResource: 10.0, TotalMemoryResource: 10.0,
 	})
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 		Name: "app1",
@@ -1579,7 +1582,7 @@ func TestPlanner_handleFailedAssign_worker(t *testing.T) {
 	state_cloud.GlobalAvailableInstances.Update("host3", resources3)
 
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", state_needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 		Name: "app1",
@@ -1615,5 +1618,151 @@ func TestPlanner_handleFailedAssign_worker(t *testing.T) {
 	elem, _ := state_cloud.GlobalCloudLayout.Desired.GetHost("host3")
 	if elem.Apps["app1"].DeploymentCount != 2 {
 		t.Error(elem.Apps["app1"])
+	}
+}
+
+
+
+func TestPlanner_MultiplePlanningSteps_noChanges(t *testing.T) {
+	state_configuration.GlobalConfigurationState.Init()
+	state_cloud.GlobalCloudLayout.Init()
+	state_needs.GlobalAppsNeedState = make(map[base.AppName]state_needs.AppNeedVersion)
+
+	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100,})
+	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{TotalCpuResource: 200, TotalMemoryResource: 200, TotalNetworkResource: 200,})
+
+	config := example.ExampleJsonConfig()
+	config.ApplyToState()
+	cloud.Init()
+
+	if len(state_configuration.GlobalConfigurationState.Apps) != 4 {
+		t.Error("init state_config apps wrong len")
+	}
+
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
+		t.Error("init state_cloud current should be empty")
+	}
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 0 {
+		t.Error("init state_cloud desired should be empty")
+	}
+
+	if len(state_needs.GlobalAppsNeedState) != 4 {
+		t.Error(state_needs.GlobalAppsNeedState)
+	}
+
+	InitialPlan()
+
+
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
+		t.Error("init state_cloud current should be empty")
+	}
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) == 0 {
+		t.Error("init state_cloud desired should have elements")
+	}
+	for i := 0; i < 10; i++ {
+		Plan()
+
+		if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
+			t.Error("init state_cloud current should be empty")
+		}
+		if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["host1"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host1"].Apps["app1"].DeploymentCount != 2 {
+			t.Errorf("iteration %d - %+v", i, state_cloud.GlobalCloudLayout.Desired.Layout)
+		}
+	}
+}
+
+
+
+func TestPlanner_MultiplePlanningSteps_hostKilledByEventAndNewHostSpawned(t *testing.T) {
+	state_configuration.GlobalConfigurationState.Init()
+	state_cloud.GlobalCloudLayout.Init()
+	state_needs.GlobalAppsNeedState = make(map[base.AppName]state_needs.AppNeedVersion)
+
+	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100,})
+	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{TotalCpuResource: 200, TotalMemoryResource: 200, TotalNetworkResource: 200,})
+
+	config := example.ExampleJsonConfig()
+	config.ApplyToState()
+	cloud.Init()
+
+	if len(state_configuration.GlobalConfigurationState.Apps) != 4 {
+		t.Error("init state_config apps wrong len")
+	}
+
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
+		t.Error("init state_cloud current should be empty")
+	}
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 0 {
+		t.Error("init state_cloud desired should be empty")
+	}
+
+	if len(state_needs.GlobalAppsNeedState) != 4 {
+		t.Error(state_needs.GlobalAppsNeedState)
+	}
+
+	InitialPlan()
+
+
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
+		t.Error("init state_cloud current should be empty")
+	}
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) == 0 {
+		t.Error("init state_cloud desired should have elements")
+	}
+
+	Plan()
+
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
+		t.Error("init state_cloud current should be empty")
+	}
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["host1"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host1"].Apps["app1"].DeploymentCount != 2 {
+		t.Errorf("%+v", state_cloud.GlobalCloudLayout.Desired.Layout)
+	}
+
+	tracker.GlobalHostTracker.HandleCloudProviderEvent(cloud.ProviderEvent{"host1", cloud.PROVIDER_EVENT_KILLED})
+
+	if len(state_cloud.GlobalAvailableInstances) != 1 {
+		t.Error(state_cloud.GlobalAvailableInstances)
+	}
+
+	Plan()
+
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
+		t.Error("init state_cloud current should be empty")
+	}
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app1"].DeploymentCount != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app2"].DeploymentCount != 2 {
+		t.Errorf("%+v", state_cloud.GlobalCloudLayout.Desired.Layout)
+	}
+	//host not ready yet
+	Plan()
+
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
+		t.Error("init state_cloud current should be empty")
+	}
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app1"].DeploymentCount != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app2"].DeploymentCount != 2 {
+		t.Errorf("%+v", state_cloud.GlobalCloudLayout.Desired.Layout)
+	}
+
+	//new host is pushing to the trainer = available for planning
+	hostInfo := base.HostInfo{
+		HostId: "newReplacementHost",
+		IpAddr: "1.2.5.6",
+		OsInfo: base.OsInfo{},
+		Apps: []base.AppInfo{},
+	}
+	state_cloud.GlobalCloudLayout.Current.UpdateHost(hostInfo)
+	tracker.GlobalHostTracker.Update(hostInfo.HostId, time.Now().UTC())
+
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 1 {
+		t.Error(state_cloud.GlobalCloudLayout.Current.Layout)
+	}
+	if len(state_cloud.GlobalAvailableInstances) != 2 || state_cloud.GlobalAvailableInstances["newReplacementHost"].TotalCpuResource != 10 {
+		t.Error(state_cloud.GlobalAvailableInstances)
+	}
+
+	Plan()
+
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["newReplacementHost"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app1"].DeploymentCount != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app2"].DeploymentCount != 2 {
+		t.Errorf("%+v", state_cloud.GlobalCloudLayout.Desired.Layout)
 	}
 }

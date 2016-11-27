@@ -11,6 +11,8 @@ import (
 
 
 func TestHostTracker_Get(t *testing.T) {
+	cloud.Init()
+	state_cloud.GlobalCloudLayout.Init()
 	_, err := GlobalHostTracker.Get("host1")
 	if err == nil {
 		t.Error("should throw error")
@@ -32,11 +34,16 @@ func TestHostTracker_CheckCheckinTimeout(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("host1")
 	GlobalHostTracker.Update("host1", ti)
+	cloud.Init()
 
 	res, _ := GlobalHostTracker.Get("host1")
 
 	if res.LastCheckin != ti {
 		t.Error(res)
+	}
+
+	if len(state_cloud.GlobalAvailableInstances) != 1 || state_cloud.GlobalAvailableInstances["host1"].TotalCpuResource != 10 {
+		t.Error(state_cloud.GlobalAvailableInstances)
 	}
 
 	GlobalHostTracker.CheckCheckinTimeout()
@@ -61,7 +68,7 @@ func TestHostTracker_CheckCheckinTimeout(t *testing.T) {
 func TestHostTracker_CheckCloudProvider(t *testing.T) {
 	GlobalHostCrashHandler = HostCrashHandler{}
 	GlobalHostTracker = HostTracker{}
-
+	cloud.Init()
 	if len(GlobalHostCrashHandler) != 0 {
 		t.Error(GlobalHostCrashHandler)
 	}
@@ -116,6 +123,7 @@ func TestHostTracker_HandleCloudProviderEvent(t *testing.T) {
 
 func TestHostCrashHandler_checkinHost(t *testing.T) {
 	GlobalHostCrashHandler = HostCrashHandler{}
+	cloud.Init()
 	if len(GlobalHostCrashHandler) != 0 {
 		t.Error(GlobalHostCrashHandler)
 	}
@@ -131,5 +139,35 @@ func TestHostCrashHandler_checkinHost(t *testing.T) {
 	res1, err := GlobalHostCrashHandler.Get("somehost")
 	if err == nil {
 		t.Error(res1)
+	}
+}
+
+func Test_removeHostFromState(t *testing.T) {
+	state_cloud.GlobalCloudLayout.Init()
+        state_cloud.GlobalCloudLayout.Current.AddEmptyHost("lamehost")
+	state_cloud.GlobalAvailableInstances.Update("lamehost", state_cloud.InstanceResources{})
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 1 {
+		t.Error(state_cloud.GlobalCloudLayout.Current.Layout)
+	}
+	if len(state_cloud.GlobalAvailableInstances) != 1 {
+		t.Error(state_cloud.GlobalAvailableInstances)
+	}
+
+	removeHostFromState("otherhost")
+
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 1 {
+		t.Error(state_cloud.GlobalCloudLayout.Current.Layout)
+	}
+	if len(state_cloud.GlobalAvailableInstances) != 1 {
+		t.Error(state_cloud.GlobalAvailableInstances)
+	}
+
+	removeHostFromState("lamehost")
+
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
+		t.Error(state_cloud.GlobalCloudLayout.Current.Layout)
+	}
+	if len(state_cloud.GlobalAvailableInstances) != 0 {
+		t.Error(state_cloud.GlobalAvailableInstances)
 	}
 }

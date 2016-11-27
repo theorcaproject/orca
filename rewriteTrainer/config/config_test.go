@@ -6,6 +6,7 @@ import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/base"
+	"gatoor/orca/rewriteTrainer/needs"
 )
 
 
@@ -89,10 +90,10 @@ func TestConfig_ApplyToState(t *testing.T) {
 				Type: base.EXEC_COMMAND,
 				Command: base.Command{"rm", "-rf /server/app1"},
 			},
-			Needs: state_needs.AppNeeds{
-				MemoryNeeds: state_needs.MemoryNeeds(5),
-				CpuNeeds: state_needs.CpuNeeds(5),
-				NetworkNeeds: state_needs.NetworkNeeds(5),
+			Needs: needs.AppNeeds{
+				MemoryNeeds: needs.MemoryNeeds(5),
+				CpuNeeds: needs.CpuNeeds(5),
+				NetworkNeeds: needs.NetworkNeeds(5),
 			},
 		},
 		{
@@ -117,10 +118,10 @@ func TestConfig_ApplyToState(t *testing.T) {
 				Type: base.EXEC_COMMAND,
 				Command: base.Command{"rm", "-rf /server/app11"},
 			},
-			Needs: state_needs.AppNeeds{
-				MemoryNeeds: state_needs.MemoryNeeds(5),
-				CpuNeeds: state_needs.CpuNeeds(5),
-				NetworkNeeds: state_needs.NetworkNeeds(5),
+			Needs: needs.AppNeeds{
+				MemoryNeeds: needs.MemoryNeeds(5),
+				CpuNeeds: needs.CpuNeeds(5),
+				NetworkNeeds: needs.NetworkNeeds(5),
 			},
 		},
 		{
@@ -145,10 +146,10 @@ func TestConfig_ApplyToState(t *testing.T) {
 				Type: base.EXEC_COMMAND,
 				Command: base.Command{"rm", "-rf /server/app2"},
 			},
-			Needs: state_needs.AppNeeds{
-				MemoryNeeds: state_needs.MemoryNeeds(5),
-				CpuNeeds: state_needs.CpuNeeds(5),
-				NetworkNeeds: state_needs.NetworkNeeds(5),
+			Needs: needs.AppNeeds{
+				MemoryNeeds: needs.MemoryNeeds(5),
+				CpuNeeds: needs.CpuNeeds(5),
+				NetworkNeeds: needs.NetworkNeeds(5),
 			},
 		},
 	}
