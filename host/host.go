@@ -75,6 +75,18 @@ func (a AppConfig) Get(appName base.AppName, version base.Version) base.AppConfi
     return a[appName][version]
 }
 
+func (a AppConfig) GetLatest(appName base.AppName) base.AppConfiguration {
+    appConfigsMutex.Lock()
+    defer appConfigsMutex.Unlock()
+    var latest base.Version
+    for version := range a[appName] {
+        if version > latest {
+            latest = version
+        }
+    }
+    return a[appName][latest]
+}
+
 type StableAppVersions map[base.AppName]map[base.Version]bool
 var stableVersionMutex = &sync.Mutex{}
 
@@ -436,13 +448,26 @@ func installApp(conf base.AppConfiguration, deploymentCount base.DeploymentCount
         Id: base.AppId(conf.Name + "_installer"),
     }
 
-    uninstallApp(conf.Name)
+    uninstallLatestApp(conf.Name)
     removeApp(appObj)
     doInstallApp(conf, deploymentCount)
 }
 
 func getAppId(appName base.AppName) base.AppId {
     return base.AppId(fmt.Sprintf("%s_%d", appName, rand.Int31()))
+}
+
+func uninstallLatestApp(appName base.AppName) {
+    conf := AppConfigCache.GetLatest(appName)
+    res := executeCommand(conf.RemoveCommand)
+    if res {
+        HostLogger.Infof("Uninstalled app %s:%s", conf.Name, conf.Version)
+        removeApp(base.AppInfo{Type: conf.Type, Name: conf.Name, Version: conf.Version, Status: base.STATUS_DEAD})
+    } else {
+        HostLogger.Infof("Uninstall of app %s:%s failed - config: %+v", conf.Name, conf.Version, conf)
+        updateAllAppState(conf.Name, conf.Version, base.STATUS_DEAD)
+        StableAppVersionsCache.Set(conf.Name, conf.Version, false)
+    }
 }
 
 func uninstallApp(appName base.AppName) {
