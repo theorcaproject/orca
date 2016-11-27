@@ -21,36 +21,6 @@ func applySampleConfig() {
 
 	conf.Trainer.Port = 5000
 
-	conf.Habitats = []config.HabitatJsonConfiguration{
-		{
-			Name: "habitat1",
-			Version: "0.1",
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ls", "/home"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/etc/orca.conf", "somefilecontent as a string"},
-				},
-			},
-		},
-		{
-			Name: "habitat2",
-			Version: "0.1",
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ps", "aux"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/etc/orca.conf", "different config"},
-				},
-			},
-		},
-	}
 
 	httpApp1 := config.AppJsonConfiguration{
 		Name: "httpApp_1",

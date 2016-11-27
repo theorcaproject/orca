@@ -22,6 +22,7 @@ import (
 
 
 const (
+    ORCA_VERSION = "0.1"
     HOST_INFO_FILE_PATH = "/orca/data/host/host_info.json"
     HOST_CONFIG_FILE_PATH = "/orca/config/host/host.conf"
     APP_CONFIG_CACHE_FILE_PATH = "/orca/data/host/app_config.json"
@@ -397,6 +398,7 @@ func handleTrainerResponse(body []byte) {
     if err := json.Unmarshal(body, &config); err != nil {
         HostLogger.Errorf("Failed to parse response - %s HTTP_BODY: %s", err, string(body))
     } else {
+        HostLogger.Infof("Got Config with OrcaVersion %s", config.OrcaVersion)
         installApp(config.AppConfiguration, config.DeploymentCount)
     }
 }

@@ -134,6 +134,7 @@ type PushWrapper struct {
 
 type PushConfiguration struct {
     //TargetHostId HostId
+    OrcaVersion string
     DeploymentCount DeploymentCount
     AppConfiguration AppConfiguration
     //HabitatConfiguration HabitatConfiguration

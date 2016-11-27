@@ -16,6 +16,7 @@ import (
 	"gatoor/orca/base"
 )
 
+const ORCA_VERSION = "0.1"
 type Api struct{}
 var ApiLogger = Logger.LoggerWithField(Logger.Logger, "module", "api")
 
@@ -63,9 +64,12 @@ func pushHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		ApiLogger.Infof("Sending empty response to host '%s'", hostInfo.HostId)
-		returnJson(w, nil)
+		config = base.PushConfiguration{}
+		config.OrcaVersion = ORCA_VERSION
+		returnJson(w, config)
 		return
 	}
+	config.OrcaVersion = ORCA_VERSION
 	ApiLogger.Infof("Sending new config to host '%s': '%+v'", hostInfo.HostId, config)
 	returnJson(w, config)
 }
