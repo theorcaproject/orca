@@ -100,11 +100,11 @@ type MetricsWrapper struct {
 
 var metricsMutex = &sync.Mutex{}
 
-func (m MetricsWrapper) Wipe() {
+func (m *MetricsWrapper) Wipe() {
     metricsMutex.Lock()
     defer metricsMutex.Unlock()
-    m.HostMetrics = make(map[string]HostStats)
-    m.AppMetrics = make(map[AppName]map[string]AppStats)
+    (*m).HostMetrics = make(map[string]HostStats)
+    (*m).AppMetrics = make(map[AppName]map[string]AppStats)
 }
 
 func (m MetricsWrapper) Get() MetricsWrapper{

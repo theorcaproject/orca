@@ -494,7 +494,7 @@ func runApp(app base.AppConfiguration, deploymentCount base.DeploymentCount) {
         Name: app.Name,
         Version: app.Version,
         Status: base.STATUS_RUNNING,
-        Id: getAppId(app.Name),
+        Id: "",
     }
     if deploymentCount == 0 {
         HostLogger.Infof("Got DeploymentCount 0 for App %s:%s, triggering uninstall", app.Name, app.Version)
@@ -509,6 +509,7 @@ func runApp(app base.AppConfiguration, deploymentCount base.DeploymentCount) {
     }
 
     for i := currentCount; i <= int(deploymentCount); i++ {
+        appInfo.Id = getAppId(app.Name)
         HostLogger.Infof("Starting App %s:%s with id %s - iteration: %d of %d", appInfo.Name, appInfo.Version, appInfo.Id, i, deploymentCount)
         res := executeCommand(app.RunCommand)
         if res {
