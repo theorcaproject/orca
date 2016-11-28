@@ -233,6 +233,7 @@ func pollAppsStatus() {
 func pollAppStatus(app base.AppInfo, pollingFunc pollingFunc) {
     conf := AppConfigCache.Get(app.Name, app.Version)
     res := pollingFunc(conf)
+    HostLogger.Infof("App %s:%s status is %s", app.Name, app.Version, res)
     if res {
         app.Status = base.STATUS_RUNNING
         replaceApp(app)
@@ -242,8 +243,8 @@ func pollAppStatus(app base.AppInfo, pollingFunc pollingFunc) {
         app.Status = base.STATUS_DEAD
         replaceApp(app)
         StableAppVersionsCache.Set(app.Name, app.Version, false)
+        runApp(app, 1)
     }
-    HostLogger.Infof("App %s:%s status is %s", app.Name, app.Version, app.Status)
 }
 
 func pollAppsMetrics() {
@@ -542,7 +543,7 @@ func runApp(app base.AppConfiguration, deploymentCount base.DeploymentCount) {
         uninstallApp(app.Name)
         return
     }
-    currentCount := 1
+    currentCount := 0
     for _, appObj := range hostInfo.Apps {
         if app.Name == appObj.Name {
             currentCount++
