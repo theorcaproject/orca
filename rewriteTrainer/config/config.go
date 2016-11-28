@@ -49,6 +49,7 @@ type AppJsonConfiguration struct {
 	InstallCommands []base.OsCommand
 	QueryStateCommand base.OsCommand
 	RemoveCommand base.OsCommand
+	RunCommand base.OsCommand
 	Needs needs.AppNeeds
 }
 
@@ -130,6 +131,7 @@ func applyAppsConfig(appsConfs []AppJsonConfiguration) {
 			MaxDeploymentCount: aConf.MaxDeploymentCount,
 			InstallCommands: aConf.InstallCommands,
 			QueryStateCommand: aConf.QueryStateCommand,
+			RunCommand: aConf.RunCommand,
 			RemoveCommand: aConf.RemoveCommand,
 		})
 	}

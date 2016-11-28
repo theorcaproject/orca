@@ -123,6 +123,9 @@ func (m MetricsWrapper) AddHostMetrics(hostMetrics HostStats) {
 func (m MetricsWrapper) AddAppMetrics(appName AppName, appMetrics AppStats) {
     metricsMutex.Lock()
     defer metricsMutex.Unlock()
+    if _, exists := m.AppMetrics[appName]; !exists {
+        m.AppMetrics[appName] = make(map[string]AppStats)
+    }
     m.AppMetrics[appName][time.Now().UTC().Format(time.RFC3339)] = appMetrics
 }
 
