@@ -159,4 +159,5 @@ type AppConfiguration struct {
     RunCommand OsCommand
     QueryStateCommand OsCommand
     RemoveCommand OsCommand
+    StopCommand OsCommand
 }

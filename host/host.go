@@ -448,6 +448,7 @@ func installApp(conf base.AppConfiguration, deploymentCount base.DeploymentCount
         Id: base.AppId(conf.Name + "_installer"),
     }
 
+    stopApp(conf.name)
     uninstallLatestApp(conf.Name)
     removeApp(appObj)
     doInstallApp(conf, deploymentCount)
@@ -465,6 +466,19 @@ func uninstallLatestApp(appName base.AppName) {
         removeApp(base.AppInfo{Type: conf.Type, Name: conf.Name, Version: conf.Version, Status: base.STATUS_DEAD})
     } else {
         HostLogger.Infof("Uninstall of app %s:%s failed - config: %+v", conf.Name, conf.Version, conf)
+        removeApp(base.AppInfo{Type: conf.Type, Name: conf.Name, Version: conf.Version, Status: base.STATUS_DEAD})
+        updateAllAppState(conf.Name, conf.Version, base.STATUS_DEAD)
+        StableAppVersionsCache.Set(conf.Name, conf.Version, false)
+    }
+}
+func stopApp(appName base.AppName) {
+    conf := AppConfigCache.GetLatest(appName)
+    res := executeCommand(conf.StopCommand)
+    if res {
+        HostLogger.Infof("Stopped app %s:%s", conf.Name, conf.Version)
+        removeApp(base.AppInfo{Type: conf.Type, Name: conf.Name, Version: conf.Version, Status: base.STATUS_DEAD})
+    } else {
+        HostLogger.Infof("Stopping of app %s:%s failed - config: %+v", conf.Name, conf.Version, conf)
         removeApp(base.AppInfo{Type: conf.Type, Name: conf.Name, Version: conf.Version, Status: base.STATUS_DEAD})
         updateAllAppState(conf.Name, conf.Version, base.STATUS_DEAD)
         StableAppVersionsCache.Set(conf.Name, conf.Version, false)

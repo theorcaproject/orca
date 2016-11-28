@@ -50,6 +50,7 @@ type AppJsonConfiguration struct {
 	QueryStateCommand base.OsCommand
 	RemoveCommand base.OsCommand
 	RunCommand base.OsCommand
+	StopCommand base.OsCommand
 	Needs needs.AppNeeds
 }
 
@@ -132,6 +133,7 @@ func applyAppsConfig(appsConfs []AppJsonConfiguration) {
 			InstallCommands: aConf.InstallCommands,
 			QueryStateCommand: aConf.QueryStateCommand,
 			RunCommand: aConf.RunCommand,
+			StopCommand: aConf.StopCommand,
 			RemoveCommand: aConf.RemoveCommand,
 		})
 	}
