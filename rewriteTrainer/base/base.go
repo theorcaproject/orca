@@ -26,6 +26,8 @@ type DesiredInstances int
 type MaxInstances int
 type CloudType string
 type CloudName string
+type CloudAccessKeyId string
+type CloudAccessKeySecret string
 
 type CloudProviderLoadBalancerName string
 type CloudProviderLoadBalancerId string

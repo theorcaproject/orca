@@ -18,6 +18,7 @@ type JsonConfiguration struct {
 	Trainer TrainerJsonConfiguration
 	Habitats []HabitatJsonConfiguration
 	Apps []AppJsonConfiguration
+	Clouds []CloudsJsonConfiguration
 }
 
 type TrainerJsonConfiguration struct {
@@ -28,6 +29,14 @@ type HabitatJsonConfiguration struct {
 	Name base.HabitatName
 	Version base.Version
 	InstallCommands []base.OsCommand
+}
+
+type CloudsJsonConfiguration struct {
+	Name base.CloudName
+	Version base.Version
+	Type base.CloudType
+	AccessKeyId base.CloudAccessKeyId
+	AccessKeySecret base.CloudAccessKeySecret
 }
 
 type AppJsonConfiguration struct {
@@ -44,6 +53,10 @@ type AppJsonConfiguration struct {
 	Min base.MinInstances
 	Desired base.DesiredInstances
 	Max base.MaxInstances
+	LoadBalancer []base.CloudProviderLoadBalancerName
+	Networks []base.CloudProviderVpcName
+
+	Cloud base.CloudName
 }
 
 type CloudJsonConfiguration struct {
@@ -79,6 +92,7 @@ func (j *JsonConfiguration)  ApplyToState() {
 	applyTrainerConfig(j.Trainer)
 	applyAppsConfig(j.Apps)
 	applyNeeds(j.Apps)
+	applyCloudsConfig(j.Clouds)
 	Logger.InitLogger.Infof("Config was applied to State")
 }
 
@@ -92,6 +106,9 @@ func applyAppsConfig(appsConfs []AppJsonConfiguration) {
 			InstallFiles: aConf.InstallFiles,
 			QueryStateCommand: aConf.QueryStateCommand,
 			RemoveCommand: aConf.RemoveCommand,
+			LoadBalancer:aConf.LoadBalancer,
+			Networks: aConf.Networks,
+			Cloud: aConf.Cloud,
 		})
 	}
 }
@@ -102,6 +119,18 @@ func applyHabitatConfig (habitatConfs []HabitatJsonConfiguration) {
 			Name: hConf.Name,
 			Version: hConf.Version,
 			InstallCommands: hConf.InstallCommands,
+		})
+	}
+}
+
+func applyCloudsConfig (cloudsConfs []CloudsJsonConfiguration) {
+	for _, cConf := range cloudsConfs {
+		state_configuration.GlobalConfigurationState.ConfigureClouds(state_configuration.CloudProviderConfiguration{
+			Name: cConf.Name,
+			Version: cConf.Version,
+			Type: cConf.Type,
+			AccessKeyId: cConf.AccessKeyId,
+			AccessKeySecret: cConf.AccessKeySecret,
 		})
 	}
 }

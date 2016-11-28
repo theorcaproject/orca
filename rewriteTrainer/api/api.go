@@ -30,6 +30,7 @@ func (api Api) Init (port int) {
 	r.HandleFunc("/state/needs", getStateNeeds)
 
 	r.HandleFunc("/state/config/applications", getConfigApps)
+	r.HandleFunc("/state/config/cloud", getConfigCloud)
 
 	http.Handle("/", r)
 
@@ -97,6 +98,10 @@ func getConfigApps(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	returnJson(w, state_configuration.GlobalConfigurationState.GetAllApps())
+}
+
+func getConfigCloud(w http.ResponseWriter, r *http.Request) {
+	returnJson(w, state_configuration.GlobalConfigurationState.GetAllClouds())
 }
 
 func getStateNeeds(w http.ResponseWriter, r *http.Request) {
