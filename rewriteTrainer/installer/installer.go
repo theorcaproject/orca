@@ -12,12 +12,11 @@ var InstallerLogger = Logger.LoggerWithField(Logger.Logger, "module", "installer
 func ubuntu1604(trainerIp base.IpAddr, hostId base.HostId) []string {
 	const (
 		SUPERVISOR_CONFIG = "'[unix_http_server]\\nfile=/var/run/supervisor.sock\\nchmod=0770\\nchown=root:supervisor\\n[supervisord]\\nlogfile=/var/log/supervisor/supervisord.log\\npidfile=/var/run/supervisord.pid\\nchildlogdir=/var/log/supervisor\\n[rpcinterface:supervisor]\\nsupervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\\n[supervisorctl]\\nserverurl=unix:///var/run/supervisor.sock\\n[include]\\nfiles = /etc/supervisor/conf.d/*.conf' > /etc/supervisor/supervisord.conf"
-	        ORCA_SUPERVISOR_CONFIG = "'[program:orca_client]\\ncommand=/orca/bin/host\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=orca\\nredirect_stderr=true\\nstdout_logfile=/orca/log/host.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
+	        ORCA_SUPERVISOR_CONFIG = "'[program:orca_client]\\ncommand=/orca/bin/host\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=root\\nredirect_stderr=true\\nstdout_logfile=/orca/log/host.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
 	)
 
 	return []string{
 		"echo orca | sudo -S addgroup --system supervisor",
-		"echo orca | sudo -S adduser orca supervisor",
 		"echo orca | sudo -S apt-get update",
 		"echo orca | sudo -S apt-get install -y git golang supervisor",
 		"echo orca | sudo -S sh -c \"echo " + SUPERVISOR_CONFIG + "\"",

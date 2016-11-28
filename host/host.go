@@ -17,6 +17,8 @@ import (
     "gatoor/orca/util"
     "fmt"
     "math/rand"
+    //"syscall"
+    //"os/user"
 )
 
 
@@ -233,14 +235,15 @@ func pollAppsStatus() {
 func pollAppStatus(app base.AppInfo, pollingFunc pollingFunc) {
     conf := AppConfigCache.Get(app.Name, app.Version)
     res := pollingFunc(conf)
-    HostLogger.Infof("App %s:%s status is %s", app.Name, app.Version, res)
     if res {
         app.Status = base.STATUS_RUNNING
+        HostLogger.Infof("App %s:%s status is %s", app.Name, app.Version, app.Status)
         replaceApp(app)
         StableAppVersionsCache.Set(app.Name, app.Version, true)
     }
     if !res && app.Status != base.STATUS_DEPLOYING {
         app.Status = base.STATUS_DEAD
+        HostLogger.Infof("App %s:%s status is %s", app.Name, app.Version, app.Status)
         replaceApp(app)
         StableAppVersionsCache.Set(app.Name, app.Version, false)
         runApp(conf, 1)
@@ -545,11 +548,10 @@ func runApp(app base.AppConfiguration, deploymentCount base.DeploymentCount) {
     }
     currentCount := 0
     for _, appObj := range hostInfo.Apps {
-        if app.Name == appObj.Name {
+        if app.Name == appObj.Name && appObj.Status == base.STATUS_RUNNING {
             currentCount++
         }
     }
-
     for i := currentCount; i <= int(deploymentCount); i++ {
         appInfo.Id = getAppId(app.Name)
         HostLogger.Infof("Starting App %s:%s with id %s - iteration: %d of %d", appInfo.Name, appInfo.Version, appInfo.Id, i, deploymentCount)
@@ -574,6 +576,9 @@ func executeCommand(command base.OsCommand) bool {
     if command.Type == base.EXEC_COMMAND {
         return executeExecCommand(command.Command)
     }
+    //if command.Type == base.DOCKER_COMMAND {
+    //    return executeDockerCommand(command.Command)
+    //}
     return false
 }
 
@@ -596,6 +601,9 @@ func executeExecCommand(command base.Command) bool {
     } else {
         cmd = exec.Command(command.Path, strings.Fields(command.Args)...)
     }
+    //u, err := user.Lookup("orca")
+    //cmd.SysProcAttr = &syscall.SysProcAttr{}
+    //cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uid, Gid: gid}
     HostLogger.Infof("Will execute: %s %s", command.Path, command.Args)
     output, err := cmd.CombinedOutput()
     if err != nil {
@@ -606,6 +614,10 @@ func executeExecCommand(command base.Command) bool {
     HostLogger.Info(string(output))
     return true
 }
+
+//func executeDockerCommand(command base.Command) bool {
+//
+//}
 
 type AppState struct {
     Version base.Version
