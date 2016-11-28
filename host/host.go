@@ -465,6 +465,7 @@ func uninstallLatestApp(appName base.AppName) {
         removeApp(base.AppInfo{Type: conf.Type, Name: conf.Name, Version: conf.Version, Status: base.STATUS_DEAD})
     } else {
         HostLogger.Infof("Uninstall of app %s:%s failed - config: %+v", conf.Name, conf.Version, conf)
+        removeApp(base.AppInfo{Type: conf.Type, Name: conf.Name, Version: conf.Version, Status: base.STATUS_DEAD})
         updateAllAppState(conf.Name, conf.Version, base.STATUS_DEAD)
         StableAppVersionsCache.Set(conf.Name, conf.Version, false)
     }
@@ -480,6 +481,7 @@ func uninstallApp(appName base.AppName) {
                 removeApp(base.AppInfo{Type: app.Type, Name: app.Name, Version: app.Version, Status: base.STATUS_DEAD})
             } else {
                 HostLogger.Infof("Uninstall of app %s:%s failed - config: %+v", app.Name, app.Version, conf)
+                removeApp(base.AppInfo{Type: conf.Type, Name: conf.Name, Version: conf.Version, Status: base.STATUS_DEAD})
                 updateAllAppState(app.Name, app.Version, base.STATUS_DEAD)
                 StableAppVersionsCache.Set(app.Name, app.Version, false)
             }
