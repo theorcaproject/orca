@@ -243,7 +243,7 @@ func pollAppStatus(app base.AppInfo, pollingFunc pollingFunc) {
         app.Status = base.STATUS_DEAD
         replaceApp(app)
         StableAppVersionsCache.Set(app.Name, app.Version, false)
-        runApp(app, 1)
+        runApp(conf, 1)
     }
 }
 
