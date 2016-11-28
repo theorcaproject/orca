@@ -448,7 +448,7 @@ func installApp(conf base.AppConfiguration, deploymentCount base.DeploymentCount
         Id: base.AppId(conf.Name + "_installer"),
     }
 
-    stopApp(conf.name)
+    stopApp(conf.Name)
     uninstallLatestApp(conf.Name)
     removeApp(appObj)
     doInstallApp(conf, deploymentCount)
