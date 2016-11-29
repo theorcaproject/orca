@@ -5,6 +5,7 @@ import (
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/base"
 	"gatoor/orca/client/types"
+	"strconv"
 )
 
 var InstallerLogger = Logger.LoggerWithField(Logger.Logger, "module", "installer")
@@ -43,12 +44,12 @@ func ubuntu1604(clientConfig types.Configuration) []string {
 		"echo orca | sudo -S chmod -R 777 /orca",
 		//"echo orca | sudo -S sh -c \"echo '" + string(trainerIp) + " orcatrainer' >> /etc/hosts\"",
 		"rm -rf /orca/src/gatoor && mkdir -p /orca/src/gatoor && cd /orca/src/gatoor && git clone -b awstest https://github.com/gatoor/orca.git",
-		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca && go get github.com/c9s/goprocinfo/linux && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh'",
+		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca && go get github.com/c9s/goprocinfo/linux && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/fsouza/go-dockerclient'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/base && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/base/log && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/util && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/client && go install'",
-		"echo orca | sudo -S sh -c \"echo '{\\\"Type\\\": \\\"" + string(clientConfig.Type) + "\\\", \\\"TrainerPollInterval\\\": " + string(clientConfig.TrainerPollInterval) + ", \\\"AppStatusPollInterval\\\": " + string(clientConfig.AppStatusPollInterval) + ", \\\"MetricsPollInterval\\\": " + string(clientConfig.MetricsPollInterval) + ", \\\"TrainerUrl\\\": \\\"" + clientConfig.TrainerUrl + "\\\", \\\"HostId\\\":\\\"" + string(clientConfig.HostId) + "\\\"}' > /orca/config/client/client.conf\"",
+		"echo orca | sudo -S sh -c \"echo '{\\\"Type\\\": \\\"" + string(clientConfig.Type) + "\\\", \\\"TrainerPollInterval\\\": " + strconv.Itoa(clientConfig.TrainerPollInterval) + ", \\\"AppStatusPollInterval\\\": " + strconv.Itoa(clientConfig.AppStatusPollInterval) + ", \\\"MetricsPollInterval\\\": " + strconv.Itoa(clientConfig.MetricsPollInterval) + ", \\\"TrainerUrl\\\": \\\"" + clientConfig.TrainerUrl + "\\\", \\\"HostId\\\":\\\"" + string(clientConfig.HostId) + "\\\"}' > /orca/config/client/client.conf\"",
 		"echo orca | sudo -S service supervisor restart",
 		//"echo orca | sudo -S sh -c 'nohup /orca/bin/host >> /orca/log'",
 	}

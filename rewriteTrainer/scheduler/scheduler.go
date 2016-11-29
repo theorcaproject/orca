@@ -20,8 +20,8 @@ var trackerTicker *time.Ticker
 
 func Start() {
 	SchedulerLogger.Infof("Scheduler starting")
-	ticker := time.NewTicker(time.Second * 10)
-	trackerTicker = time.NewTicker(time.Second * 13)
+	ticker := time.NewTicker(time.Second * 600)
+	trackerTicker = time.NewTicker(time.Second * 10)
 	go func () {
 		for {
 			<- ticker.C

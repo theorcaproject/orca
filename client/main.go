@@ -136,21 +136,21 @@ func loadConfig() {
 	if err != nil {
 		MainLogger.Fatalf("Could not open client config file at %s: %s", CLIENT_CONFIG_FILE_PATH, err)
 	}
-	loadJsonFile(file, client.Configuration)
+	loadJsonFile(file, &client.Configuration)
 	file.Close()
 }
 
 func loadLastStateAndConfig() {
 	hostFile, err := os.Open(APP_STATUS_FILE_PATH)
 	if err != nil {
-		MainLogger.Errorf("Failed to load AppStatus from file : %v", err)
+		MainLogger.Warnf("Failed to load AppStatus from file : %v", err)
 	} else {
 		loadJsonFile(hostFile, &client.AppsState)
 	}
 	hostFile.Close()
 	appFile, err := os.Open(APP_CONFIG_FILE_PATH)
 	if err != nil {
-		MainLogger.Errorf("Failed to load AppConfig from file : %v", err)
+		MainLogger.Warnf("Failed to load AppConfig from file : %v", err)
 	} else {
 		loadJsonFile(appFile, &client.AppsConfiguration)
 	}
