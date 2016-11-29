@@ -3,10 +3,10 @@ package client
 import (
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/base"
-	"gatoor/orca/hostRewrite/docker"
-	"gatoor/orca/hostRewrite/raw"
-	"gatoor/orca/hostRewrite/types"
-	"gatoor/orca/hostRewrite/testClient"
+	"gatoor/orca/client/docker"
+	"gatoor/orca/client/raw"
+	"gatoor/orca/client/types"
+	"gatoor/orca/client/testClient"
 )
 
 
@@ -35,6 +35,7 @@ type Client interface {
 
 
 func Init() {
+	ClientLogger.Info("Initializing Client...")
 	if Configuration.Type == types.DOCKER_CLIENT {
 		cli = &docker.Client{}
 	} else if Configuration.Type == types.RAW_CLIENT {
@@ -45,6 +46,7 @@ func Init() {
 	AppsState = make(map[base.AppId]base.AppInfo)
 	AppsConfiguration = make(map[base.AppId]base.AppConfiguration)
 	AppsMetricsById = make(map[base.AppId]map[string]base.AppStats)
+	ClientLogger.Infof("Initialized Client of Type %s", cli.Type())
 }
 
 

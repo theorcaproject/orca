@@ -3,6 +3,8 @@ package cloud
 import (
 	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/state/cloud"
+	"strings"
+	"strconv"
 )
 
 type ProviderType string
@@ -104,7 +106,16 @@ func (a *TestProvider) Init() {
 }
 
 func (a *TestProvider) GetResources(ty InstanceType) state_cloud.InstanceResources {
-	return state_cloud.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: 10, TotalNetworkResource:10, TotalCpuResource:10}
+
+	if !strings.Contains(string(ty), "metrics=") {
+		return state_cloud.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: 10, TotalNetworkResource:10, TotalCpuResource:10}
+	}
+	arr := strings.Split(strings.Split(string(ty), "metrics=")[1], "_")
+	cpu, _ := strconv.Atoi(arr[0])
+	mem, _ := strconv.Atoi(arr[1])
+	net, _ := strconv.Atoi(arr[2])
+
+	return state_cloud.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: state_cloud.MemoryResource(mem), TotalNetworkResource:state_cloud.NetworkResource(net), TotalCpuResource:state_cloud.CpuResource(cpu)}
 }
 
 func (a *TestProvider) SpawnInstance(ty InstanceType) {
@@ -134,8 +145,7 @@ func (a *TestProvider) TerminateInstance(hostId base.HostId) {
 }
 
 func (a *TestProvider) GetInstanceType(hostId base.HostId) InstanceType{
-	AWSLogger.Errorf("NOT IMPLEMENTED GetInstanceType")
-	return "testInstanceType"
+	return InstanceType(hostId)
 }
 
 func (a *TestProvider) SpawnInstanceSync(ty InstanceType) {
@@ -170,15 +180,18 @@ func (a *TestProvider) SuitableInstanceTypes(resources state_cloud.InstanceResou
 }
 
 func (a *TestProvider) CheckInstance(hostId base.HostId) InstanceStatus {
-	if hostId == "healthy" {
+	if strings.Contains(string(hostId), "healthy") {
 		return INSTANCE_STATUS_HEALTHY
 	}
-	if hostId == "spawning" {
+	if strings.Contains(string(hostId), "spawning") {
 		return INSTANCE_STATUS_SPAWNING
 	}
-	if hostId == "spawn_triggered" {
+	if strings.Contains(string(hostId), "spawn_triggered") {
 		return INSTANCE_STATUS_SPAWN_TRIGGERED
 	}
-	return INSTANCE_STATUS_DEAD
+	if strings.Contains(string(hostId), "dead") {
+		return INSTANCE_STATUS_DEAD
+	}
+	return INSTANCE_STATUS_HEALTHY
 }
 

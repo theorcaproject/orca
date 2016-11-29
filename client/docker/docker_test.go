@@ -3,7 +3,7 @@ package docker
 import (
 	"testing"
 	"gatoor/orca/base"
-	"gatoor/orca/hostRewrite/types"
+	"gatoor/orca/client/types"
 )
 
 func TestClient_InstallApp_NewApp(t *testing.T) {

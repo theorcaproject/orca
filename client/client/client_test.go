@@ -2,7 +2,7 @@ package client
 
 import (
 	"testing"
-	"gatoor/orca/hostRewrite/types"
+	"gatoor/orca/client/types"
 	"gatoor/orca/base"
 	"time"
 )

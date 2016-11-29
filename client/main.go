@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"gatoor/orca/util"
 	"fmt"
-	"gatoor/orca/hostRewrite/types"
-	"gatoor/orca/hostRewrite/client"
+	"gatoor/orca/client/types"
+	"gatoor/orca/client/client"
 	"time"
 	"io/ioutil"
 	"gatoor/orca/base"
@@ -27,36 +27,12 @@ const (
 
 var MainLogger = Logger.LoggerWithField(Logger.Logger, "module", "main")
 
-
-func init() {
-	parseConfig()
+func main() {
+	loadConfig()
 	client.Init()
 	loadLastStateAndConfig()
-}
-
-func main() {
 	startScheduledTasks()
 }
-
-func parseConfig() {
-	file, err := os.Open(CLIENT_CONFIG_FILE_PATH)
-	if err != nil {
-		MainLogger.Fatal(err)
-	}
-
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&client.Configuration); err != nil {
-		extra := ""
-		if serr, ok := err.(*json.SyntaxError); ok {
-			line, col, highlight := util.HighlightBytePosition(file, serr.Offset)
-			extra = fmt.Sprintf(":\nError at line %d, column %d (file offset %d):\n%s",
-				line, col, serr.Offset, highlight)
-		}
-		MainLogger.Fatal("error parsing JSON object in config file %s%s\n%v",
-			file.Name(), extra, err)
-	}
-}
-
 
 func startScheduledTasks() {
 	pollTicker := time.NewTicker(time.Duration(client.Configuration.AppStatusPollInterval) * time.Second)
@@ -140,12 +116,28 @@ func saveStateAndConfig(state types.AppsState, conf types.AppsConfiguration) {
 		return
 	}
 	err = ioutil.WriteFile(APP_STATUS_FILE_PATH, stateJson, 0644)
+	if err != nil {
+		MainLogger.Errorf("Could not save file %s: %s", APP_STATUS_FILE_PATH, err)
+	}
 	var confJson, errConf = json.Marshal(conf)
 	if errConf != nil {
 		MainLogger.Errorf("AppsConfiguration JSON serialization failed: %+v", errConf)
 		return
 	}
 	err = ioutil.WriteFile(APP_CONFIG_FILE_PATH, confJson, 0644)
+	if err != nil {
+		MainLogger.Errorf("Could not save file %s: %s", APP_CONFIG_FILE_PATH, err)
+	}
+}
+
+
+func loadConfig() {
+	file, err := os.Open(CLIENT_CONFIG_FILE_PATH)
+	if err != nil {
+		MainLogger.Fatalf("Could not open client config file at %s: %s", CLIENT_CONFIG_FILE_PATH, err)
+	}
+	loadJsonFile(file, client.Configuration)
+	file.Close()
 }
 
 func loadLastStateAndConfig() {
@@ -153,14 +145,14 @@ func loadLastStateAndConfig() {
 	if err != nil {
 		MainLogger.Errorf("Failed to load AppStatus from file : %v", err)
 	} else {
-		loadJsonFile(hostFile, client.AppsState)
+		loadJsonFile(hostFile, &client.AppsState)
 	}
 	hostFile.Close()
 	appFile, err := os.Open(APP_CONFIG_FILE_PATH)
 	if err != nil {
 		MainLogger.Errorf("Failed to load AppConfig from file : %v", err)
 	} else {
-		loadJsonFile(appFile, client.AppsConfiguration)
+		loadJsonFile(appFile, &client.AppsConfiguration)
 	}
 	appFile.Close()
 }

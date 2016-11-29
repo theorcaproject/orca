@@ -4,15 +4,26 @@ import (
 	orcaSSh "gatoor/orca/util"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/base"
-	"gatoor/orca/rewriteTrainer/state/configuration"
+	"gatoor/orca/client/types"
 )
 
 var InstallerLogger = Logger.LoggerWithField(Logger.Logger, "module", "installer")
 
-func ubuntu1604(trainerIp base.IpAddr, hostId base.HostId) []string {
+func TestClientConfig(id base.HostId) types.Configuration {
+	return types.Configuration{
+		HostId: id,
+		Type: "test",
+		AppStatusPollInterval: 1,
+		MetricsPollInterval: 1,
+		TrainerPollInterval: 5,
+		TrainerUrl: "http://172.16.147.1:5000/push",
+	}
+}
+
+func ubuntu1604(clientConfig types.Configuration) []string {
 	const (
 		SUPERVISOR_CONFIG = "'[unix_http_server]\\nfile=/var/run/supervisor.sock\\nchmod=0770\\nchown=root:supervisor\\n[supervisord]\\nlogfile=/var/log/supervisor/supervisord.log\\npidfile=/var/run/supervisord.pid\\nchildlogdir=/var/log/supervisor\\n[rpcinterface:supervisor]\\nsupervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\\n[supervisorctl]\\nserverurl=unix:///var/run/supervisor.sock\\n[include]\\nfiles = /etc/supervisor/conf.d/*.conf' > /etc/supervisor/supervisord.conf"
-	        ORCA_SUPERVISOR_CONFIG = "'[program:orca_client]\\ncommand=/orca/bin/rewriteHost\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=root\\nredirect_stderr=true\\nstdout_logfile=/orca/log/client.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
+	        ORCA_SUPERVISOR_CONFIG = "'[program:orca_client]\\ncommand=/orca/bin/client\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=root\\nredirect_stderr=true\\nstdout_logfile=/orca/log/client.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
 	)
 
 	return []string{
@@ -36,29 +47,29 @@ func ubuntu1604(trainerIp base.IpAddr, hostId base.HostId) []string {
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/base && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/base/log && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/util && go build'",
-		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/rewriteHost && go install'",
-		"echo orca | sudo -S sh -c \"echo '{\\\"Type\\\": \\\"test\\\", \\\"TrainerPollInterval\\\": 30, \\\"AppStatusPollInterval\\\": 10, \\\"MetricsPollInterval\\\": 10, \\\"TrainerUrl\\\": \\\"http://" + string(trainerIp) + ":5000/push\\\", \\\"HostId\\\":\\\"" + string(hostId) + "\\\"}' > /orca/config/client/client.conf\"",
+		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/client && go install'",
+		"echo orca | sudo -S sh -c \"echo '{\\\"Type\\\": \\\"" + string(clientConfig.Type) + "\\\", \\\"TrainerPollInterval\\\": " + string(clientConfig.TrainerPollInterval) + ", \\\"AppStatusPollInterval\\\": " + string(clientConfig.AppStatusPollInterval) + ", \\\"MetricsPollInterval\\\": " + string(clientConfig.MetricsPollInterval) + ", \\\"TrainerUrl\\\": \\\"" + clientConfig.TrainerUrl + "\\\", \\\"HostId\\\":\\\"" + string(clientConfig.HostId) + "\\\"}' > /orca/config/client/client.conf\"",
 		"echo orca | sudo -S service supervisor restart",
 		//"echo orca | sudo -S sh -c 'nohup /orca/bin/host >> /orca/log'",
 	}
 }
 
-func InstallNewInstance(hostId base.HostId, ipAddr base.IpAddr) bool {
-	InstallerLogger.Infof("Starting install on host %s:%s", hostId, ipAddr)
+func InstallNewInstance(clientConfig types.Configuration, ipAddr base.IpAddr) bool {
+	InstallerLogger.Infof("Starting install on host %s:%s", clientConfig.HostId, ipAddr)
 	userName := "orca"
 	session, addr := orcaSSh.Connect(userName, string(ipAddr) + ":22")
 	if session == nil {
-		InstallerLogger.Infof("Install on host %s:%s failed: No session", hostId, ipAddr)
+		InstallerLogger.Infof("Install on host %s:%s failed: No session", clientConfig.HostId, ipAddr)
 		return false
 	}
-	instance := ubuntu1604(state_configuration.GlobalConfigurationState.Trainer.Ip, hostId)
+	instance := ubuntu1604(clientConfig)
 	for _, cmd := range instance {
 		res := orcaSSh.ExecuteSshCommand(session, addr, cmd)
 		if !res {
-			InstallerLogger.Infof("Install on host %s:%s failed", hostId, ipAddr)
+			InstallerLogger.Infof("Install on host %s:%s failed", clientConfig.HostId, ipAddr)
 			return false
 		}
 	}
-	InstallerLogger.Infof("Install on host %s:%s success", hostId, ipAddr)
+	InstallerLogger.Infof("Install on host %s:%s success", clientConfig.HostId, ipAddr)
 	return true
 }

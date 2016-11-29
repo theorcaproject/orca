@@ -2,7 +2,7 @@ package docker
 
 import (
 	Logger "gatoor/orca/rewriteTrainer/log"
-	"gatoor/orca/hostRewrite/types"
+	"gatoor/orca/client/types"
 	"gatoor/orca/base"
 	DockerClient "github.com/fsouza/go-dockerclient"
 	//DockerTypes "github.com/docker/docker/api/types"
