@@ -190,7 +190,7 @@ func StopApp(id base.AppId) bool {
 }
 
 func QueryApp(id base.AppId) bool {
-	ClientLogger.Infof("Ouery app state of %s", id)
+	ClientLogger.Debugf("Ouery app state of %s", id)
 	res := cli.QueryApp(id, AppsConfiguration.Get(id), &AppsState, &Configuration)
 	var status base.Status
 	if res {
@@ -199,7 +199,7 @@ func QueryApp(id base.AppId) bool {
 		status = base.STATUS_DEAD
 	}
 	AppsState.Set(id, status)
-	ClientLogger.Infof("Ouery app state of %s done: %s, Success=%t", id, status, res)
+	ClientLogger.Debugf("Ouery app state of %s done: %s, Success=%t", id, status, res)
 	return res
 }
 
@@ -235,9 +235,9 @@ func PollAppsState() {
 }
 
 func AppMetrics(id base.AppId) bool {
-	ClientLogger.Infof("Query Metrics of app %s", id)
+	ClientLogger.Debugf("Query Metrics of app %s", id)
 	res := cli.AppMetrics(id, AppsConfiguration.Get(id), &AppsState, &Configuration, &AppsMetricsById)
-	ClientLogger.Infof("Query Metrics of app %s done. Success=%t", id, res)
+	ClientLogger.Debugf("Query Metrics of app %s done. Success=%t", id, res)
 	return res
 }
 

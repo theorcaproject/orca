@@ -14,6 +14,7 @@ import (
 	"gatoor/orca/base"
 	"bytes"
 	"net/http"
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -32,6 +33,30 @@ func main() {
 	client.Init()
 	loadLastStateAndConfig()
 	startScheduledTasks()
+	r := mux.NewRouter()
+	r.HandleFunc("/info", info)
+	http.Handle("/", r)
+}
+
+type infoObj struct {
+	AppsState types.AppsState
+	AppsConfiguration types.AppsConfiguration
+}
+
+func info(w http.ResponseWriter, r *http.Request) {
+	MainLogger.Info("Got API /info request")
+	obj := infoObj{
+		AppsState: client.AppsState,
+		AppsConfiguration: client.AppsConfiguration,
+	}
+	j, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		MainLogger.Errorf("Json serialization failed - %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(j)
 }
 
 func startScheduledTasks() {
@@ -50,7 +75,7 @@ func startScheduledTasks() {
 			client.PollAppsState()
 		}
 	}()
-	func () {
+	go func () {
 		for {
 			<- trainerTicker.C
 			CallTrainer()
