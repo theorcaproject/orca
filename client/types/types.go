@@ -22,6 +22,7 @@ type Configuration struct {
 	AppStatusPollInterval int
 	MetricsPollInterval int
 	TrainerUrl string
+	Port int
 	HostId base.HostId
 }
 

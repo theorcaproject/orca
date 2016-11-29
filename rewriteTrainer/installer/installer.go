@@ -18,6 +18,7 @@ func TestClientConfig(id base.HostId) types.Configuration {
 		MetricsPollInterval: 1,
 		TrainerPollInterval: 5,
 		TrainerUrl: "http://172.16.147.1:5000/push",
+		Port: 5001,
 	}
 }
 
@@ -48,7 +49,7 @@ func ubuntu1604(clientConfig types.Configuration) []string {
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/base/log && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/util && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/client && go install'",
-		"echo orca | sudo -S sh -c \"echo '{\\\"Type\\\": \\\"" + string(clientConfig.Type) + "\\\", \\\"TrainerPollInterval\\\": " + strconv.Itoa(clientConfig.TrainerPollInterval) + ", \\\"AppStatusPollInterval\\\": " + strconv.Itoa(clientConfig.AppStatusPollInterval) + ", \\\"MetricsPollInterval\\\": " + strconv.Itoa(clientConfig.MetricsPollInterval) + ", \\\"TrainerUrl\\\": \\\"" + clientConfig.TrainerUrl + "\\\", \\\"HostId\\\":\\\"" + string(clientConfig.HostId) + "\\\"}' > /orca/client/config/client.conf\"",
+		"echo orca | sudo -S sh -c \"echo '{\\\"Type\\\": \\\"" + string(clientConfig.Type) + "\\\", \\\"TrainerPollInterval\\\": " + strconv.Itoa(clientConfig.TrainerPollInterval) + ", \\\"Port\\\": " + strconv.Itoa(clientConfig.Port) + ", \\\"AppStatusPollInterval\\\": " + strconv.Itoa(clientConfig.AppStatusPollInterval) + ", \\\"MetricsPollInterval\\\": " + strconv.Itoa(clientConfig.MetricsPollInterval) + ", \\\"TrainerUrl\\\": \\\"" + clientConfig.TrainerUrl + "\\\", \\\"HostId\\\":\\\"" + string(clientConfig.HostId) + "\\\"}' > /orca/client/config/client.conf\"",
 		"echo orca | sudo -S service supervisor restart",
 		//"echo orca | sudo -S sh -c 'nohup /orca/bin/host >> /orca/log'",
 	}

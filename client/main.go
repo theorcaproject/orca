@@ -36,6 +36,10 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/info", info)
 	http.Handle("/", r)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", client.Configuration.Port), nil)
+	if err != nil {
+		MainLogger.Fatalf("Api failed to start - %s", err)
+	}
 }
 
 type infoObj struct {
