@@ -18,9 +18,9 @@ import (
 
 const (
 	ORCA_VERSION = "0.1"
-	CLIENT_CONFIG_FILE_PATH = "/orca/config/client/client.conf"
-	APP_STATUS_FILE_PATH = "/orca/data/client/app_status.json"
-	APP_CONFIG_FILE_PATH = "/orca/data/client/app_config.json"
+	CLIENT_CONFIG_FILE_PATH = "/orca/client/config/client.conf"
+	APP_STATUS_FILE_PATH = "/orca/client/data/app_status.json"
+	APP_CONFIG_FILE_PATH = "/orca/client/data/app_config.json"
 )
 
 
