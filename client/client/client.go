@@ -52,6 +52,10 @@ func Init() {
 
 func Handle(config base.PushConfiguration) {
 	ClientLogger.Infof("Received Configuration from trainer: %+v", config)
+	if config.AppConfiguration.Name == base.AppName("") {
+		ClientLogger.Infof("Configuration is empty. Skipping")
+		return
+	}
 	existingAppsVersion := AppsState.GetAllWithVersion(config.AppConfiguration.Name, config.AppConfiguration.Version)
 	if len(existingAppsVersion) > 0 {
 		if len(existingAppsVersion) != int(config.DeploymentCount) {
@@ -223,11 +227,11 @@ func DeleteApp(config base.PushConfiguration) bool {
 
 
 func PollAppsState() {
-	ClientLogger.Info("Starting App Poll")
+	ClientLogger.Debug("Starting App Poll")
 	for _, app := range AppsState.All() {
 		QueryApp(app.Id)
 	}
-	ClientLogger.Info("Finished App Poll")
+	ClientLogger.Debug("Finished App Poll")
 }
 
 func AppMetrics(id base.AppId) bool {
@@ -238,11 +242,11 @@ func AppMetrics(id base.AppId) bool {
 }
 
 func PollMetrics() {
-	ClientLogger.Info("Starting Metrics Poll")
+	ClientLogger.Debug("Starting Metrics Poll")
 	for _, app := range AppsState.All() {
 		AppMetrics(app.Id)
 	}
-	ClientLogger.Info("Finished Metrics Poll")
+	ClientLogger.Debug("Finished Metrics Poll")
 }
 
 
