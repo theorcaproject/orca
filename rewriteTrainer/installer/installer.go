@@ -12,7 +12,7 @@ var InstallerLogger = Logger.LoggerWithField(Logger.Logger, "module", "installer
 func ubuntu1604(trainerIp base.IpAddr, hostId base.HostId) []string {
 	const (
 		SUPERVISOR_CONFIG = "'[unix_http_server]\\nfile=/var/run/supervisor.sock\\nchmod=0770\\nchown=root:supervisor\\n[supervisord]\\nlogfile=/var/log/supervisor/supervisord.log\\npidfile=/var/run/supervisord.pid\\nchildlogdir=/var/log/supervisor\\n[rpcinterface:supervisor]\\nsupervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\\n[supervisorctl]\\nserverurl=unix:///var/run/supervisor.sock\\n[include]\\nfiles = /etc/supervisor/conf.d/*.conf' > /etc/supervisor/supervisord.conf"
-	        ORCA_SUPERVISOR_CONFIG = "'[program:orca_client]\\ncommand=/orca/bin/host\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=root\\nredirect_stderr=true\\nstdout_logfile=/orca/log/host.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
+	        ORCA_SUPERVISOR_CONFIG = "'[program:orca_client]\\ncommand=/orca/bin/rewriteHost\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=root\\nredirect_stderr=true\\nstdout_logfile=/orca/log/client.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
 	)
 
 	return []string{
@@ -28,7 +28,7 @@ func ubuntu1604(trainerIp base.IpAddr, hostId base.HostId) []string {
 		"echo orca | sudo -S mkdir -p /orca/data",
 		"echo orca | sudo -S mkdir -p /orca/data/host",
 		"echo orca | sudo -S mkdir -p /orca/config",
-		"echo orca | sudo -S mkdir -p /orca/config/host",
+		"echo orca | sudo -S mkdir -p /orca/config/client",
 		"echo orca | sudo -S chmod -R 777 /orca",
 		//"echo orca | sudo -S sh -c \"echo '" + string(trainerIp) + " orcatrainer' >> /etc/hosts\"",
 		"rm -rf /orca/src/gatoor && mkdir -p /orca/src/gatoor && cd /orca/src/gatoor && git clone -b awstest https://github.com/gatoor/orca.git",
@@ -36,8 +36,8 @@ func ubuntu1604(trainerIp base.IpAddr, hostId base.HostId) []string {
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/base && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/base/log && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/util && go build'",
-		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/host && go install'",
-		"echo orca | sudo -S sh -c \"echo '{\\\"PollInterval\\\": 10, \\\"TrainerUrl\\\": \\\"http://" + string(trainerIp) + ":5000/push\\\", \\\"HostId\\\":\\\"" + string(hostId) + "\\\"}' > /orca/config/host/host.conf\"",
+		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/rewriteHost && go install'",
+		"echo orca | sudo -S sh -c \"echo '{\\\"Type\\\": \\\"test\\\", \\\"TrainerPollInterval\\\": 30, \\\"AppStatusPollInterval\\\": 10, \\\"MetricsPollInterval\\\": 10, \\\"TrainerUrl\\\": \\\"http://" + string(trainerIp) + ":5000/push\\\", \\\"HostId\\\":\\\"" + string(hostId) + "\\\"}' > /orca/config/client/client.conf\"",
 		"echo orca | sudo -S service supervisor restart",
 		//"echo orca | sudo -S sh -c 'nohup /orca/bin/host >> /orca/log'",
 	}

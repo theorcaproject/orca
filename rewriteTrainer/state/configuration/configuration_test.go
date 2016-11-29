@@ -16,30 +16,38 @@ func TestConfigureApp(t *testing.T) {
 	GlobalConfig := prepareConfigState()
 	GlobalConfig.ConfigureApp(base.AppConfiguration{
 		"appname", base.APP_HTTP, "0.1", 1, 2,
-		[]base.OsCommand{
-			{
-				base.EXEC_COMMAND,
-				base.Command{
-					":aa", "mmm",
+		base.DockerConfig{}, base.RawConfig{
+			InstallCommands: []base.OsCommand{
+				{
+					base.EXEC_COMMAND,
+					base.Command{
+						":aa", "mmm",
+					},
 				},
 			},
-		},
-		base.OsCommand{
-			base.EXEC_COMMAND,
-			base.Command{
-				":bb", "uu",
+			QueryStateCommand: base.OsCommand{
+				base.EXEC_COMMAND,
+				base.Command{
+					":bb", "uu",
+				},
 			},
-		},
-		base.OsCommand{
-			base.EXEC_COMMAND,
-			base.Command{
-				":bb", "uu",
+			RunCommand: base.OsCommand{
+				base.EXEC_COMMAND,
+				base.Command{
+					":bb", "uu",
+				},
 			},
-		},
-		base.OsCommand{
-			base.FILE_COMMAND,
-			base.Command{
-				":cc", "ii",
+			RemoveCommand: base.OsCommand{
+				base.FILE_COMMAND,
+				base.Command{
+					":cc", "ii",
+				},
+			},
+			StopCommand: base.OsCommand{
+				base.FILE_COMMAND,
+				base.Command{
+					":cc", "ii",
+				},
 			},
 		},
 	})
@@ -54,10 +62,10 @@ func TestConfigureApp(t *testing.T) {
 		if val.Name != "appname" {
 			t.Error()
 		}
-		if val.InstallCommands[0].Type != base.EXEC_COMMAND {
+		if val.RawConfig.InstallCommands[0].Type != base.EXEC_COMMAND {
 			t.Error()
 		}
-		if val.RemoveCommand.Type != base.FILE_COMMAND {
+		if val.RawConfig.RemoveCommand.Type != base.FILE_COMMAND {
 			t.Error()
 		}
 	} else {
@@ -121,7 +129,7 @@ func TestAppConfigurationVersions_AllAppsLatestVersion(t *testing.T) {
 	GlobalConfig := prepareConfigState()
 	GlobalConfig.ConfigureApp(base.AppConfiguration{
 		"appname", base.APP_HTTP, "0.1", 1, 2,
-		[]base.OsCommand{
+		base.DockerConfig{},base.RawConfig{[]base.OsCommand{
 			{
 				base.EXEC_COMMAND,
 				base.Command{
@@ -142,15 +150,21 @@ func TestAppConfigurationVersions_AllAppsLatestVersion(t *testing.T) {
 			},
 		},
 		base.OsCommand{
+			base.EXEC_COMMAND,
+			base.Command{
+				":bb", "uu",
+			},
+		},
+		base.OsCommand{
 			base.FILE_COMMAND,
 			base.Command{
 				":cc", "ii",
 			},
-		},
+		},},
 	})
 	GlobalConfig.ConfigureApp(base.AppConfiguration{
 		"appname", base.APP_HTTP, "1.1", 1, 2,
-		[]base.OsCommand{
+		base.DockerConfig{},base.RawConfig{[]base.OsCommand{
 			{
 				base.EXEC_COMMAND,
 				base.Command{
@@ -176,10 +190,16 @@ func TestAppConfigurationVersions_AllAppsLatestVersion(t *testing.T) {
 				":cc", "ii",
 			},
 		},
+		base.OsCommand{
+			base.FILE_COMMAND,
+			base.Command{
+				":cc", "ii",
+			},
+		},},
 	})
 	GlobalConfig.ConfigureApp(base.AppConfiguration{
 		"appname2", base.APP_HTTP, "2.0", 1, 2,
-		[]base.OsCommand{
+		base.DockerConfig{},base.RawConfig{[]base.OsCommand{
 			{
 				base.EXEC_COMMAND,
 				base.Command{
@@ -200,11 +220,17 @@ func TestAppConfigurationVersions_AllAppsLatestVersion(t *testing.T) {
 			},
 		},
 		base.OsCommand{
+			base.EXEC_COMMAND,
+			base.Command{
+				":bb", "uu",
+			},
+		},
+		base.OsCommand{
 			base.FILE_COMMAND,
 			base.Command{
 				":cc", "ii",
 			},
-		},
+		},},
 	})
 
 	latest := GlobalConfig.AllAppsLatest()

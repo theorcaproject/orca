@@ -36,36 +36,6 @@ func TestConfig_ApplyToState(t *testing.T) {
 
 	conf.Trainer.Port = 5000
 
-	conf.Habitats = []HabitatJsonConfiguration{
-		{
-			Name: "habitat1",
-			Version: "0.1",
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ls", "/home"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/etc/orca.conf", "somefilecontent as a string"},
-				},
-			},
-		},
-		{
-			Name: "habitat2",
-			Version: "0.1",
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ps", "aux"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/etc/orca.conf", "different config"},
-				},
-			},
-		},
-	}
 
 	conf.Apps = []AppJsonConfiguration{
 		{
@@ -159,9 +129,6 @@ func TestConfig_ApplyToState(t *testing.T) {
 
 	if len(state_configuration.GlobalConfigurationState.Apps) != 3 {
 		t.Error("init state_config apps wrong len")
-	}
-	if len(state_configuration.GlobalConfigurationState.Habitats) != 2 {
-		t.Error("init state_config habitats wrong len")
 	}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {

@@ -4,16 +4,14 @@ import (
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/state/configuration"
-	//"gatoor/orca/base"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/rewriteTrainer/config"
 	"gatoor/orca/rewriteTrainer/api"
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/db"
-	//"gatoor/orca/rewriteTrainer/installer"
 	"gatoor/orca/rewriteTrainer/scheduler"
 	"gatoor/orca/rewriteTrainer/planner"
-	//"gatoor/orca/rewriteTrainer/installer"
+	"gatoor/orca/rewriteTrainer/installer"
 )
 
 
@@ -24,7 +22,7 @@ func main() {
 	initConfig()
 	cloud.Init()
 	db.Init("")
-	//installer.InstallNewInstance("vm1", "172.16.147.189")
+	installer.InstallNewInstance("vm1", "172.16.147.189")
 	scheduler.Start()
 	planner.InitialPlan()
 	initApi()

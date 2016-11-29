@@ -130,11 +130,11 @@ func applyAppsConfig(appsConfs []AppJsonConfiguration) {
 			Version: aConf.Version,
 			MinDeploymentCount: aConf.MinDeploymentCount,
 			MaxDeploymentCount: aConf.MaxDeploymentCount,
-			InstallCommands: aConf.InstallCommands,
-			QueryStateCommand: aConf.QueryStateCommand,
-			RunCommand: aConf.RunCommand,
-			StopCommand: aConf.StopCommand,
-			RemoveCommand: aConf.RemoveCommand,
+			//InstallCommands: aConf.InstallCommands,
+			//QueryStateCommand: aConf.QueryStateCommand,
+			//RunCommand: aConf.RunCommand,
+			//StopCommand: aConf.StopCommand,
+			//RemoveCommand: aConf.RemoveCommand,
 		})
 	}
 }

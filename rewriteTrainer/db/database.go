@@ -87,5 +87,5 @@ func (a OrcaDb) Get(bucket string, key string) string {
 
 func GetNow() (string, time.Time) {
 	t := time.Now().UTC()
-	return t.Format(time.RFC3339), t
+	return t.Format(time.RFC3339Nano), t
 }

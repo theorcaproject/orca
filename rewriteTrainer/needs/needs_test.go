@@ -6,22 +6,22 @@ import (
 )
 
 func TestNeeds_timeToWeekdayMinutes(t *testing.T) {
-	t1, _ := time.Parse(time.RFC3339, "2016-11-26T00:15:44+00:00")
+	t1, _ := time.Parse(time.RFC3339Nano, "2016-11-26T00:15:44+00:00")
 	w1, m1 := timeToWeekdayMinutes(t1)
 	if w1 != time.Saturday || m1 != 15 {
 		t.Error(w1, m1)
 	}
-	t2, _ := time.Parse(time.RFC3339, "2016-11-27T00:05:44+00:00")
+	t2, _ := time.Parse(time.RFC3339Nano, "2016-11-27T00:05:44+00:00")
 	w2, m2 := timeToWeekdayMinutes(t2)
 	if w2 != time.Sunday || m2 != 0 {
 		t.Error(w2, m2)
 	}
-	t3, _ := time.Parse(time.RFC3339, "2016-11-27T10:16:44+00:00")
+	t3, _ := time.Parse(time.RFC3339Nano, "2016-11-27T10:16:44+00:00")
 	w3, m3 := timeToWeekdayMinutes(t3)
 	if w3 != time.Sunday || m3 != 615 {
 		t.Error(w3, m3)
 	}
-	t4, _ := time.Parse(time.RFC3339, "2016-11-27T10:29:44+00:00")
+	t4, _ := time.Parse(time.RFC3339Nano, "2016-11-27T10:29:44+00:00")
 	w4, m4 := timeToWeekdayMinutes(t4)
 	if w4 != time.Sunday || m4 != 615 {
 		t.Error(w4, m4)
@@ -32,12 +32,12 @@ func TestNeeds_SetFlat(t *testing.T) {
 	weekly := WeeklyNeeds{}
 	weekly.SetFlat(AppNeeds{CpuNeeds:10, MemoryNeeds:5, NetworkNeeds: 2})
 
-	t1, _ := time.Parse(time.RFC3339, "2016-11-26T06:00:44+00:00")
+	t1, _ := time.Parse(time.RFC3339Nano, "2016-11-26T06:00:44+00:00")
 
 	if weekly.Get(timeToWeekdayMinutes(t1)).CpuNeeds != 10 || weekly.Get(timeToWeekdayMinutes(t1)).NetworkNeeds != 2 {
 		t.Error(weekly.Get(timeToWeekdayMinutes(t1)))
 	}
-	t2, _ := time.Parse(time.RFC3339, "2016-11-29T16:47:44+00:00")
+	t2, _ := time.Parse(time.RFC3339Nano, "2016-11-29T16:47:44+00:00")
 
 	if weekly.Get(timeToWeekdayMinutes(t2)).CpuNeeds != 10 || weekly.Get(timeToWeekdayMinutes(t2)).NetworkNeeds != 2 {
 		t.Error(weekly.Get(timeToWeekdayMinutes(t2)))

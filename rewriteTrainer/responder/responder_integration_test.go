@@ -309,9 +309,6 @@ func testInitConfig(t *testing.T) {
 	if len(state_configuration.GlobalConfigurationState.Apps["workerApp_3"]) != 1 {
 		t.Error("init state_config apps wrong len")
 	}
-	if len(state_configuration.GlobalConfigurationState.Habitats) != 2 {
-		t.Error("init state_config habitats wrong len")
-	}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
 		t.Error("init state_cloud current should be empty")
@@ -457,7 +454,7 @@ func TestResponder_GetConfigForHost_Integration(t *testing.T) {
 
 
 	cpuHost_1Config, _ := GetConfigForHost("cpuHost_1")
-	if cpuHost_1Config.DeploymentCount != 1 {
+	if cpuHost_1Config.DeploymentCount != 4 {
 		t.Errorf("%+v", cpuHost_1Config)
 	}
 

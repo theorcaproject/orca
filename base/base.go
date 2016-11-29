@@ -43,7 +43,7 @@ type OsCommand struct {
     Command Command
 }
 
-type Usage float32
+type Usage int
 
 type HostStats struct {
     MemoryUsage Usage
@@ -55,6 +55,7 @@ type AppStats struct {
     MemoryUsage Usage
     CpuUsage Usage
     NetworkUsage Usage
+    ResponseTime int
 }
 
 type HostInfo struct {
@@ -93,9 +94,11 @@ type TrainerPushWrapper struct {
     Stats MetricsWrapper
 }
 
+type AppMetrics map[AppName]map[Version]map[string]AppStats
+
 type MetricsWrapper struct {
     HostMetrics map[string]HostStats
-    AppMetrics map[AppName]map[string]AppStats
+    AppMetrics map[AppName]map[Version]map[string]AppStats
 }
 
 var metricsMutex = &sync.Mutex{}
@@ -104,7 +107,7 @@ func (m *MetricsWrapper) Wipe() {
     metricsMutex.Lock()
     defer metricsMutex.Unlock()
     (*m).HostMetrics = make(map[string]HostStats)
-    (*m).AppMetrics = make(map[AppName]map[string]AppStats)
+    (*m).AppMetrics = make(map[AppName]map[Version]map[string]AppStats)
 }
 
 func (m MetricsWrapper) Get() MetricsWrapper{
@@ -117,16 +120,19 @@ func (m MetricsWrapper) Get() MetricsWrapper{
 func (m MetricsWrapper) AddHostMetrics(hostMetrics HostStats) {
     metricsMutex.Lock()
     defer metricsMutex.Unlock()
-    m.HostMetrics[time.Now().UTC().Format(time.RFC3339)] = hostMetrics
+    m.HostMetrics[time.Now().UTC().Format(time.RFC3339Nano)] = hostMetrics
 }
 
-func (m MetricsWrapper) AddAppMetrics(appName AppName, appMetrics AppStats) {
+func (m MetricsWrapper) AddAppMetrics(appName AppName, version Version, appMetrics AppStats) {
     metricsMutex.Lock()
     defer metricsMutex.Unlock()
     if _, exists := m.AppMetrics[appName]; !exists {
-        m.AppMetrics[appName] = make(map[string]AppStats)
+        m.AppMetrics[appName] = make(map[Version]map[string]AppStats)
     }
-    m.AppMetrics[appName][time.Now().UTC().Format(time.RFC3339)] = appMetrics
+    if _, exists := m.AppMetrics[appName][version]; !exists {
+        m.AppMetrics[appName][version] = make(map[string]AppStats)
+    }
+    m.AppMetrics[appName][version][time.Now().UTC().Format(time.RFC3339Nano)] = appMetrics
 }
 
 
@@ -155,9 +161,47 @@ type AppConfiguration struct {
     Version Version
     MinDeploymentCount DeploymentCount
     MaxDeploymentCount DeploymentCount
+    DockerConfig DockerConfig
+    RawConfig RawConfig
+}
+
+type RawConfig struct {
     InstallCommands []OsCommand
     RunCommand OsCommand
     QueryStateCommand OsCommand
     RemoveCommand OsCommand
     StopCommand OsCommand
+}
+
+type DockerConfig struct {
+    Registry string
+    Repository string
+    Reference string
+}
+
+var appsMetricsMutex = &sync.Mutex{}
+
+func (a *AppMetrics) Add(name AppName, version Version, time string, stats AppStats) {
+    appsMetricsMutex.Lock()
+    defer appsMetricsMutex.Unlock()
+    if _, exists := (*a)[name]; !exists {
+        (*a)[name] = make(map[Version]map[string]AppStats)
+    }
+    if _, exists := (*a)[name][version]; !exists {
+        (*a)[name][version] = make(map[string]AppStats)
+    }
+    (*a)[name][version][time] = stats
+}
+
+func (a *AppMetrics) All() map[AppName]map[Version]map[string]AppStats {
+    appsMetricsMutex.Lock()
+    defer appsMetricsMutex.Unlock()
+    res := (*a)
+    return res
+}
+
+func (a *AppMetrics) Clear() {
+    appsMetricsMutex.Lock()
+    defer appsMetricsMutex.Unlock()
+    (*a) = make(map[AppName]map[Version]map[string]AppStats)
 }
