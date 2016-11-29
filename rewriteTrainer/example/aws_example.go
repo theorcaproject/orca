@@ -35,19 +35,19 @@ func AwsJsonConfig() config.JsonConfiguration {
 			Type: base.APP_HTTP,
 			MinDeploymentCount: 2,
 			MaxDeploymentCount: 10,
-			InstallCommands: []base.OsCommand{
-				{base.EXEC_COMMAND, base.Command{"mkdir", "/orca/apps/nginx"},},
-				{base.FILE_COMMAND, base.Command{"/orca/apps/nginx/index.html", "HELLO ORCA!"},},
-				{base.EXEC_COMMAND, base.Command{"docker", "run --name orca-nginx -p 80:80 -v /orca/apps/nginx:/usr/share/nginx/html nginx"},},
-			},
-			QueryStateCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"wget", "http://localhost"},
-			},
-			RemoveCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"docker", "stop orca-nginx"},
-			},
+			//InstallCommands: []base.OsCommand{
+			//	{base.EXEC_COMMAND, base.Command{"mkdir", "/orca/apps/nginx"},},
+			//	{base.FILE_COMMAND, base.Command{"/orca/apps/nginx/index.html", "HELLO ORCA!"},},
+			//	{base.EXEC_COMMAND, base.Command{"docker", "run --name orca-nginx -p 80:80 -v /orca/apps/nginx:/usr/share/nginx/html nginx"},},
+			//},
+			//QueryStateCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"wget", "http://localhost"},
+			//},
+			//RemoveCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"docker", "stop orca-nginx"},
+			//},
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
@@ -60,19 +60,19 @@ func AwsJsonConfig() config.JsonConfiguration {
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 5,
 			MaxDeploymentCount: 10,
-			InstallCommands: []base.OsCommand{
-				{base.EXEC_COMMAND, base.Command{"mkdir", "/orca/apps/nginxworker"},},
-				{base.FILE_COMMAND, base.Command{"/orca/apps/nginxworker/index.html", "HELLO ORCA as worker!"},},
-				{base.EXEC_COMMAND, base.Command{"docker", "run --name orca-nginxworker -v /orca/apps/nginxworker:/usr/share/nginx/html nginx"},},
-			},
-			QueryStateCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"wget", "http://localhost"},
-			},
-			RemoveCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"docker", "stop orca-nginxworker"},
-			},
+			//InstallCommands: []base.OsCommand{
+			//	{base.EXEC_COMMAND, base.Command{"mkdir", "/orca/apps/nginxworker"},},
+			//	{base.FILE_COMMAND, base.Command{"/orca/apps/nginxworker/index.html", "HELLO ORCA as worker!"},},
+			//	{base.EXEC_COMMAND, base.Command{"docker", "run --name orca-nginxworker -v /orca/apps/nginxworker:/usr/share/nginx/html nginx"},},
+			//},
+			//QueryStateCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"wget", "http://localhost"},
+			//},
+			//RemoveCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"docker", "stop orca-nginxworker"},
+			//},
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(3),
 				CpuNeeds: needs.CpuNeeds(3),

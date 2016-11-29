@@ -69,24 +69,24 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			Type: base.APP_HTTP,
 			MinDeploymentCount: 2,
 			MaxDeploymentCount: 10,
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ls", "/home"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/server/http1/app1.conf", "somefilecontent as a string"},
-				},
-			},
-			QueryStateCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"wget", "http://localhost:1234/check"},
-			},
-			RemoveCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"rm", "-rf /server/http1"},
-			},
+			//InstallCommands: []base.OsCommand{
+			//	{
+			//		Type: base.EXEC_COMMAND,
+			//		Command: base.Command{"ls", "/home"},
+			//	},
+			//	{
+			//		Type: base.FILE_COMMAND,
+			//		Command: base.Command{"/server/http1/app1.conf", "somefilecontent as a string"},
+			//	},
+			//},
+			//QueryStateCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"wget", "http://localhost:1234/check"},
+			//},
+			//RemoveCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"rm", "-rf /server/http1"},
+			//},
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
@@ -98,24 +98,24 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
 			MaxDeploymentCount: 10,
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ls", "/home"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-				},
-			},
-			QueryStateCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"wget", "http://localhost:1234/check"},
-			},
-			RemoveCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"rm", "-rf /server/app1"},
-			},
+			//InstallCommands: []base.OsCommand{
+			//	{
+			//		Type: base.EXEC_COMMAND,
+			//		Command: base.Command{"ls", "/home"},
+			//	},
+			//	{
+			//		Type: base.FILE_COMMAND,
+			//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
+			//	},
+			//},
+			//QueryStateCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"wget", "http://localhost:1234/check"},
+			//},
+			//RemoveCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"rm", "-rf /server/app1"},
+			//},
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
@@ -128,24 +128,24 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
 			MaxDeploymentCount: 10,
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ls", "/home"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/server/app11/app11.conf", "somefilecontent as a string"},
-				},
-			},
-			QueryStateCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"wget", "http://localhost:1235/check"},
-			},
-			RemoveCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"rm", "-rf /server/app11"},
-			},
+			//InstallCommands: []base.OsCommand{
+			//	{
+			//		Type: base.EXEC_COMMAND,
+			//		Command: base.Command{"ls", "/home"},
+			//	},
+			//	{
+			//		Type: base.FILE_COMMAND,
+			//		Command: base.Command{"/server/app11/app11.conf", "somefilecontent as a string"},
+			//	},
+			//},
+			//QueryStateCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"wget", "http://localhost:1235/check"},
+			//},
+			//RemoveCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"rm", "-rf /server/app11"},
+			//},
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
@@ -158,24 +158,24 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
 			MaxDeploymentCount: 10,
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ls", "/home"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/server/app2/app2.conf", "somefilecontent as a string"},
-				},
-			},
-			QueryStateCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"wget", "http://localhost:1236/check"},
-			},
-			RemoveCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"rm", "-rf /server/app2"},
-			},
+			//InstallCommands: []base.OsCommand{
+			//	{
+			//		Type: base.EXEC_COMMAND,
+			//		Command: base.Command{"ls", "/home"},
+			//	},
+			//	{
+			//		Type: base.FILE_COMMAND,
+			//		Command: base.Command{"/server/app2/app2.conf", "somefilecontent as a string"},
+			//	},
+			//},
+			//QueryStateCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"wget", "http://localhost:1236/check"},
+			//},
+			//RemoveCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"rm", "-rf /server/app2"},
+			//},
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),

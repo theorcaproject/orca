@@ -651,24 +651,24 @@ func TestPlanner_getGlobalMinNeeds(t *testing.T) {
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
 			MaxDeploymentCount: 10,
-			InstallCommands: []base.OsCommand{
-			{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"ls", "/home"},
-			},
-			{
-				Type: base.FILE_COMMAND,
-				Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-			},
-		},
-			QueryStateCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"wget", "http://localhost:1234/check"},
-		},
-			RemoveCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"rm", "-rf /server/app1"},
-		},
+		//	InstallCommands: []base.OsCommand{
+		//	{
+		//		Type: base.EXEC_COMMAND,
+		//		Command: base.Command{"ls", "/home"},
+		//	},
+		//	{
+		//		Type: base.FILE_COMMAND,
+		//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
+		//	},
+		//},
+		//	QueryStateCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"wget", "http://localhost:1234/check"},
+		//},
+		//	RemoveCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"rm", "-rf /server/app1"},
+		//},
 			Needs: needs.AppNeeds{
 			CpuNeeds: needs.CpuNeeds(11),
 			MemoryNeeds: needs.MemoryNeeds(22),
@@ -702,24 +702,24 @@ func TestPlanner_getGlobalCurrentNeeds(t *testing.T) {
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
 			MaxDeploymentCount: 10,
-			InstallCommands: []base.OsCommand{
-			{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"ls", "/home"},
-			},
-			{
-				Type: base.FILE_COMMAND,
-				Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-			},
-		},
-			QueryStateCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"wget", "http://localhost:1234/check"},
-		},
-			RemoveCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"rm", "-rf /server/app1"},
-		},
+		//	InstallCommands: []base.OsCommand{
+		//	{
+		//		Type: base.EXEC_COMMAND,
+		//		Command: base.Command{"ls", "/home"},
+		//	},
+		//	{
+		//		Type: base.FILE_COMMAND,
+		//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
+		//	},
+		//},
+		//	QueryStateCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"wget", "http://localhost:1234/check"},
+		//},
+		//	RemoveCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"rm", "-rf /server/app1"},
+		//},
 			Needs: needs.AppNeeds{
 			CpuNeeds: needs.CpuNeeds(11),
 			MemoryNeeds: needs.MemoryNeeds(22),

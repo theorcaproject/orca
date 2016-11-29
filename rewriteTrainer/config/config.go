@@ -46,11 +46,12 @@ type AppJsonConfiguration struct {
 	Type base.AppType
 	MinDeploymentCount base.DeploymentCount
 	MaxDeploymentCount base.DeploymentCount
-	InstallCommands []base.OsCommand
-	QueryStateCommand base.OsCommand
-	RemoveCommand base.OsCommand
-	RunCommand base.OsCommand
-	StopCommand base.OsCommand
+	//InstallCommands []base.OsCommand
+	//QueryStateCommand base.OsCommand
+	//RemoveCommand base.OsCommand
+	//RunCommand base.OsCommand
+	//StopCommand base.OsCommand
+	DockerConfig base.DockerConfig
 	Needs needs.AppNeeds
 }
 
@@ -130,6 +131,7 @@ func applyAppsConfig(appsConfs []AppJsonConfiguration) {
 			Version: aConf.Version,
 			MinDeploymentCount: aConf.MinDeploymentCount,
 			MaxDeploymentCount: aConf.MaxDeploymentCount,
+			DockerConfig: aConf.DockerConfig,
 			//InstallCommands: aConf.InstallCommands,
 			//QueryStateCommand: aConf.QueryStateCommand,
 			//RunCommand: aConf.RunCommand,

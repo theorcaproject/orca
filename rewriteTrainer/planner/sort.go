@@ -78,7 +78,7 @@ func sortByAvailableResources() []base.HostId {
 	for i := 0; i < len(hostList); i++ {
 		sorted[i] = hostList[i].Key
 	}
-	PlannerLogger.Debugf("Sorted Hosts %+v", sorted)
+	PlannerLogger.Infof("Sorted Hosts with TRY_TO_REMOVE_HOSTS=%t: %+v", state_configuration.GlobalConfigurationState.Trainer.Policies.TRY_TO_REMOVE_HOSTS, sorted)
 	return sorted
 }
 

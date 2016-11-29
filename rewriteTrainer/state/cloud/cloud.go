@@ -261,9 +261,9 @@ var AvailableInstancesLogger = StateCloudLogger.WithField("type", "AvailableInst
 func (a AvailableInstances) HostHasResourcesForApp (hostId base.HostId, ns needs.AppNeeds) bool{
 	availableInstancesMutex.Lock()
 	res := a[hostId]
-	if int(res.TotalCpuResource - res.UsedCpuResource) > int(ns.CpuNeeds) &&
-		int(res.TotalMemoryResource - res.UsedMemoryResource) > int(ns.MemoryNeeds) &&
-		int(res.TotalNetworkResource - res.UsedNetworkResource) > int(ns.NetworkNeeds) {
+	if int(res.TotalCpuResource - res.UsedCpuResource) >= int(ns.CpuNeeds) &&
+		int(res.TotalMemoryResource - res.UsedMemoryResource) >= int(ns.MemoryNeeds) &&
+		int(res.TotalNetworkResource - res.UsedNetworkResource) >= int(ns.NetworkNeeds) {
 		availableInstancesMutex.Unlock()
 		return true
 	}

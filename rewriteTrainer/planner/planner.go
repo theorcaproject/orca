@@ -503,6 +503,8 @@ func findHostWithResources(ns needs.AppNeeds, app base.AppName, sortedHosts []ba
 		if state_cloud.GlobalAvailableInstances.HostHasResourcesForApp(hostId, ns) {
 			PlannerLogger.Infof("Found suitable host '%s'", hostId)
 			return hostId
+		} else {
+			PlannerLogger.Infof("Host '%s' has insufficient resources foor app %s", hostId, app)
 		}
 	}
 	PlannerLogger.Infof("Found no suitable host which has app '%s' installed. Returning backup host '%s'", app, backUpHost)
@@ -532,6 +534,8 @@ func findHttpHostWithResources(ns needs.AppNeeds, app base.AppName, sortedHosts 
 		if state_cloud.GlobalAvailableInstances.HostHasResourcesForApp(hostId, ns) {
 			PlannerLogger.Infof("Found suitable host '%s'", hostId)
 			return hostId
+		} else {
+			PlannerLogger.Infof("Host '%s' has insufficient resources foor app %s", hostId, app)
 		}
 	}
 	return backUpHost

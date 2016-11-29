@@ -27,24 +27,24 @@ func applySampleConfig() {
 		Type: base.APP_HTTP,
 		MinDeploymentCount: 3,
 		MaxDeploymentCount: 10,
-		InstallCommands: []base.OsCommand{
-			{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"ls", "/home"},
-			},
-			{
-				Type: base.FILE_COMMAND,
-				Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-			},
-		},
-			QueryStateCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"wget", "http://localhost:1234/check"},
-		},
-			RemoveCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"rm", "-rf /server/app1"},
-		},
+		//InstallCommands: []base.OsCommand{
+		//	{
+		//		Type: base.EXEC_COMMAND,
+		//		Command: base.Command{"ls", "/home"},
+		//	},
+		//	{
+		//		Type: base.FILE_COMMAND,
+		//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
+		//	},
+		//},
+		//	QueryStateCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"wget", "http://localhost:1234/check"},
+		//},
+		//	RemoveCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"rm", "-rf /server/app1"},
+		//},
 			Needs: needs.AppNeeds{
 			MemoryNeeds: needs.MemoryNeeds(1),
 			CpuNeeds: needs.CpuNeeds(1),
@@ -58,24 +58,24 @@ func applySampleConfig() {
 		Type: base.APP_HTTP,
 		MinDeploymentCount: 2,
 		MaxDeploymentCount: 10,
-		InstallCommands: []base.OsCommand{
-			{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"ls", "/home"},
-			},
-			{
-				Type: base.FILE_COMMAND,
-				Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-			},
-		},
-			QueryStateCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"wget", "http://localhost:1234/check"},
-		},
-			RemoveCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"rm", "-rf /server/app1"},
-		},
+		//InstallCommands: []base.OsCommand{
+		//	{
+		//		Type: base.EXEC_COMMAND,
+		//		Command: base.Command{"ls", "/home"},
+		//	},
+		//	{
+		//		Type: base.FILE_COMMAND,
+		//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
+		//	},
+		//},
+		//	QueryStateCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"wget", "http://localhost:1234/check"},
+		//},
+		//	RemoveCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"rm", "-rf /server/app1"},
+		//},
 			Needs: needs.AppNeeds{
 			MemoryNeeds: needs.MemoryNeeds(2),
 			CpuNeeds: needs.CpuNeeds(2),
@@ -89,24 +89,24 @@ func applySampleConfig() {
 		Type: base.APP_HTTP,
 		MinDeploymentCount: 4,
 		MaxDeploymentCount: 10,
-		InstallCommands: []base.OsCommand{
-			{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"ls", "/home"},
-			},
-			{
-				Type: base.FILE_COMMAND,
-				Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-			},
-		},
-		QueryStateCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"wget", "http://localhost:1234/check"},
-		},
-		RemoveCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"rm", "-rf /server/app1"},
-		},
+		//InstallCommands: []base.OsCommand{
+		//	{
+		//		Type: base.EXEC_COMMAND,
+		//		Command: base.Command{"ls", "/home"},
+		//	},
+		//	{
+		//		Type: base.FILE_COMMAND,
+		//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
+		//	},
+		//},
+		//QueryStateCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"wget", "http://localhost:1234/check"},
+		//},
+		//RemoveCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"rm", "-rf /server/app1"},
+		//},
 		Needs: needs.AppNeeds{
 			MemoryNeeds: needs.MemoryNeeds(1),
 			CpuNeeds: needs.CpuNeeds(1),
@@ -120,24 +120,24 @@ func applySampleConfig() {
 		Type: base.APP_WORKER,
 		MinDeploymentCount: 1,
 		MaxDeploymentCount: 1,
-		InstallCommands: []base.OsCommand{
-			{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"ls", "/home"},
-			},
-			{
-				Type: base.FILE_COMMAND,
-				Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-			},
-		},
-		QueryStateCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"wget", "http://localhost:1234/check"},
-		},
-		RemoveCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"rm", "-rf /server/app1"},
-		},
+		//InstallCommands: []base.OsCommand{
+		//	{
+		//		Type: base.EXEC_COMMAND,
+		//		Command: base.Command{"ls", "/home"},
+		//	},
+		//	{
+		//		Type: base.FILE_COMMAND,
+		//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
+		//	},
+		//},
+		//QueryStateCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"wget", "http://localhost:1234/check"},
+		//},
+		//RemoveCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"rm", "-rf /server/app1"},
+		//},
 		Needs: needs.AppNeeds{
 			CpuNeeds: needs.CpuNeeds(50),
 			MemoryNeeds: needs.MemoryNeeds(10),
@@ -151,24 +151,24 @@ func applySampleConfig() {
 		Type: base.APP_WORKER,
 		MinDeploymentCount: 1,
 		MaxDeploymentCount: 1,
-		InstallCommands: []base.OsCommand{
-			{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"ls", "/home"},
-			},
-			{
-				Type: base.FILE_COMMAND,
-				Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-			},
-		},
-		QueryStateCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"wget", "http://localhost:1234/check"},
-		},
-		RemoveCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"rm", "-rf /server/app1"},
-		},
+		//InstallCommands: []base.OsCommand{
+		//	{
+		//		Type: base.EXEC_COMMAND,
+		//		Command: base.Command{"ls", "/home"},
+		//	},
+		//	{
+		//		Type: base.FILE_COMMAND,
+		//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
+		//	},
+		//},
+		//QueryStateCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"wget", "http://localhost:1234/check"},
+		//},
+		//RemoveCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"rm", "-rf /server/app1"},
+		//},
 		Needs: needs.AppNeeds{
 			CpuNeeds: needs.CpuNeeds(70),
 			MemoryNeeds: needs.MemoryNeeds(40),
@@ -182,24 +182,24 @@ func applySampleConfig() {
 		Type: base.APP_WORKER,
 		MinDeploymentCount: 5,
 		MaxDeploymentCount: 10,
-		InstallCommands: []base.OsCommand{
-			{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"ls", "/home"},
-			},
-			{
-				Type: base.FILE_COMMAND,
-				Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-			},
-		},
-		QueryStateCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"wget", "http://localhost:1234/check"},
-		},
-		RemoveCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"rm", "-rf /server/app1"},
-		},
+		//InstallCommands: []base.OsCommand{
+		//	{
+		//		Type: base.EXEC_COMMAND,
+		//		Command: base.Command{"ls", "/home"},
+		//	},
+		//	{
+		//		Type: base.FILE_COMMAND,
+		//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
+		//	},
+		//},
+		//QueryStateCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"wget", "http://localhost:1234/check"},
+		//},
+		//RemoveCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"rm", "-rf /server/app1"},
+		//},
 		Needs: needs.AppNeeds{
 			CpuNeeds: needs.CpuNeeds(23),
 			MemoryNeeds: needs.MemoryNeeds(23),
@@ -213,24 +213,24 @@ func applySampleConfig() {
 		Type: base.APP_WORKER,
 		MinDeploymentCount: 100,
 		MaxDeploymentCount: 200,
-		InstallCommands: []base.OsCommand{
-			{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"ls", "/home"},
-			},
-			{
-				Type: base.FILE_COMMAND,
-				Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-			},
-		},
-		QueryStateCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"wget", "http://localhost:1234/check"},
-		},
-		RemoveCommand: base.OsCommand{
-			Type: base.EXEC_COMMAND,
-			Command: base.Command{"rm", "-rf /server/app1"},
-		},
+		//InstallCommands: []base.OsCommand{
+		//	{
+		//		Type: base.EXEC_COMMAND,
+		//		Command: base.Command{"ls", "/home"},
+		//	},
+		//	{
+		//		Type: base.FILE_COMMAND,
+		//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
+		//	},
+		//},
+		//QueryStateCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"wget", "http://localhost:1234/check"},
+		//},
+		//RemoveCommand: base.OsCommand{
+		//	Type: base.EXEC_COMMAND,
+		//	Command: base.Command{"rm", "-rf /server/app1"},
+		//},
 		Needs: needs.AppNeeds{
 			CpuNeeds: needs.CpuNeeds(7),
 			MemoryNeeds: needs.MemoryNeeds(2),

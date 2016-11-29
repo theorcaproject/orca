@@ -20,7 +20,7 @@ var trackerTicker *time.Ticker
 
 func Start() {
 	SchedulerLogger.Infof("Scheduler starting")
-	ticker := time.NewTicker(time.Second * 600)
+	ticker := time.NewTicker(time.Second * 60)
 	trackerTicker = time.NewTicker(time.Second * 10)
 	go func () {
 		for {
@@ -40,6 +40,10 @@ func Stop() {
 	ticker.Stop()
 	trackerTicker.Stop()
 	SchedulerLogger.Infof("Scheduler stopped")
+}
+
+func TriggerRun() {
+	run()
 }
 
 func run() {
@@ -97,6 +101,8 @@ func run() {
 	fmt.Println("")
 	fmt.Printf("Planned Layout: %+v", state_cloud.GlobalCloudLayout)
 	fmt.Println("")
+	fmt.Println("")
+	fmt.Printf("Tracker: %+v", tracker.GlobalHostTracker)
 	fmt.Println("")
 
 	fmt.Println(".........")

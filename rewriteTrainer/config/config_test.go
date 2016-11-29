@@ -42,24 +42,24 @@ func TestConfig_ApplyToState(t *testing.T) {
 			Name: "app1",
 			Version: "0.1",
 			Type: base.APP_WORKER,
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ls", "/home"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-				},
-			},
-			QueryStateCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"wget", "http://localhost:1234/check"},
-			},
-			RemoveCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"rm", "-rf /server/app1"},
-			},
+			//InstallCommands: []base.OsCommand{
+			//	{
+			//		Type: base.EXEC_COMMAND,
+			//		Command: base.Command{"ls", "/home"},
+			//	},
+			//	{
+			//		Type: base.FILE_COMMAND,
+			//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
+			//	},
+			//},
+			//QueryStateCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"wget", "http://localhost:1234/check"},
+			//},
+			//RemoveCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"rm", "-rf /server/app1"},
+			//},
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
@@ -70,24 +70,24 @@ func TestConfig_ApplyToState(t *testing.T) {
 			Name: "app11",
 			Version: "0.1",
 			Type: base.APP_WORKER,
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ls", "/home"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/server/app11/app11.conf", "somefilecontent as a string"},
-				},
-			},
-			QueryStateCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"wget", "http://localhost:1235/check"},
-			},
-			RemoveCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"rm", "-rf /server/app11"},
-			},
+			//InstallCommands: []base.OsCommand{
+			//	{
+			//		Type: base.EXEC_COMMAND,
+			//		Command: base.Command{"ls", "/home"},
+			//	},
+			//	{
+			//		Type: base.FILE_COMMAND,
+			//		Command: base.Command{"/server/app11/app11.conf", "somefilecontent as a string"},
+			//	},
+			//},
+			//QueryStateCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"wget", "http://localhost:1235/check"},
+			//},
+			//RemoveCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"rm", "-rf /server/app11"},
+			//},
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
@@ -98,24 +98,24 @@ func TestConfig_ApplyToState(t *testing.T) {
 			Name: "app2",
 			Version: "0.2",
 			Type: base.APP_WORKER,
-			InstallCommands: []base.OsCommand{
-				{
-					Type: base.EXEC_COMMAND,
-					Command: base.Command{"ls", "/home"},
-				},
-				{
-					Type: base.FILE_COMMAND,
-					Command: base.Command{"/server/app2/app2.conf", "somefilecontent as a string"},
-				},
-			},
-			QueryStateCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"wget", "http://localhost:1236/check"},
-			},
-			RemoveCommand: base.OsCommand{
-				Type: base.EXEC_COMMAND,
-				Command: base.Command{"rm", "-rf /server/app2"},
-			},
+			//InstallCommands: []base.OsCommand{
+			//	{
+			//		Type: base.EXEC_COMMAND,
+			//		Command: base.Command{"ls", "/home"},
+			//	},
+			//	{
+			//		Type: base.FILE_COMMAND,
+			//		Command: base.Command{"/server/app2/app2.conf", "somefilecontent as a string"},
+			//	},
+			//},
+			//QueryStateCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"wget", "http://localhost:1236/check"},
+			//},
+			//RemoveCommand: base.OsCommand{
+			//	Type: base.EXEC_COMMAND,
+			//	Command: base.Command{"rm", "-rf /server/app2"},
+			//},
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
