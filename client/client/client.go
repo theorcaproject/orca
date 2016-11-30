@@ -256,7 +256,7 @@ func generateCombinedMetrics() base.AppMetrics {
 	for id, metricsbyTime := range metrics {
 		app := AppsState.Get(id)
 		for time, metrics := range metricsbyTime {
-			combined.Add(app.Name, app.Version, time, base.AppStats{CpuUsage: metrics.CpuUsage, MemoryUsage: metrics.MemoryUsage, NetworkUsage: metrics.NetworkUsage, ResponseTime: metrics.ResponseTime})
+			combined.Add(app.Name, app.Version, time, base.AppStats{CpuUsage: metrics.CpuUsage, MemoryUsage: metrics.MemoryUsage, NetworkUsage: metrics.NetworkUsage, ResponsePerformance: metrics.ResponsePerformance})
 		}
 	}
 	AppsMetricsById.Clear()

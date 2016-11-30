@@ -54,7 +54,7 @@ func (c *Client) AppMetrics(appId base.AppId, appConf base.AppConfiguration, app
 	net, _ := strconv.Atoi(arr[2])
 	resp, _ := strconv.Atoi(arr[3])
 	metrics.Add(appId, now, base.AppStats{
-		CpuUsage: base.Usage(cpu), MemoryUsage: base.Usage(mem), NetworkUsage: base.Usage(net), ResponseTime: resp,
+		CpuUsage: base.Usage(cpu), MemoryUsage: base.Usage(mem), NetworkUsage: base.Usage(net), ResponsePerformance: uint64(resp),
 	})
 	return true
 }

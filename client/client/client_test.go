@@ -536,7 +536,7 @@ func TestAppMetrics(t *testing.T) {
 		t.Error()
 	}
 	for _, met := range AppsMetricsById["app_2"] {
-		if met.CpuUsage != 10 || met.MemoryUsage != 20 || met.NetworkUsage != 30 || met.ResponseTime != 2 {
+		if met.CpuUsage != 10 || met.MemoryUsage != 20 || met.NetworkUsage != 30 || met.ResponsePerformance != 2 {
 			t.Error(met)
 		}
 	}
