@@ -109,7 +109,7 @@ func checkAppUpdate(appObj base.AppInfo, hostId base.HostId, queuedState planner
 	if appObj.Status == base.STATUS_RUNNING {
 		if appObj.Version == queuedState.Version.Version {
 			ResponderLogger.Infof("Update of App '%s' - '%s' on host '%s' successful", appObj.Name, appObj.Version, hostId)
-			handleSuccessfulUpdate(appObj.Name, appObj.Version)
+			handleSuccessfulUpdate(hostId, appObj.Name, appObj.Version)
 		} else {
 			ResponderLogger.Warnf("Update of App '%s' - '%s' on host '%s' rolled back to version %s", appObj.Name, queuedState.Version.Version, hostId, appObj.Version)
 			handleRollback(hostId, appObj.Name, queuedState.Version.Version)
@@ -130,9 +130,9 @@ func checkAppUpdate(appObj base.AppInfo, hostId base.HostId, queuedState planner
 	}
 }
 
-//TODO ADD AS STABLE VERSION remove from queue for host
-func handleSuccessfulUpdate(appName base.AppName, version base.Version) {
+func handleSuccessfulUpdate(hostId base.HostId, appName base.AppName, version base.Version) {
 	tracker.GlobalAppsStatusTracker.Update("", appName, version, tracker.APP_EVENT_SUCCESSFUL_UPDATE)
+	planner.Queue.Remove(hostId, appName)
 }
 
 
@@ -143,6 +143,7 @@ func handleRollback(hostId base.HostId, appName base.AppName, failedVersion base
 	fmt.Println(failedVersion)
 	fmt.Println("ROLLBACK")
 	tracker.GlobalAppsStatusTracker.Update(hostId, appName, failedVersion, tracker.APP_EVENT_ROLLBACK)
+	planner.Queue.SetState(hostId, appName, planner.STATE_SUCCESS)
 	planner.Queue.RemoveApp(appName, failedVersion)
 }
 

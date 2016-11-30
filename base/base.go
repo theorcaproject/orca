@@ -43,7 +43,7 @@ type OsCommand struct {
     Command Command
 }
 
-type Usage int
+type Usage uint64
 
 type HostStats struct {
     MemoryUsage Usage
@@ -55,7 +55,7 @@ type AppStats struct {
     MemoryUsage Usage
     CpuUsage Usage
     NetworkUsage Usage
-    ResponseTime int
+    ResponsePerformance uint64
 }
 
 type HostInfo struct {

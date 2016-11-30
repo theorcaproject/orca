@@ -24,7 +24,7 @@ type Client interface {
 	Init()
 
 	InstallApp(base.AppConfiguration, *types.AppsState, *types.Configuration) bool
-	RunApp(base.AppConfiguration, *types.AppsState, *types.Configuration) bool
+	RunApp(base.AppId, base.AppConfiguration, *types.AppsState, *types.Configuration) bool
 	QueryApp(base.AppId, base.AppConfiguration, *types.AppsState, *types.Configuration) bool
 	StopApp(base.AppId, base.AppConfiguration, *types.AppsState, *types.Configuration) bool
 	DeleteApp(base.AppConfiguration, *types.AppsState, *types.Configuration) bool
@@ -172,7 +172,7 @@ func RunApp(conf base.AppConfiguration) bool {
 	info := base.AppInfo{Name: conf.Name, Type: conf.Type, Version: conf.Version, Id: id, Status: base.STATUS_DEPLOYING}
 	AppsConfiguration.Add(id, conf)
 	AppsState.Add(id, info)
-	res := cli.RunApp(conf, &AppsState, &Configuration)
+	res := cli.RunApp(id, conf, &AppsState, &Configuration)
 	if !res {
 		AppsState.Set(id, base.STATUS_DEAD)
 	}

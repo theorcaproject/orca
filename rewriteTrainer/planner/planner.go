@@ -124,11 +124,11 @@ func (p PlannerQueue) Remove(hostId base.HostId, appName base.AppName) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	if _, exists := p.Queue[hostId]; exists {
-		if val, exists := p.Queue[hostId][appName]; exists {
-			if val.State == STATE_SUCCESS || val.State == STATE_FAIL {
-				QueueLogger.Infof("Removing from host '%s' app '%s'", hostId, appName)
+		if _, exists := p.Queue[hostId][appName]; exists {
+			//if val.State == STATE_SUCCESS || val.State == STATE_FAIL {
+				QueueLogger.Infof("Removing QueueElement host '%s' app '%s'", hostId, appName)
 				delete(p.Queue[hostId], appName)
-			}
+			//}
 		}
 	}
 }

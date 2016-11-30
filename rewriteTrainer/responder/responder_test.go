@@ -205,6 +205,7 @@ func TestResponder_checkAppUpdate(t *testing.T) {
 
 	// app update was successful
 
+	planner.Queue.SetState("host1", "app1", planner.STATE_APPLYING)
 	updated := before2["app1"]
 	updated.Version.Version = "1.1"
 	checkAppUpdate(base.AppInfo{Name: "app1", Version:"1.1", Status:base.STATUS_RUNNING}, "host1", updated)
@@ -218,6 +219,13 @@ func TestResponder_checkAppUpdate(t *testing.T) {
 	if tracker.GlobalAppsStatusTracker["app1"]["1.1"].Rating != tracker.RATING_STABLE {
 		t.Error(tracker.GlobalAppsStatusTracker["app1"]["1.1"])
 	}
+	if !planner.Queue.Empty("host1") {
+		t.Error(planner.Queue)
+	}
+
+	planner.Queue.Add("host1", "app1", state_cloud.AppsVersion{Version: "1.0", DeploymentCount: 1})
+	planner.Queue.SetState("host1", "app1", planner.STATE_APPLYING)
+	before2, _ = planner.Queue.Get("host1")
 
 	// app is dead - the update crashed the app and no rollback
 

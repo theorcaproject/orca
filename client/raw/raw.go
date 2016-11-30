@@ -26,7 +26,7 @@ func (c *Client) InstallApp(appConf base.AppConfiguration, appsState *types.Apps
 	return false
 }
 
-func (c *Client) RunApp(appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
+func (c *Client) RunApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
 	return strings.Contains(string(appConf.Name), "fail")
 }
 
