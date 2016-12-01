@@ -18,6 +18,7 @@ func before () AWSProvider {
 		AWSConfiguration: AWSConfiguration{
 			Region: "us-west-2",
 			AMI: "unknown",
+			SecurityGroupId: "sg-cdf3cfb4",
 			InstanceTypes: []InstanceType{},
 			InstanceCost: make(map[InstanceType]Cost),
 			InstanceResources: make(map[InstanceType]state_cloud.InstanceResources),

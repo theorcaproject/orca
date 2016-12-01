@@ -52,6 +52,7 @@ type AWSConfiguration struct {
 	Secret string
 	Region string
 	AMI string
+	SecurityGroupId string
 	InstanceTypes []InstanceType
 	InstanceCost map[InstanceType]Cost
 	InstanceResources map[InstanceType]state_cloud.InstanceResources
@@ -105,6 +106,7 @@ func (a *AWSProvider) SpawnInstance(ty InstanceType) base.HostId {
 		InstanceType: aws.String(string(ty)),
 		MinCount:     aws.Int64(1),
 		MaxCount:     aws.Int64(1),
+		SecurityGroupIds: aws.StringSlice([]string{string(CurrentProviderConfig.AWSConfiguration.SecurityGroupId)}),
 	})
 
 	if err != nil {
