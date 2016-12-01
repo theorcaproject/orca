@@ -7,18 +7,28 @@ import (
 	"github.com/Sirupsen/logrus"
 	"io"
 	"time"
+	"io/ioutil"
 )
+
+const SSH_PEM_PATH = "/orca/config/orca_test_us.pem"
 
 func Connect(sshUser string, hostAndPort string) (*ssh.Client, string) {
 	addr := sshUser + "@" + hostAndPort
 	var SSHLogger = log.LoggerWithField(log.LoggerWithField(log.AuditLogger, "Type", "ssh"), "target", addr)
 
+	pemBytes, err := ioutil.ReadFile(SSH_PEM_PATH)
+	if err != nil {
+		SSHLogger.Errorf("PEM file read failed: %s", err)
+	}
+	signer, err := ssh.ParsePrivateKey(pemBytes)
+	if err != nil {
+		SSHLogger.Errorf("PEM file parse failed: %s", err)
+	}
+
 	SSHLogger.Info("Connecting...")
 	sshConfig := &ssh.ClientConfig{
 		User: sshUser,
-		Auth: []ssh.AuthMethod{
-			ssh.Password("orca"),
-		},
+		Auth: []ssh.AuthMethod{ssh.PublicKeys(signer)},
 		Timeout: time.Second * 3,
 	}
 
