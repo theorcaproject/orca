@@ -1762,7 +1762,7 @@ func TestPlanner_MultiplePlanningSteps_hostKilledByEventAndNewHostSpawned(t *tes
 
 	Plan()
 
-	if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["newReplacementHost"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app1"].DeploymentCount != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app2"].DeploymentCount != 2 {
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["newReplacementHost"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app1"].DeploymentCount != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app2"].DeploymentCount != 1 {
 		t.Errorf("%+v", state_cloud.GlobalCloudLayout.Desired.Layout)
 	}
 }

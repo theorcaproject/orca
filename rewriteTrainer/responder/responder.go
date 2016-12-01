@@ -19,6 +19,7 @@ func GetConfigForHost(hostId base.HostId) (base.PushConfiguration, error) {
 	ResponderLogger.Infof("Getting config for host %s", hostId)
 	appName, elem, err := getQueueElement(hostId)
 	if err == nil {
+		ResponderLogger.Infof("Got QueueElement for host %s: app %s", hostId, appName)
 		config, err := state_configuration.GlobalConfigurationState.GetApp(appName, elem.Version.Version)
 		if err != nil {
 			ResponderLogger.Warnf("Getting config for host %s app %s failed %s", hostId, appName, err)
@@ -50,7 +51,7 @@ func getQueueElement(hostId base.HostId) (base.AppName, planner.AppsUpdateState,
 			}
 		}
 	}
-	ResponderLogger.Infof("Get queue element for host '%s' failed", hostId)
+	ResponderLogger.Infof("Get queue element for host '%s' failed: %s", hostId, err)
 	return "", planner.AppsUpdateState{}, errors.New("No element for host ")
 }
 
@@ -63,6 +64,17 @@ func CheckAppState(hostInfo base.HostInfo) {
 		handleEmptyHost(hostInfo)
 		return
 	}
+
+	if !checkScaling(hostInfo, queued) {
+		ResponderLogger.Infof("Host %s did not scale yet. Performing simple checks", hostInfo.HostId)
+		for _, appObj := range hostInfo.Apps {
+			if _, exists := queued[appObj.Name]; exists {
+				simpleAppCheck(appObj, hostInfo.HostId)
+			}
+		}
+		return
+	}
+
 	for _, appObj := range hostInfo.Apps {
 		if queuedState, exists := queued[appObj.Name]; exists { //the app is queued for an update
 			if queuedState.State == planner.STATE_QUEUED { //the update is waiting for other updates, perform simple check
@@ -74,6 +86,27 @@ func CheckAppState(hostInfo base.HostInfo) {
 			simpleAppCheck(appObj, hostInfo.HostId)
 		}
 	}
+}
+
+func checkScaling(hostInfo base.HostInfo, queued map[base.AppName]planner.AppsUpdateState) bool{
+	appsCount := make(map[base.AppName]int)
+	if len(queued) > 0 {
+		for _, app := range hostInfo.Apps {
+			appsCount[app.Name]++
+		}
+		ResponderLogger.Infof("Check scaling on host %s. Queued: %+v", hostInfo.HostId, queued)
+		for appName, count := range appsCount {
+			if queued[appName].State != planner.STATE_QUEUED && queued[appName].State != planner.UpdateState("") {
+				if int(queued[appName].Version.DeploymentCount) != count {
+					ResponderLogger.Warnf("Scaling up of app %s:%s on host %s is not done. Should be %d but is %d", appName, queued[appName].Version.Version, hostInfo.HostId, queued[appName].Version.DeploymentCount, count)
+					return false
+				} else {
+					ResponderLogger.Infof("Scaling up of app %s:%s on host %s successful", appName, queued[appName].Version.Version, hostInfo.HostId)
+				}
+			}
+		}
+	}
+	return true
 }
 
 

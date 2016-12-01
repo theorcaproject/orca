@@ -7,6 +7,8 @@ import (
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/needs"
+	"os"
+	"gatoor/orca/rewriteTrainer/cloud"
 )
 
 
@@ -142,4 +144,30 @@ func TestConfig_ApplyToState(t *testing.T) {
 		t.Error("init state_needs wrong len")
 	}
 
+}
+
+
+func Test_applyAwsConfiguration(t *testing.T) {
+	file, err := os.Open("/orca/config/trainer/aws_cloud_provider.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	j := JsonConfiguration{}
+	loadConfigFromFile(file, &j.CloudProvider)
+	file.Close()
+	applyCloudProviderConfiguration(j.CloudProvider)
+	cloud.Init()
+
+	if cloud.CurrentProviderConfig.Type != "AWS" {
+		t.Error(cloud.CurrentProviderConfig)
+	}
+
+	awsProvider := cloud.CurrentProvider.(*cloud.AWSProvider)
+	if awsProvider.Type != "AWS" {
+		t.Error(cloud.CurrentProvider)
+	}
+
+	if cloud.CurrentProviderConfig.AWSConfiguration.InstanceCost["t2.nano"] != 65 {
+		t.Error(cloud.CurrentProviderConfig)
+	}
 }

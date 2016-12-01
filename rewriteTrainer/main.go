@@ -14,6 +14,12 @@ import (
 )
 
 
+var (
+	TRAINER_CONFIGURATION_FILE = "/orca/config/trainer/trainer.json"
+	APPS_CONFIGURATION_FILE = "/orca/config/trainer/apps.json"
+	AVAILABLE_INSTANCES_CONFIGURATION_FILE = "/orca/config/trainer/available_instances.json"
+	CLOUD_PROVIDER_CONFIGURATION_FILE = "/orca/config/trainer/cloud_provider.json"
+)
 
 func main() {
 	Logger.InitLogger.Info("Starting trainer...")
@@ -35,7 +41,8 @@ func initState() {
 
 func initConfig() {
 	var baseConfiguration config.JsonConfiguration
-	baseConfiguration.Load()
+	baseConfiguration.Load(TRAINER_CONFIGURATION_FILE, APPS_CONFIGURATION_FILE, AVAILABLE_INSTANCES_CONFIGURATION_FILE, CLOUD_PROVIDER_CONFIGURATION_FILE)
+	baseConfiguration.Check()
 	baseConfiguration.ApplyToState()
 }
 

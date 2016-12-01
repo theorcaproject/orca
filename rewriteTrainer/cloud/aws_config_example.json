@@ -1,0 +1,14 @@
+{
+  "Type": "AWS",
+  "MinInstances": 2,
+  "MaxInstances": 4,
+  "AWSConfiguration": {
+    "Region": "us-west-2",
+    "AMI": "ami-3df75e5d",
+    "InstanceTypes": ["t2.nano", "t2.micro"],
+    "InstanceCost": {"t2.nano": 65, "t2.micro": 130},
+    "InstanceResources": {"t2.nano": {"TotalCpuResource": 1000, "TotalMemoryResource": 500, "TotalNetworkResource": 1000}, "t2.micro": {"TotalCpuResource": 1000,"TotalMemoryResource": 1000, "TotalNetworkResource": 1000}},
+    "InstanceSafety": {"t2.nano": true, "t2.micro": false},
+    "SuitableInstanceSafetyFactor": 2
+  }
+}

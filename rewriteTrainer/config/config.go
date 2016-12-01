@@ -14,12 +14,6 @@ import (
 	"gatoor/orca/rewriteTrainer/needs"
 )
 
-const (
-	TRAINER_CONFIGURATION_FILE = "/orca/config/trainer/trainer.json"
-	APPS_CONFIGURATION_FILE = "/orca/config/trainer/apps.json"
-	AVAILABLE_INSTANCES_CONFIGURATION_FILE = "/orca/config/trainer/available_instances.json"
-	CLOUD_PROVIDER_CONFIGURATION_FILE = "/orca/config/trainer/cloud_provider.json"
-)
 
 type JsonConfiguration struct {
 	Trainer TrainerJsonConfiguration
@@ -78,12 +72,17 @@ func loadConfigFromFile(file *os.File, conf interface{}) {
 	}
 }
 
-func (j *JsonConfiguration) Load() {
+func (j *JsonConfiguration) Check() {
+
+
+}
+
+func (j *JsonConfiguration) Load(trainerConfigPath string, appConfigPath string, availableInstancesPath string, cloudProviderConfigPath string) {
 	configFiles := make(map[string]interface{})
-	configFiles[TRAINER_CONFIGURATION_FILE] = &j.Trainer
-	configFiles[APPS_CONFIGURATION_FILE] = &j.Apps
-	configFiles[AVAILABLE_INSTANCES_CONFIGURATION_FILE] = &j.AvailableInstances
-	configFiles[CLOUD_PROVIDER_CONFIGURATION_FILE] = &j.CloudProvider
+	configFiles[trainerConfigPath] = &j.Trainer
+	configFiles[appConfigPath] = &j.Apps
+	configFiles[availableInstancesPath] = &j.AvailableInstances
+	configFiles[cloudProviderConfigPath] = &j.CloudProvider
 	for key, interf := range configFiles {
 		Logger.InitLogger.Infof("Loading config file from %s", key)
 		file, err := os.Open(key)
@@ -117,10 +116,9 @@ func applyAvailableInstances(instances []base.HostId) {
 func applyCloudProviderConfiguration(conf cloud.ProviderConfiguration) {
 	Logger.InitLogger.Infof("Applying CloudProvider config: %+v", conf)
 	cloud.CurrentProviderConfig.Type = conf.Type
-	cloud.CurrentProviderConfig.AllowedInstanceTypes = conf.AllowedInstanceTypes
 	cloud.CurrentProviderConfig.MaxInstances = conf.MaxInstances
 	cloud.CurrentProviderConfig.MinInstances = conf.MinInstances
-	cloud.CurrentProviderConfig.FundamentalInstanceType = conf.FundamentalInstanceType
+	cloud.CurrentProviderConfig.AWSConfiguration = conf.AWSConfiguration
 }
 
 func applyAppsConfig(appsConfs []AppJsonConfiguration) {

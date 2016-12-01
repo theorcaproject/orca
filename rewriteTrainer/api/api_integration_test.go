@@ -470,6 +470,9 @@ func TestApi_doHandlePush_AppStillUpdating(t *testing.T) {
 	if err != nil {
 		t.Error(conf)
 	}
+	if conf.DeploymentCount != 1 || conf.AppConfiguration.Name != "httpApp_1" {
+		t.Error(conf)
+	}
 
 	//app is not rated yet:
 	tA := tracker.GlobalAppsStatusTracker["httpApp_1"]["http_1.1"]
@@ -532,7 +535,7 @@ func TestApi_doHandlePush_AppUpdate(t *testing.T) {
 	doHandlePush(info, stats)
 
 	conf, err := responder.GetConfigForHost("host1")
-	if err != nil {
+	if err == nil {
 		t.Error(conf)
 	}
 
