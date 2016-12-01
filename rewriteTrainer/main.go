@@ -11,8 +11,11 @@ import (
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/scheduler"
 	"gatoor/orca/rewriteTrainer/planner"
+	"time"
 )
 
+
+const CHECKIN_WAIT_TIME = 5
 
 var (
 	TRAINER_CONFIGURATION_FILE = "/orca/config/trainer/trainer.json"
@@ -27,10 +30,21 @@ func main() {
 	initConfig()
 	cloud.Init()
 	db.Init("")
+	initApi()
+	waitForCheckin()
 	scheduler.Start()
 	planner.InitialPlan()
-	initApi()
 	Logger.InitLogger.Info("Trainer started")
+	ticker := time.NewTicker(time.Second * 60)
+	for {
+		<- ticker.C
+	}
+}
+
+func waitForCheckin() {
+	Logger.InitLogger.Infof("Waiting %ds for existsing clients to check in", CHECKIN_WAIT_TIME)
+	time.Sleep(time.Duration(CHECKIN_WAIT_TIME * time.Second))
+	Logger.InitLogger.Info("Done waiting")
 }
 
 func initState() {

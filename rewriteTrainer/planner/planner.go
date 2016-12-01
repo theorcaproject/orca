@@ -381,7 +381,7 @@ func handleMissingAssign() {
 	PlannerLogger.Error("HANDLE MISSING ASSIGN NOT IMPLEMENTED -- TODO call CloudProvider to spawn instances")
 	PlannerLogger.Error("HANDLE MISSING ASSIGN NOT IMPLEMENTED -- TODO call CloudProvider to spawn instances")
 	PlannerLogger.Error("HANDLE MISSING ASSIGN NOT IMPLEMENTED -- TODO call CloudProvider to spawn instances")
-	cloud.CurrentProvider.SpawnInstance("m1.xlarge")
+	//cloud.CurrentProvider.SpawnInstance("m1.xlarge")
 	PlannerLogger.Infof("handleMissingAssign complete")
 }
 

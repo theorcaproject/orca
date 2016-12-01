@@ -33,10 +33,12 @@ func (api Api) Init () {
 
 	http.Handle("/", r)
 
-	err := http.ListenAndServe(fmt.Sprintf(":%d", state_configuration.GlobalConfigurationState.Trainer.Port), nil)
-	if err != nil {
-		ApiLogger.Fatalf("Api failed to start - %s", err)
-	}
+	go func () {
+		err := http.ListenAndServe(fmt.Sprintf(":%d", state_configuration.GlobalConfigurationState.Trainer.Port), nil)
+		if err != nil {
+			ApiLogger.Fatalf("Api failed to start - %s", err)
+		}
+	}()
 }
 
 func returnJson(w http.ResponseWriter, obj interface{}) {
