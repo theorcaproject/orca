@@ -13,9 +13,19 @@ import (
 
 func before () AWSProvider {
 	aws := AWSProvider{}
+	CurrentProviderConfig = ProviderConfiguration{
+		Type: PROVIDER_AWS, MinInstances: 1, MaxInstances: 3,
+		AWSConfiguration: AWSConfiguration{
+			Region: "us-west-2",
+			AMI: "unknown",
+			InstanceTypes: []InstanceType{},
+			InstanceCost: make(map[InstanceType]Cost),
+			InstanceResources: make(map[InstanceType]state_cloud.InstanceResources),
+			InstanceSafety: make(map[InstanceType]SafeInstance),
+			SuitableInstanceSafetyFactor: 2.0,
+		},
+	}
 	aws.Init()
-	aws.Config.Region = "us-west-2" //Oregon
-	aws.Config.AMI = "unknown"
 	return aws
 }
 
@@ -39,7 +49,7 @@ func TestAWSProvider_SpawnInstance_TerminateInstance(t *testing.T) {
 		t.Error()
 	}
 
-	aws.Config.AMI = "ami-3df75e5d"
+	CurrentProviderConfig.AWSConfiguration.AMI = "ami-3df75e5d"
 
 	if aws.SpawnInstance("xyz") != "" {
 		t.Error()
@@ -133,19 +143,19 @@ func TestAWSProvider_SpawnInstance_TerminateInstance(t *testing.T) {
 func TestAWSProvider_SuitableInstanceTypes(t *testing.T) {
 	aws := before()
 
-	aws.Config.InstanceTypes = []InstanceType{"i1", "i10", "i20", "i100", "i50"}
-	aws.Config.SuitableInstanceSafetyFactor = 2.0
-	aws.Config.InstanceResources["i1"] = state_cloud.InstanceResources{TotalCpuResource: 1, TotalMemoryResource: 1, TotalNetworkResource: 1}
-	aws.Config.InstanceResources["i10"] = state_cloud.InstanceResources{TotalCpuResource: 10, TotalMemoryResource: 10, TotalNetworkResource: 10}
-	aws.Config.InstanceResources["i20"] = state_cloud.InstanceResources{TotalCpuResource: 20, TotalMemoryResource: 20, TotalNetworkResource: 20}
-	aws.Config.InstanceResources["i50"] = state_cloud.InstanceResources{TotalCpuResource: 50, TotalMemoryResource: 50, TotalNetworkResource: 50}
-	aws.Config.InstanceResources["i100"] = state_cloud.InstanceResources{TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100}
+	CurrentProviderConfig.AWSConfiguration.InstanceTypes = []InstanceType{"i1", "i10", "i20", "i100", "i50"}
+	CurrentProviderConfig.AWSConfiguration.SuitableInstanceSafetyFactor = 2.0
+	CurrentProviderConfig.AWSConfiguration.InstanceResources["i1"] = state_cloud.InstanceResources{TotalCpuResource: 1, TotalMemoryResource: 1, TotalNetworkResource: 1}
+	CurrentProviderConfig.AWSConfiguration.InstanceResources["i10"] = state_cloud.InstanceResources{TotalCpuResource: 10, TotalMemoryResource: 10, TotalNetworkResource: 10}
+	CurrentProviderConfig.AWSConfiguration.InstanceResources["i20"] = state_cloud.InstanceResources{TotalCpuResource: 20, TotalMemoryResource: 20, TotalNetworkResource: 20}
+	CurrentProviderConfig.AWSConfiguration.InstanceResources["i50"] = state_cloud.InstanceResources{TotalCpuResource: 50, TotalMemoryResource: 50, TotalNetworkResource: 50}
+	CurrentProviderConfig.AWSConfiguration.InstanceResources["i100"] = state_cloud.InstanceResources{TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100}
 
-	aws.Config.InstanceCost["i1"] = 1
-	aws.Config.InstanceCost["i10"] = 10
-	aws.Config.InstanceCost["i20"] = 20
-	aws.Config.InstanceCost["i50"] = 5
-	aws.Config.InstanceCost["i100"] = 100
+	CurrentProviderConfig.AWSConfiguration.InstanceCost["i1"] = 1
+	CurrentProviderConfig.AWSConfiguration.InstanceCost["i10"] = 10
+	CurrentProviderConfig.AWSConfiguration.InstanceCost["i20"] = 20
+	CurrentProviderConfig.AWSConfiguration.InstanceCost["i50"] = 5
+	CurrentProviderConfig.AWSConfiguration.InstanceCost["i100"] = 100
 
 	instances := aws.SuitableInstanceTypes(state_cloud.InstanceResources{TotalCpuResource: 10, TotalMemoryResource: 10, TotalNetworkResource: 10})
 

@@ -44,7 +44,6 @@ func (s SpawnLog) Remove(hostId base.HostId) {
 
 type AWSProvider struct {
 	Type ProviderType
-	Config AWSConfiguration
 	SpawnLog SpawnLog
 }
 
@@ -61,18 +60,18 @@ type AWSConfiguration struct {
 }
 
 func (a *AWSProvider) CheckCredentials() bool {
-	if a.Config.Key == "" || a.Config.Secret == "" {
+	if CurrentProviderConfig.AWSConfiguration.Key == "" || CurrentProviderConfig.AWSConfiguration.Secret == "" {
 		AWSLogger.Errorf("No AWS Credentials set")
 		return false
 	}
-	AWSLogger.Infof("Checking AwsCredentials: Key='%s' Secret='%s...'", a.Config.Key, a.Config.Secret[:4])
+	AWSLogger.Infof("Checking AwsCredentials: Key='%s' Secret='%s...'", CurrentProviderConfig.AWSConfiguration.Key, CurrentProviderConfig.AWSConfiguration.Secret[:4])
 
 	sess, err := session.NewSession()
 	if err != nil {
 		AWSLogger.Errorf("AwsCredentials fail: %s", err)
 		return false
 	}
-	svc := ec2.New(sess, &aws.Config{Region: aws.String(a.Config.Region)})
+	svc := ec2.New(sess, &aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)})
 
 	_, err = svc.DescribeInstances(nil)
 	if err != nil {
@@ -85,24 +84,24 @@ func (a *AWSProvider) CheckCredentials() bool {
 
 func (a *AWSProvider) Init() {
 	a.Type = PROVIDER_AWS
-	a.Config.InstanceTypes = []InstanceType{}
-	a.Config.InstanceResources = make(map[InstanceType]state_cloud.InstanceResources)
-	a.Config.InstanceSafety = make(map[InstanceType]SafeInstance)
-	a.Config.InstanceCost = make(map[InstanceType]Cost)
-	a.Config.Key = os.Getenv("AWS_ACCESS_KEY_ID")
-	a.Config.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
-	if a.Config.Key == "" || a.Config.Secret == "" {
+	//CurrentProviderConfig.AWSConfiguration.InstanceTypes = []InstanceType{}
+	//CurrentProviderConfig.AWSConfiguration.InstanceResources = make(map[InstanceType]state_cloud.InstanceResources)
+	//CurrentProviderConfig.AWSConfiguration.InstanceSafety = make(map[InstanceType]SafeInstance)
+	//CurrentProviderConfig.AWSConfiguration.InstanceCost = make(map[InstanceType]Cost)
+	CurrentProviderConfig.AWSConfiguration.Key = os.Getenv("AWS_ACCESS_KEY_ID")
+	CurrentProviderConfig.AWSConfiguration.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
+	if CurrentProviderConfig.AWSConfiguration.Key == "" || CurrentProviderConfig.AWSConfiguration.Secret == "" {
 		AWSLogger.Errorf("Missing AWS credential environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY")
 	}
 }
 
 func (a *AWSProvider) SpawnInstance(ty InstanceType) base.HostId {
-	AWSLogger.Infof("Trying to spawn a single instance of type '%s'", ty)
+	AWSLogger.Infof("Trying to spawn a single instance of type '%s' in region %s with AMI %s", ty, CurrentProviderConfig.AWSConfiguration.Region, CurrentProviderConfig.AWSConfiguration.AMI)
 
-	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.Config.Region)}))
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
 
 	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{
-		ImageId:      aws.String(a.Config.AMI),
+		ImageId:      aws.String(CurrentProviderConfig.AWSConfiguration.AMI),
 		InstanceType: aws.String(string(ty)),
 		MinCount:     aws.Int64(1),
 		MaxCount:     aws.Int64(1),
@@ -121,7 +120,7 @@ func (a *AWSProvider) SpawnInstance(ty InstanceType) base.HostId {
 }
 
 func (a *AWSProvider) waitOnInstanceReady(hostId base.HostId) bool {
-	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.Config.Region)}))
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
 
 	if err := svc.WaitUntilInstanceRunning(&ec2.DescribeInstancesInput{InstanceIds: aws.StringSlice([]string{string(hostId)}), }); err != nil {
 		AWSLogger.Errorf("WaitOnInstanceReady for %s failed: %s", hostId, err)
@@ -175,7 +174,7 @@ func (a *AWSProvider) SpawnInstances(tys []InstanceType) bool {
 }
 
 func (a *AWSProvider) getInstanceInfo(hostId base.HostId) (*ec2.Instance, error) {
-	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.Config.Region)}))
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
 	res, err := svc.DescribeInstances(&ec2.DescribeInstancesInput{InstanceIds: aws.StringSlice([]string{string(hostId)}), })
 	if err != nil {
 		return &ec2.Instance{}, err
@@ -225,7 +224,7 @@ func checkResources(available state_cloud.InstanceResources, needed state_cloud.
 
 
 func (a *AWSProvider) GetResources(ty InstanceType) state_cloud.InstanceResources {
-	return a.Config.InstanceResources[ty]
+	return CurrentProviderConfig.AWSConfiguration.InstanceResources[ty]
 }
 
 type CostSort struct {
@@ -265,19 +264,19 @@ func sortByCost(tys []InstanceType, costMap map[InstanceType]Cost) []InstanceTyp
 func (a *AWSProvider) SuitableInstanceTypes(resources state_cloud.InstanceResources) []InstanceType {
 	AWSLogger.Infof("Get Suitable Instances for needs: %+v", resources)
 	suitableInstances := []InstanceType{}
-	for _, ty := range a.Config.InstanceTypes {
-		if checkResources(a.GetResources(ty), resources, a.Config.SuitableInstanceSafetyFactor) {
+	for _, ty := range CurrentProviderConfig.AWSConfiguration.InstanceTypes {
+		if checkResources(a.GetResources(ty), resources, CurrentProviderConfig.AWSConfiguration.SuitableInstanceSafetyFactor) {
 			suitableInstances = append(suitableInstances, ty)
 		}
 	}
-	suitableInstances = sortByCost(suitableInstances, a.Config.InstanceCost)
+	suitableInstances = sortByCost(suitableInstances, CurrentProviderConfig.AWSConfiguration.InstanceCost)
 	AWSLogger.Infof("Suitable Instances for needs %+v: %v", resources, suitableInstances)
 	return suitableInstances
 }
 
 func (a *AWSProvider) CheckInstance(hostId base.HostId) InstanceStatus {
 	AWSLogger.Infof("Checking instance %s", hostId)
-	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.Config.Region)}))
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
 	res, err := svc.DescribeInstanceStatus(&ec2.DescribeInstanceStatusInput{InstanceIds: aws.StringSlice([]string{string(hostId)})})
 	if err != nil {
 		AWSLogger.Infof("Checking instance %s failed:%s", hostId, err)
@@ -293,7 +292,7 @@ func (a *AWSProvider) CheckInstance(hostId base.HostId) InstanceStatus {
 
 func (a *AWSProvider) TerminateInstance(hostId base.HostId) bool {
 	AWSLogger.Infof("Trying to terminate instance %s", hostId)
-	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.Config.Region)}))
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
 	_, err := svc.TerminateInstances(&ec2.TerminateInstancesInput{
 		InstanceIds: aws.StringSlice([]string{string(hostId)}),
 	})
