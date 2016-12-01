@@ -3,11 +3,8 @@ package main
 import (
 	"testing"
 	"time"
-	"gatoor/orca/rewriteTrainer/installer"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/scheduler"
-	"gatoor/orca/rewriteTrainer/tracker"
-	"gatoor/orca/rewriteTrainer/planner"
 )
 
 

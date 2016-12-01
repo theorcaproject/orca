@@ -1,0 +1,5 @@
+go get -u golang.org/x/crypto/ssh
+go get -u github.com/Sirupsen/logrus
+go get -u github.com/aws/aws-sdk-go
+go get -u github.com/gorilla/mux
+go get -u github.com/boltdb/bolt
