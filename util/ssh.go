@@ -12,7 +12,7 @@ import (
 
 const (
 	SSH_PEM_PATH = "/orca/config/orca_test_us.pem"
-	CONNECT_RETRY_AMOUNT = 5
+	CONNECT_RETRY_AMOUNT = 15
 )
 
 func Connect(sshUser string, hostAndPort string) (*ssh.Client, string) {

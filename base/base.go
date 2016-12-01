@@ -156,13 +156,13 @@ type HabitatConfiguration struct {
 }
 
 type AppConfiguration struct {
-    Name AppName
-    Type AppType
-    Version Version
-    MinDeploymentCount DeploymentCount
-    MaxDeploymentCount DeploymentCount
-    DockerConfig DockerConfig
-    RawConfig RawConfig
+    Name                  AppName
+    Type                  AppType
+    Version               Version
+    TargetDeploymentCount DeploymentCount
+    MinDeploymentCount    DeploymentCount
+    DockerConfig          DockerConfig
+    RawConfig             RawConfig
 }
 
 type RawConfig struct {

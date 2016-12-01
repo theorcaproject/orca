@@ -26,6 +26,7 @@ func applySampleConfig() {
 	conf := config.JsonConfiguration{}
 
 	conf.Trainer.Port = 5000
+	conf.Trainer.Policies.TRY_TO_REMOVE_HOSTS = true
 
 
 	httpApp1 := config.AppJsonConfiguration{

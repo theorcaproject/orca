@@ -20,6 +20,7 @@ func applySampleConfig() {
 	conf := config.JsonConfiguration{}
 
 	conf.Trainer.Port = 5000
+	conf.Trainer.Policies.TRY_TO_REMOVE_HOSTS = true
 
 	httpApp1 := config.AppJsonConfiguration{
 		Name: "httpApp_1",
@@ -664,7 +665,7 @@ func TestPlannerIntegration_initialPlan_BigAssDeployment(t *testing.T) {
 			Name: base.AppName("fillerHttp_" + fmt.Sprint(i)),
 			Type: base.APP_HTTP,
 			Version: "1.0",
-			MinDeploymentCount: base.DeploymentCount(c),
+			TargetDeploymentCount: base.DeploymentCount(c),
 		})
 		state_needs.GlobalAppsNeedState.UpdateNeeds(base.AppName("fillerHttp_" + fmt.Sprint(i)), "1.0", needs.AppNeeds{
 			CpuNeeds: needs.CpuNeeds(rand.Intn(10) + 1), MemoryNeeds: needs.MemoryNeeds(rand.Intn(10) + 1), NetworkNeeds: needs.NetworkNeeds(rand.Intn(10) + 1),
@@ -674,7 +675,7 @@ func TestPlannerIntegration_initialPlan_BigAssDeployment(t *testing.T) {
 			Name: base.AppName("fillerWorker_" + fmt.Sprint(i)),
 			Type: base.APP_WORKER,
 			Version: "1.0",
-			MinDeploymentCount: base.DeploymentCount(d),
+			TargetDeploymentCount: base.DeploymentCount(d),
 		})
 		state_needs.GlobalAppsNeedState.UpdateNeeds(base.AppName("fillerWorker_" + fmt.Sprint(i)), "1.0", needs.AppNeeds{
 			CpuNeeds: needs.CpuNeeds(rand.Intn(10) + 1), MemoryNeeds: needs.MemoryNeeds(rand.Intn(10) + 1), NetworkNeeds: needs.NetworkNeeds(rand.Intn(10) + 1),

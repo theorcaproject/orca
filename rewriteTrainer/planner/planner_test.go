@@ -1057,7 +1057,7 @@ func TestPlanner_planHttp_moreInstancesThanNeeded(t *testing.T) {
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	appObj := base.AppConfiguration{
-		Name: "app1", Version: "1.0", MinDeploymentCount: 2,
+		Name: "app1", Version: "1.0", TargetDeploymentCount: 2,
 	}
 
 	called := 0
@@ -1136,7 +1136,7 @@ func TestPlanner_planHttp_lessInstancesThanNeeded(t *testing.T) {
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	appObj := base.AppConfiguration{
-		Name: "app1", Version: "1.0", MinDeploymentCount: 8,
+		Name: "app1", Version: "1.0", TargetDeploymentCount: 8,
 	}
 
 	called := 0
@@ -1194,7 +1194,7 @@ func TestPlanner_planWorker_moreInstancesThanNeeded(t *testing.T) {
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	appObj := base.AppConfiguration{
-		Name: "app1", Version: "1.0", MinDeploymentCount: 5,
+		Name: "app1", Version: "1.0", TargetDeploymentCount: 5,
 	}
 
 	called := false
@@ -1268,7 +1268,7 @@ func TestPlanner_planWorker_lessInstancesThanNeeded(t *testing.T) {
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	appObj := base.AppConfiguration{
-		Name: "app1", Version: "1.0", MinDeploymentCount: 20,
+		Name: "app1", Version: "1.0", TargetDeploymentCount: 20,
 	}
 
 	called := false
@@ -1539,7 +1539,7 @@ func TestPlanner_handleFailedAssign_http(t *testing.T) {
 		Name: "app1",
 		Type: base.APP_HTTP,
 		Version: "1.0",
-		MinDeploymentCount: 100,
+		TargetDeploymentCount: 100,
 	})
 
 	wipeDesired()
@@ -1588,7 +1588,7 @@ func TestPlanner_handleFailedAssign_worker(t *testing.T) {
 		Name: "app1",
 		Type: base.APP_WORKER,
 		Version: "1.0",
-		MinDeploymentCount: 100,
+		TargetDeploymentCount: 100,
 	})
 
 	wipeDesired()

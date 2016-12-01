@@ -126,7 +126,7 @@ func (p PlannerQueue) Remove(hostId base.HostId, appName base.AppName) {
 	if _, exists := p.Queue[hostId]; exists {
 		if _, exists := p.Queue[hostId][appName]; exists {
 			//if val.State == STATE_SUCCESS || val.State == STATE_FAIL {
-				QueueLogger.Infof("Removing QueueElement host '%s' app '%s'", hostId, appName)
+				QueueLogger.Infof("Removing QueueElement host '%s' app '%s'. State was %s", hostId, appName, p.Queue[hostId][appName].State)
 				delete(p.Queue[hostId], appName)
 			//}
 		}
@@ -357,7 +357,7 @@ func doPlanInternal() {
 		wg.Add(len(chunk))
 		for _, appName := range chunk {
 			appObj := apps[appName]
-			PlannerLogger.Infof("Assigning HttpApp '%s' - '%s'. Need to do this %d times", appObj.Name, appObj.Version, appObj.MinDeploymentCount)
+			PlannerLogger.Infof("Assigning HttpApp '%s' - '%s'. Need to do this %d times", appObj.Name, appObj.Version, appObj.TargetDeploymentCount)
 			go func () {
 				defer wg.Done()
 				planHttp(appObj, findHttpHostWithResources, false)
@@ -369,7 +369,7 @@ func doPlanInternal() {
 
 	for _, appName := range workerOrder {
 		appObj := apps[appName]
-		PlannerLogger.Infof("Assigning WorkerApp '%s' - '%s'. Need to do this %d times", appObj.Name, appObj.Version, appObj.MinDeploymentCount)
+		PlannerLogger.Infof("Assigning WorkerApp '%s' - '%s'. Need to do this %d times", appObj.Name, appObj.Version, appObj.TargetDeploymentCount)
 		planWorker(appObj, findHostWithResources, false)
 
 	}
@@ -391,7 +391,7 @@ func handleFailedAssign() {
 		appObj, err := state_configuration.GlobalConfigurationState.GetApp(failed.AppName, failed.AppVersion)
 		if err == nil {
 			PlannerLogger.Infof("Retrying failed assignment of app '%s', DeploymentCount: %d", failed.AppName, failed.DeploymentCount)
-			appObj.MinDeploymentCount = failed.DeploymentCount
+			appObj.TargetDeploymentCount = failed.DeploymentCount
 			if appObj.Type == base.APP_HTTP {
 				planHttp(appObj, findHttpHostWithResources, true)
 			} else {
@@ -420,7 +420,7 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 	sortedHosts := sortByAvailableResources()
 	goodHosts := state_cloud.GlobalCloudLayout.Current.FindHostsWithApp(appObj.Name)
 
-	for deployed <= appObj.MinDeploymentCount {
+	for deployed <= appObj.TargetDeploymentCount {
 		hostId := hostFinderFunc(ns, appObj.Name, sortedHosts, goodHosts)
 		if hostId == "" {
 			PlannerLogger.Warnf("App '%s' - '%s' could not find suitable host", appObj.Name, appObj.Version)
@@ -438,12 +438,12 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 			depl = deploymentCountFunc(resources, ns)
 		}
 
-		if deployed == appObj.MinDeploymentCount {
+		if deployed == appObj.TargetDeploymentCount {
 			PlannerLogger.Infof("Assinged all deployments of App '%s' - '%s'", appObj.Name, appObj.Version)
 			return success
 		}
-		if depl > appObj.MinDeploymentCount - deployed {
-			depl = appObj.MinDeploymentCount - deployed
+		if depl > appObj.TargetDeploymentCount - deployed {
+			depl = appObj.TargetDeploymentCount - deployed
 		}
 		if !assignAppToHost(hostId, appObj, depl) {
 			if !ignoreFailures {
@@ -456,9 +456,9 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 		deployed += depl
 	}
 
-	if deployed < appObj.MinDeploymentCount {
-		PlannerLogger.Warnf("App '%s' - '%s' could not deploy MinDeploymentCount %d, only deployed %d", appObj.Name, appObj.Version, appObj.MinDeploymentCount, deployed)
-		addMissingAssign(appObj.Name, appObj.Version, appObj.Type, appObj.MinDeploymentCount - deployed)
+	if deployed < appObj.TargetDeploymentCount {
+		PlannerLogger.Warnf("App '%s' - '%s' could not deploy MinDeploymentCount %d, only deployed %d", appObj.Name, appObj.Version, appObj.TargetDeploymentCount, deployed)
+		addMissingAssign(appObj.Name, appObj.Version, appObj.Type, appObj.TargetDeploymentCount - deployed)
 		success = false
 	}
 	return success
@@ -650,9 +650,9 @@ func getGlobalMinNeeds() (needs.CpuNeeds, needs.MemoryNeeds, needs.NetworkNeeds)
 			PlannerLogger.Warnf("Missing needs for app '%s' - '%s'", appName, version)
 			continue
 		}
-		cpu := int(appObj[version].MinDeploymentCount) * int(appNeeds.CpuNeeds)
-		mem := int(appObj[version].MinDeploymentCount) * int(appNeeds.MemoryNeeds)
-		net := int(appObj[version].MinDeploymentCount) * int(appNeeds.NetworkNeeds)
+		cpu := int(appObj[version].TargetDeploymentCount) * int(appNeeds.CpuNeeds)
+		mem := int(appObj[version].TargetDeploymentCount) * int(appNeeds.MemoryNeeds)
+		net := int(appObj[version].TargetDeploymentCount) * int(appNeeds.NetworkNeeds)
 		PlannerLogger.Infof("AppMinNeeds for '%s' - '%s': Cpu=%d, Memory=%d, Network=%d", appName, version, cpu, mem, net)
 		totalCpuNeeds += needs.CpuNeeds(cpu)
 		totalMemoryNeeds += needs.MemoryNeeds(mem)
