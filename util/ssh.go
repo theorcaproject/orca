@@ -10,7 +10,10 @@ import (
 	"io/ioutil"
 )
 
-const SSH_PEM_PATH = "/orca/config/orca_test_us.pem"
+const (
+	SSH_PEM_PATH = "/orca/config/orca_test_us.pem"
+	CONNECT_RETRY_AMOUNT = 5
+)
 
 func Connect(sshUser string, hostAndPort string) (*ssh.Client, string) {
 	addr := sshUser + "@" + hostAndPort
@@ -32,13 +35,23 @@ func Connect(sshUser string, hostAndPort string) (*ssh.Client, string) {
 		Timeout: time.Second * 3,
 	}
 
-	connection, err := ssh.Dial("tcp", hostAndPort, sshConfig)
+	var connection *ssh.Client
+	for i := 1; i <= CONNECT_RETRY_AMOUNT; i++ {
+		connection, err = ssh.Dial("tcp", hostAndPort, sshConfig)
 
-	if err != nil {
-		SSHLogger.Error(fmt.Sprintf("Failed to dial: %v", err))
-		return nil, ""
+		if err != nil {
+			if i == CONNECT_RETRY_AMOUNT {
+				SSHLogger.Error(fmt.Sprintf("Failed to dial: %v aborting", err))
+				return nil, ""
+			}
+			SSHLogger.Error(fmt.Sprintf("Failed to dial, it was try %d: %v retrying...", i, err))
+			time.Sleep(time.Duration(5 * time.Second))
+			continue
+		} else {
+			return connection, addr
+		}
 	}
-	return connection, addr
+	return nil, ""
 }
 
 func accquireSession(connection *ssh.Client, SSHLogger *logrus.Entry, stdWriter io.Writer) *ssh.Session {
