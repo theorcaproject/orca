@@ -11,6 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"sync"
 	"sort"
+	"gatoor/orca/rewriteTrainer/installer"
+	"gatoor/orca/client/types"
+	"fmt"
+	"gatoor/orca/rewriteTrainer/state/configuration"
 )
 
 var AWSLogger = Logger.LoggerWithField(Logger.Logger, "module", "aws")
@@ -110,9 +114,8 @@ func (a *AWSProvider) SpawnInstance(ty InstanceType) base.HostId {
 	}
 
 	id := base.HostId(*runResult.Instances[0].InstanceId)
-	AWSLogger.Infof("Spawned a single instance of type '%s'. Id=%s. Starting Install of orca client", ty, id)
+	AWSLogger.Infof("Spawned a single instance of type '%s'. Id=%s", ty, id)
 	a.SpawnLog.Add(id)
-	//installOrcaClient()
 
 	return id
 }
@@ -127,7 +130,18 @@ func (a *AWSProvider) waitOnInstanceReady(hostId base.HostId) bool {
 }
 
 
-//func installOrcaClient()
+func installOrcaClient(hostId base.HostId, ip base.IpAddr, trainerIp base.IpAddr) {
+	clientConf := types.Configuration{
+		Type: types.DOCKER_CLIENT,
+		TrainerPollInterval: 30,
+		AppStatusPollInterval: 10,
+		MetricsPollInterval: 10,
+		TrainerUrl: fmt.Sprintf("http://%s:5000/push", trainerIp),
+		Port: 5001,
+		HostId: hostId,
+	}
+	installer.InstallNewInstance(clientConf, ip)
+}
 
 func (a AWSProvider) SpawnInstanceSync(ty InstanceType) base.HostId {
 	AWSLogger.Infof("Spawning Instance synchronously, type %s", ty)
@@ -138,6 +152,10 @@ func (a AWSProvider) SpawnInstanceSync(ty InstanceType) base.HostId {
 	if !a.waitOnInstanceReady(id) {
 		return ""
 	}
+
+	ipAddr := a.GetIp(id)
+	installOrcaClient(id, ipAddr, state_configuration.GlobalConfigurationState.Trainer.Ip)
+
 	return id
 }
 
