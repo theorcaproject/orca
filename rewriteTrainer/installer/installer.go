@@ -57,7 +57,7 @@ func ubuntu1604(clientConfig types.Configuration) []string {
 
 func InstallNewInstance(clientConfig types.Configuration, ipAddr base.IpAddr) bool {
 	InstallerLogger.Infof("Starting install on host %s:%s", clientConfig.HostId, ipAddr)
-	userName := "orca"
+	userName := "ubuntu"
 	session, addr := orcaSSh.Connect(userName, string(ipAddr) + ":22")
 	if session == nil {
 		InstallerLogger.Infof("Install on host %s:%s failed: No session", clientConfig.HostId, ipAddr)
