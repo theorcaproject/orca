@@ -26,6 +26,11 @@ type JsonConfiguration struct {
 type TrainerJsonConfiguration struct {
 	Port int
 	Ip base.IpAddr
+	Policies TrainerPolicies
+}
+
+type TrainerPolicies struct {
+	TRY_TO_REMOVE_HOSTS bool
 }
 
 type HabitatJsonConfiguration struct {
@@ -152,6 +157,7 @@ func applyHabitatConfig (habitatConfs []HabitatJsonConfiguration) {
 func applyTrainerConfig (trainerConf TrainerJsonConfiguration) {
 	state_configuration.GlobalConfigurationState.Trainer.Port = trainerConf.Port
 	state_configuration.GlobalConfigurationState.Trainer.Ip = trainerConf.Ip
+	state_configuration.GlobalConfigurationState.Trainer.Policies.TRY_TO_REMOVE_HOSTS = trainerConf.Policies.TRY_TO_REMOVE_HOSTS
 }
 
 //TODO use WeeklyNeeds

@@ -39,7 +39,7 @@ func (c *Client) InstallApp(appConf base.AppConfiguration, appsState *types.Apps
 	var buf bytes.Buffer
 	imageOpt := DockerClient.PullImageOptions{
 		Repository: appConf.DockerConfig.Repository,
-		Registry: appConf.DockerConfig.Registry,
+		Tag: appConf.DockerConfig.Tag,
 		OutputStream: &buf,
 	}
 	err := dockerCli.PullImage(imageOpt, DockerClient.AuthConfiguration{})

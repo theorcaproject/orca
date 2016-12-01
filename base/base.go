@@ -174,7 +174,7 @@ type RawConfig struct {
 }
 
 type DockerConfig struct {
-    Registry string
+    Tag string
     Repository string
     Reference string
 }

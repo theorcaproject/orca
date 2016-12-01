@@ -1751,9 +1751,10 @@ func TestPlanner_MultiplePlanningSteps_hostKilledByEventAndNewHostSpawned(t *tes
 		Apps: []base.AppInfo{},
 	}
 	state_cloud.GlobalCloudLayout.Current.UpdateHost(hostInfo)
+	state_cloud.GlobalCloudLayout.Current.Layout["host2"] = state_cloud.GlobalCloudLayout.Desired.Layout["host2"]
 	tracker.GlobalHostTracker.Update(hostInfo.HostId, time.Now().UTC())
 
-	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 1 {
+	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 2 {
 		t.Error(state_cloud.GlobalCloudLayout.Current.Layout)
 	}
 	if len(state_cloud.GlobalAvailableInstances) != 2 || state_cloud.GlobalAvailableInstances["newReplacementHost"].TotalCpuResource != 10 {
@@ -1762,7 +1763,8 @@ func TestPlanner_MultiplePlanningSteps_hostKilledByEventAndNewHostSpawned(t *tes
 
 	Plan()
 
-	if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["newReplacementHost"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app1"].DeploymentCount != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app2"].DeploymentCount != 1 {
+	if len(state_cloud.GlobalCloudLayout.Desired.Layout) != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["newReplacementHost"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["http1"].DeploymentCount != 1 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app1"].DeploymentCount != 2 || state_cloud.GlobalCloudLayout.Desired.Layout["host2"].Apps["app2"].DeploymentCount != 2 {
+		t.Errorf("%+v", state_cloud.GlobalAvailableInstances)
 		t.Errorf("%+v", state_cloud.GlobalCloudLayout.Desired.Layout)
 	}
 }

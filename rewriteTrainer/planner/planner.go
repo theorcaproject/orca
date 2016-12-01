@@ -223,8 +223,14 @@ func appsDiff(master map[base.AppName]state_cloud.AppsVersion, slave map[base.Ap
 }
 
 func Plan() {
+	layoutBefore := state_cloud.GlobalCloudLayout.Desired
 	PlannerLogger.Info("Stating Plan()")
+	PlannerLogger.Infof("Before planning AvailableInstances: %+v", state_cloud.GlobalAvailableInstances)
+	PlannerLogger.Infof("Before planning Layout: %+v", state_cloud.GlobalCloudLayout.Desired.Layout)
 	doPlan()
+	PlannerLogger.Infof("After planning AvailableInstances: %+v", state_cloud.GlobalAvailableInstances)
+	PlannerLogger.Infof("After planning Layout: %+v", state_cloud.GlobalCloudLayout.Desired.Layout)
+	PlannerLogger.Infof("After planning Diff: %+v", Diff(state_cloud.GlobalCloudLayout.Desired, layoutBefore))
 	PlannerLogger.Info("Finished Plan()")
 }
 
@@ -491,7 +497,7 @@ func maxDeploymentOnHost(resources state_cloud.InstanceResources, ns needs.AppNe
 
 func findHostWithResources(ns needs.AppNeeds, app base.AppName, sortedHosts []base.HostId, goodHosts map[base.HostId]bool) base.HostId{
 	var backUpHost base.HostId = ""
-
+	PlannerLogger.Infof("findHostWithResources for app %s. goodHosts=%+v; sortedHosts=%+v", app, goodHosts, sortedHosts)
 	for host := range goodHosts {
 		if state_cloud.GlobalAvailableInstances.HostHasResourcesForApp(host, ns) {
 			PlannerLogger.Infof("Found suitable host '%s'. It already has app '%s' installed", host, app)
@@ -515,7 +521,7 @@ var TotalIter int = 0
 
 func findHttpHostWithResources(ns needs.AppNeeds, app base.AppName, sortedHosts []base.HostId, goodHosts map[base.HostId]bool) base.HostId {
 	var backUpHost base.HostId = ""
-
+	PlannerLogger.Infof("findHttpHostWithResources for app %s. goodHosts=%+v; sortedHosts=%+v", app, goodHosts, sortedHosts)
 	for host := range goodHosts {
 		if state_cloud.GlobalCloudLayout.Desired.HostHasApp(host, app) {
 			continue
