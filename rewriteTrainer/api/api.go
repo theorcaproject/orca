@@ -42,14 +42,14 @@ func (api Api) Init () {
 }
 
 func returnJson(w http.ResponseWriter, obj interface{}) {
-	//j, err := json.MarshalIndent(obj, "", "  ")
-	//if err != nil {
-	//	ApiLogger.Errorf("Json serialization failed - %s", err)
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
+	j, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		ApiLogger.Errorf("Json serialization failed - %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	//w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte("HELLOOOO"))
+	w.Write(j)
 }
 
 func pushHandler(w http.ResponseWriter, r *http.Request) {
