@@ -97,7 +97,7 @@ func (a *AWSProvider) Init() {
 }
 
 func (a *AWSProvider) SpawnInstance(ty InstanceType) base.HostId {
-	AWSLogger.Infof("Trying to spawn a single instance of type '%s' in region %s with AMI %s", ty, CurrentProviderConfig.AWSConfiguration.Region, CurrentProviderConfig.AWSConfiguration.AMI)
+	AWSLogger.Warnf("Trying to spawn a single instance of type '%s' in region %s with AMI %s", ty, CurrentProviderConfig.AWSConfiguration.Region, CurrentProviderConfig.AWSConfiguration.AMI)
 
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
 
@@ -293,7 +293,7 @@ func (a *AWSProvider) CheckInstance(hostId base.HostId) InstanceStatus {
 }
 
 func (a *AWSProvider) TerminateInstance(hostId base.HostId) bool {
-	AWSLogger.Infof("Trying to terminate instance %s", hostId)
+	AWSLogger.Warnf("Trying to terminate instance %s", hostId)
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
 	_, err := svc.TerminateInstances(&ec2.TerminateInstancesInput{
 		InstanceIds: aws.StringSlice([]string{string(hostId)}),

@@ -6,6 +6,7 @@ import (
 import (
     "time"
     "sync"
+    "fmt"
 )
 
 const (
@@ -205,3 +206,184 @@ func (a *AppMetrics) Clear() {
     defer appsMetricsMutex.Unlock()
     (*a) = make(map[AppName]map[Version]map[string]AppStats)
 }
+
+
+
+const (
+    CAUTION_INTERVAL = 2
+    MINUTES_DELTA = 15 
+)
+
+type Needs int
+
+type MemoryNeeds Needs
+type CpuNeeds Needs
+type NetworkNeeds Needs
+
+type AppNeeds struct {
+    MemoryNeeds MemoryNeeds
+    CpuNeeds CpuNeeds
+    NetworkNeeds NetworkNeeds
+}
+
+func (d DeploymentCount) Max(current MaxAble, max MaxAble) MaxAble {
+    if max == nil {
+        return current
+    }
+    castMax := max.(DeploymentCount)
+    castCurrent := current.(DeploymentCount)
+    if castCurrent > castMax {
+        castMax = castCurrent
+    }
+    return castMax
+}
+
+func (an AppNeeds) Max(current MaxAble, max MaxAble) MaxAble {
+    if max == nil {
+        return current
+    }
+    castMax := max.(AppNeeds)
+    castCurrent := current.(AppNeeds)
+
+    if castCurrent.CpuNeeds > castMax.CpuNeeds {
+        castMax.CpuNeeds = castCurrent.CpuNeeds
+    }
+    if castCurrent.MemoryNeeds > castMax.MemoryNeeds {
+        castMax.MemoryNeeds = castCurrent.MemoryNeeds
+    }
+    if castCurrent.NetworkNeeds > castMax.NetworkNeeds {
+        castMax.NetworkNeeds = castCurrent.NetworkNeeds
+    }
+
+    return castMax
+}
+
+type Minutes int
+
+type MaxAble interface {
+    Max(MaxAble, MaxAble) MaxAble
+}
+
+type TimeBased map[Minutes]MaxAble
+
+type WeekdayBased map[time.Weekday]TimeBased
+
+type WeekdayBasedDeploymentCount struct {
+    Based WeekdayBased
+}
+
+func (w WeekdayBasedDeploymentCount) Get(day time.Weekday, minutes Minutes) DeploymentCount {
+    res := w.Based.get(day, minutes)
+    if res == nil {
+        return DeploymentCount(0)
+    }
+    return res.(DeploymentCount)
+}
+
+func (w *WeekdayBasedDeploymentCount) Set(day time.Weekday, minutes Minutes, ns DeploymentCount) {
+    if len(w.Based) == 0 {
+        w.Based = make(map[time.Weekday]TimeBased)
+    }
+    w.Based.set(day, minutes, ns)
+}
+
+func (w *WeekdayBasedDeploymentCount) SetFlat(ns DeploymentCount) {
+    if len(w.Based) == 0 {
+        w.Based = make(map[time.Weekday]TimeBased)
+    }
+    w.Based.setFlat(ns)
+}
+
+type WeekdayBasedAppNeeds struct {
+    Based WeekdayBased
+}
+
+func (w WeekdayBasedAppNeeds) Get(day time.Weekday, minutes Minutes) AppNeeds {
+    res := w.Based.get(day, minutes)
+    if res == nil {
+        fmt.Println(w.Based)
+        return AppNeeds{}
+    }
+    return res.(AppNeeds)
+}
+
+func (w *WeekdayBasedAppNeeds) Set(day time.Weekday, minutes Minutes, ns AppNeeds) {
+    if len(w.Based) == 0 {
+        w.Based = make(map[time.Weekday]TimeBased)
+    }
+    w.Based.set(day, minutes, ns)
+}
+
+func (w *WeekdayBasedAppNeeds) SetFlat(ns AppNeeds) {
+    if len(w.Based) == 0 {
+        w.Based = make(map[time.Weekday]TimeBased)
+    }
+    w.Based.setFlat(ns)
+}
+
+func (t TimeBased) Get(minutes Minutes) MaxAble {
+    return t[minutes]
+}
+
+func (w WeekdayBased) get(day time.Weekday, minutes Minutes) MaxAble {
+    var max MaxAble
+    for i := (minutes - CAUTION_INTERVAL * MINUTES_DELTA); i <= minutes + CAUTION_INTERVAL * MINUTES_DELTA; i += MINUTES_DELTA {
+        if i >= 0 && i < 1440 {
+            current := w[day][Minutes(i)]
+            if current != nil {
+                max = current.Max(current, max)
+            }
+        } else if i < 0 {
+            var dayBefore time.Weekday
+            if day == time.Sunday {
+                dayBefore = time.Saturday
+            } else {
+                dayBefore = day - 1
+            }
+            currentBefore := w[dayBefore][Minutes(1440 + i)]
+            if currentBefore != nil {
+                max = currentBefore.Max(currentBefore, max)
+            }
+        } else if i >= 1440 {
+            var dayAfter time.Weekday
+            if day == time.Saturday {
+                dayAfter = time.Sunday
+            } else {
+                dayAfter = day + 1
+            }
+            currentAfter := w[dayAfter][Minutes(i - 1440)]
+            if currentAfter != nil {
+                max = currentAfter.Max(currentAfter, max)
+            }
+        }
+    }
+    return max
+}
+
+func (w WeekdayBased) set(day time.Weekday, minutes Minutes, ns MaxAble) {
+    if _, exists := w[day]; !exists {
+        w[day] = make(map[Minutes]MaxAble)
+    }
+    w[day][minutes] = ns
+}
+
+func (w WeekdayBased) setFlat(ns MaxAble) {
+    for i := 0; i < 7; i++ {
+        w[time.Weekday(i)] = make(map[Minutes]MaxAble)
+        for m := 0; m < (24 * 60); m += MINUTES_DELTA {
+            w[time.Weekday(i)][Minutes(m)] = ns
+        }
+    }
+}
+
+//get weekday and minutes in MINUTES_DELTA increments. always rounded down
+func timeToWeekdayMinutes(t time.Time) (time.Weekday, Minutes) {
+    utcTime := t.UTC()
+    w := utcTime.Weekday()
+    m := utcTime.Hour() * 60 + utcTime.Minute()
+    if m % MINUTES_DELTA != 0 {
+        m = int(m / MINUTES_DELTA) * MINUTES_DELTA
+    }
+    return w, Minutes(m)
+}
+

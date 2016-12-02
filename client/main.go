@@ -135,6 +135,7 @@ func handleTrainerResponse(body []byte) {
 	} else {
 		MainLogger.Infof("Got Config with OrcaVersion %s: %+v", config.OrcaVersion, config)
 		client.Handle(config)
+
 	}
 }
 
