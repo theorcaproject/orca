@@ -31,7 +31,7 @@ func ubuntu1604(clientConfig types.Configuration) []string {
 	return []string{
 		"echo orca | sudo -S addgroup --system supervisor",
 		"echo orca | sudo -S apt-get update",
-		"echo orca | sudo -S apt-get install -y git golang supervisor",
+		"echo orca | sudo -S apt-get install -y git golang supervisor docker.io",
 		"echo orca | sudo -S sh -c \"echo " + SUPERVISOR_CONFIG + "\"",
 		"echo orca | sudo -S sh -c \"echo " + ORCA_SUPERVISOR_CONFIG + "\"",
 		"echo orca | sudo -S rm -rf /orca",
