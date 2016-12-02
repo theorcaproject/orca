@@ -64,21 +64,21 @@ func info(w http.ResponseWriter, r *http.Request) {
 }
 
 func startScheduledTasks() {
-	//pollTicker := time.NewTicker(time.Duration(client.Configuration.AppStatusPollInterval) * time.Second)
-	//metricsTicker := time.NewTicker(time.Duration(client.Configuration.MetricsPollInterval) * time.Second)
+	pollTicker := time.NewTicker(time.Duration(client.Configuration.AppStatusPollInterval) * time.Second)
+	metricsTicker := time.NewTicker(time.Duration(client.Configuration.MetricsPollInterval) * time.Second)
 	trainerTicker := time.NewTicker(time.Duration(client.Configuration.TrainerPollInterval) * time.Second)
-	//go func () {
-	//	for {
-	//		<- metricsTicker.C
-	//		client.PollMetrics()
-	//	}
-	//}()
-	//go func () {
-	//	for {
-	//		<- pollTicker.C
-	//		client.PollAppsState()
-	//	}
-	//}()
+	go func () {
+		for {
+			<- metricsTicker.C
+			client.PollMetrics()
+		}
+	}()
+	go func () {
+		for {
+			<- pollTicker.C
+			client.PollAppsState()
+		}
+	}()
 	go func () {
 		for {
 			<- trainerTicker.C

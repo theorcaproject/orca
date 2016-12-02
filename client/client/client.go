@@ -59,10 +59,10 @@ func Handle(config base.PushConfiguration) {
 	existingAppsVersion := AppsState.GetAllWithVersion(config.AppConfiguration.Name, config.AppConfiguration.Version)
 	if len(existingAppsVersion) > 0 {
 		if len(existingAppsVersion) != int(config.DeploymentCount) {
-			ClientLogger.Infof("Configuration for existsing app version %s:%s DeploymentCount new %d; old %s", config.AppConfiguration.Name, config.AppConfiguration.Version, config, len(existingAppsVersion))
+			ClientLogger.Infof("Configuration for existing app version %s:%s DeploymentCount new %d; old %s", config.AppConfiguration.Name, config.AppConfiguration.Version, config.DeploymentCount, len(existingAppsVersion))
 			scaleApp(existingAppsVersion, config)
 		}
-		ClientLogger.Infof("Configuration for existsing app version %s:%s DeploymentCount %d matches, skipping", config.AppConfiguration.Name, config.AppConfiguration.Version, config)
+		ClientLogger.Infof("Configuration for existing app version %s:%s DeploymentCount %d matches, skipping", config.AppConfiguration.Name, config.AppConfiguration.Version, config.DeploymentCount)
 	} else {
 		existingApps := AppsState.GetAll(config.AppConfiguration.Name)
 		if len(existingApps) > 0 {
