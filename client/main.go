@@ -113,7 +113,7 @@ func CallTrainer() {
 		//} else {
 		//	handleTrainerResponse(body)
 		//}
-		MainLogger.Infof("got trainer response")
+		MainLogger.Infof("got trainer response %v", res)
 	}
 
 	MainLogger.Infof("Metrics: %+v", metrics)
