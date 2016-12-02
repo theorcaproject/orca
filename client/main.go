@@ -106,13 +106,14 @@ func CallTrainer() {
 	if err != nil {
 		MainLogger.Errorf("Could not send data to trainer: %+v", err)
 	} else {
-		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			MainLogger.Errorf("Could not read reponse from trainer: %+v", err)
-		} else {
-			handleTrainerResponse(body)
-		}
+		//defer res.Body.Close()
+		//body, err := ioutil.ReadAll(res.Body)
+		//if err != nil {
+		//	MainLogger.Errorf("Could not read reponse from trainer: %+v", err)
+		//} else {
+		//	handleTrainerResponse(body)
+		//}
+		MainLogger.Infof("got trainer response")
 	}
 
 	MainLogger.Infof("Metrics: %+v", metrics)
