@@ -21,13 +21,24 @@ type Client struct {
 
 func (c *Client) Init() {
 	var err error
-	//dockerAuth := DockerClient.AuthConfiguration{}
-	dockerCli, err = DockerClient.NewClientFromEnv()
+	dockerCli, err = DockerClient.NewClient("unix:///var/run/docker.sock")
 
 	if err != nil {
 		DockerLogger.Fatalf("Docker client could not be instantiated: %v", err)
 	}
+}
 
+func DockerCli() *DockerClient.Client {
+	if dockerCli == nil {
+		DockerLogger.Infof("DockerClient was nil, instantiating again.")
+		var err error
+		dockerCli, err = DockerClient.NewClient("unix:///var/run/docker.sock")
+
+		if err != nil {
+			DockerLogger.Fatalf("Docker client could not be instantiated: %v", err)
+		}
+	}
+	return dockerCli
 }
 
 func (c *Client) Type() types.ClientType {
@@ -42,7 +53,7 @@ func (c *Client) InstallApp(appConf base.AppConfiguration, appsState *types.Apps
 		Tag: appConf.DockerConfig.Tag,
 		OutputStream: &buf,
 	}
-	err := dockerCli.PullImage(imageOpt, DockerClient.AuthConfiguration{})
+	err := DockerCli().PullImage(imageOpt, DockerClient.AuthConfiguration{})
 	if err != nil {
 		DockerLogger.Errorf("Install of app %s:%s failed: %s", appConf.Name, appConf.Version, err)
 		return false
@@ -57,13 +68,13 @@ func (c *Client) RunApp(appId base.AppId, appConf base.AppConfiguration, appsSta
 
 	config := DockerClient.Config{AttachStdout: true, AttachStdin: true, Image: fmt.Sprintf("%s:%s", appConf.Name, appConf.Version)}
 	opts := DockerClient.CreateContainerOptions{Name: string(appId), Config: &config}
-	container, containerErr := dockerCli.CreateContainer(opts)
+	container, containerErr := DockerCli().CreateContainer(opts)
 	if containerErr != nil {
 		DockerLogger.Errorf("Running docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version, containerErr)
 		return false
 	}
 
-	err := dockerCli.StartContainer(container.ID, &DockerClient.HostConfig{})
+	err := DockerCli().StartContainer(container.ID, &DockerClient.HostConfig{})
 
 	if err != nil {
 		DockerLogger.Warnf("Running docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version)
@@ -74,9 +85,9 @@ func (c *Client) RunApp(appId base.AppId, appConf base.AppConfiguration, appsSta
 }
 
 
-func (c *Client) QueryApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
+func (c *Client) QueryApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {      //TODO panic
 	DockerLogger.Infof("Query docker app %s - %s:%s", appId, appConf.Name, appConf.Version)
-	resp, err := dockerCli.InspectContainer(string(appId))
+	resp, err := DockerCli().InspectContainer(string(appId))
 	if err != nil {
 		DockerLogger.Infof("Query docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version)
 		return false
@@ -87,14 +98,14 @@ func (c *Client) QueryApp(appId base.AppId, appConf base.AppConfiguration, appsS
 
 func (c *Client) StopApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
 	DockerLogger.Infof("Stopping docker app %s - %s:%s", appId, appConf.Name, appConf.Version)
-	err := dockerCli.StopContainer(fmt.Sprintf("%s", appId), 0)
+	err := DockerCli().StopContainer(fmt.Sprintf("%s", appId), 0)
 	fail := false
 	if err != nil {
 		DockerLogger.Infof("Stopping docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version, err)
 		fail = true
 	}
 	opts := DockerClient.RemoveContainerOptions{ID: string(appId)}
-	err = dockerCli.RemoveContainer(opts)
+	err = DockerCli().RemoveContainer(opts)
 	if err != nil {
 		DockerLogger.Infof("Stopping docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version, err)
 		fail = true
@@ -108,7 +119,7 @@ func (c *Client) StopApp(appId base.AppId, appConf base.AppConfiguration, appsSt
 
 func (c *Client) DeleteApp(appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
 	DockerLogger.Infof("Deleting docker app %s:%s", appConf.Name, appConf.Version)
-	err := dockerCli.RemoveImage(fmt.Sprintf("%s:%s", appConf.Name, appConf.Version))
+	err := DockerCli().RemoveImage(fmt.Sprintf("%s:%s", appConf.Name, appConf.Version))
 	if err != nil {
 		DockerLogger.Infof("Deleting docker app %s:%s failed: %s", appConf.Name, appConf.Version, err)
 		return false
@@ -117,14 +128,14 @@ func (c *Client) DeleteApp(appConf base.AppConfiguration, appsState *types.AppsS
 	return true
 }
 
-func (c *Client) AppMetrics(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration, metrics *types.AppsMetricsById) bool {
+func (c *Client) AppMetrics(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration, metrics *types.AppsMetricsById) bool {     //TODO this causes panics
 	DockerLogger.Infof("Getting AppMetrics for app %s %s:%s", appId, appConf.Name, appConf.Version)
 	errC := make(chan error, 1)
 	statsC := make(chan *DockerClient.Stats)
 	done := make(chan bool)
 
 	go func() {
-		errC <- dockerCli.Stats(DockerClient.StatsOptions{ID: string(appId), Stats: statsC, Stream: true, Done: done})
+		errC <- DockerCli().Stats(DockerClient.StatsOptions{ID: string(appId), Stats: statsC, Stream: true, Done: done})
 		close(errC)
 	}()
 	var resultStats []*DockerClient.Stats
