@@ -38,7 +38,7 @@ type HostSpawn struct {
 type HostCrashHandler map[base.HostId]HostSpawn
 
 const (
-	HOST_CHECKIN_TIMEOUT = time.Duration(time.Minute * 5)
+	HOST_CHECKIN_TIMEOUT = time.Duration(time.Minute * 15)
 	HOST_CRASH_TIMEOUT = "HOST_CRASH_TIMEOUT"
 	HOST_CRASH_CLOUD_PROVIDER_KILL = "HOST_CRASH_CLOUD_PROVIDER_KILL"
 
