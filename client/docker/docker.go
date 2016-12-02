@@ -77,7 +77,7 @@ func (c *Client) RunApp(appId base.AppId, appConf base.AppConfiguration, appsSta
 	err := DockerCli().StartContainer(container.ID, &DockerClient.HostConfig{})
 
 	if err != nil {
-		DockerLogger.Warnf("Running docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version)
+		DockerLogger.Warnf("Running docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version, err)
 		return false
 	}
 	DockerLogger.Infof("Running docker app %s - %s:%s successful", appId, appConf.Name, appConf.Version)
@@ -89,7 +89,7 @@ func (c *Client) QueryApp(appId base.AppId, appConf base.AppConfiguration, appsS
 	DockerLogger.Infof("Query docker app %s - %s:%s", appId, appConf.Name, appConf.Version)
 	resp, err := DockerCli().InspectContainer(string(appId))
 	if err != nil {
-		DockerLogger.Infof("Query docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version)
+		DockerLogger.Infof("Query docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version, err)
 		return false
 	}
 	DockerLogger.Infof("Query docker app %s - %s:%s successful %+v", appId, appConf.Name, appConf.Version, resp)
