@@ -49,7 +49,7 @@ func returnJson(w http.ResponseWriter, obj interface{}) {
 	//	return
 	//}
 	//w.Header().Set("Content-Type", "application/json")
-	w.Write("HELLOOOO")
+	w.Write([]byte("HELLOOOO"))
 }
 
 func pushHandler(w http.ResponseWriter, r *http.Request) {
