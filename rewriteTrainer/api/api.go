@@ -48,7 +48,7 @@ func returnJson(w http.ResponseWriter, obj interface{}) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	//w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(j)
 }
 
