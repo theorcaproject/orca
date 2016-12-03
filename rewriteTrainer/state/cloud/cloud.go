@@ -144,7 +144,7 @@ func (c *CloudLayout) AddEmptyHost(host base.HostId) {
 	(*c).Layout[host] = CloudLayoutElement{
 		HostId: host,
 		IpAddress: "",
-		HabitatVersion: "",
+		HabitatVersion: 0,
 		Apps: make(map[base.AppName]AppsVersion),
 	}
 }

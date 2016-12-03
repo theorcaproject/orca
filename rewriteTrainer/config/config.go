@@ -43,8 +43,8 @@ type AppJsonConfiguration struct {
 	Name base.AppName
 	Version base.Version
 	Type base.AppType
+	TargetDeploymentCount base.DeploymentCount
 	MinDeploymentCount base.DeploymentCount
-	MaxDeploymentCount base.DeploymentCount
 	//InstallCommands []base.OsCommand
 	//QueryStateCommand base.OsCommand
 	//RemoveCommand base.OsCommand
@@ -82,12 +82,19 @@ func (j *JsonConfiguration) Check() {
 
 }
 
-func (j *JsonConfiguration) Load(trainerConfigPath string, appConfigPath string, availableInstancesPath string, cloudProviderConfigPath string) {
+var (
+	TRAINER_CONFIGURATION_FILE = "trainer.json"
+	APPS_CONFIGURATION_FILE = "applications.json"
+	AVAILABLE_INSTANCES_CONFIGURATION_FILE = "instances.json"
+	CLOUD_PROVIDER_CONFIGURATION_FILE = "provider.json"
+)
+
+func (j *JsonConfiguration) Load(configurationRoot string) {
 	configFiles := make(map[string]interface{})
-	configFiles[trainerConfigPath] = &j.Trainer
-	configFiles[appConfigPath] = &j.Apps
-	configFiles[availableInstancesPath] = &j.AvailableInstances
-	configFiles[cloudProviderConfigPath] = &j.CloudProvider
+	configFiles[configurationRoot + TRAINER_CONFIGURATION_FILE] = &j.Trainer
+	configFiles[configurationRoot + APPS_CONFIGURATION_FILE] = &j.Apps
+	configFiles[configurationRoot + AVAILABLE_INSTANCES_CONFIGURATION_FILE] = &j.AvailableInstances
+	configFiles[configurationRoot + CLOUD_PROVIDER_CONFIGURATION_FILE] = &j.CloudProvider
 	for key, interf := range configFiles {
 		Logger.InitLogger.Infof("Loading config file from %s", key)
 		file, err := os.Open(key)
@@ -133,7 +140,7 @@ func applyAppsConfig(appsConfs []AppJsonConfiguration) {
 			Type: aConf.Type,
 			Version: aConf.Version,
 			TargetDeploymentCount: aConf.MinDeploymentCount,
-			MinDeploymentCount: aConf.MaxDeploymentCount,
+			MinDeploymentCount: aConf.MinDeploymentCount,
 			DockerConfig: aConf.DockerConfig,
 			//InstallCommands: aConf.InstallCommands,
 			//QueryStateCommand: aConf.QueryStateCommand,

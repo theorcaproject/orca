@@ -12,22 +12,19 @@ import (
 	"gatoor/orca/rewriteTrainer/scheduler"
 	"gatoor/orca/rewriteTrainer/planner"
 	"time"
+	"flag"
 )
 
 
 const CHECKIN_WAIT_TIME = 5
 
-var (
-	TRAINER_CONFIGURATION_FILE = "/orca/config/trainer/trainer.json"
-	APPS_CONFIGURATION_FILE = "/orca/config/trainer/apps.json"
-	AVAILABLE_INSTANCES_CONFIGURATION_FILE = "/orca/config/trainer/available_instances.json"
-	CLOUD_PROVIDER_CONFIGURATION_FILE = "/orca/config/trainer/cloud_provider.json"
-)
-
 func main() {
+	var configurationRoot = flag.String("configroot", "/orca/config/", "Configuration Root Directory")
+	flag.Parse()
+
 	Logger.InitLogger.Info("Starting trainer...")
 	initState()
-	initConfig()
+	initConfig(*configurationRoot)
 	cloud.Init()
 	db.Init("")
 	initApi()
@@ -53,9 +50,9 @@ func initState() {
 	state_needs.GlobalAppsNeedState = state_needs.AppsNeedState{}
 }
 
-func initConfig() {
+func initConfig(configurationRoot string) {
 	var baseConfiguration config.JsonConfiguration
-	baseConfiguration.Load(TRAINER_CONFIGURATION_FILE, APPS_CONFIGURATION_FILE, AVAILABLE_INSTANCES_CONFIGURATION_FILE, CLOUD_PROVIDER_CONFIGURATION_FILE)
+	baseConfiguration.Load(configurationRoot)
 	baseConfiguration.Check()
 	baseConfiguration.ApplyToState()
 }

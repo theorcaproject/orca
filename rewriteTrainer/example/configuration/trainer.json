@@ -1,0 +1,7 @@
+{
+  "Port": 5000,
+  "Ip": "0.0.0.0",
+  "Policies": {
+    "TrainerPolicies": false
+  }
+}

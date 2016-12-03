@@ -111,14 +111,15 @@ type AppsConfigurationState map[base.AppName]AppConfigurationVersions
 type AppConfigurationVersions map[base.Version]base.AppConfiguration
 
 func (a AppConfigurationVersions) LatestVersion() base.Version {
-	var keys []string
+	var keys []float64
 	for k := range a {
-		keys = append(keys, string(k))
+		keys = append(keys, float64(k))
 	}
 	if len(keys) == 0 {
-		return ""
+		return 0
 	}
-	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
+
+	sort.Sort(sort.Reverse(sort.Float64Slice(keys)))
 	return base.Version(keys[0])
 }
 

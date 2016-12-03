@@ -24,7 +24,7 @@ const (
 )
 
 type HostId string
-type Version string
+type Version float64
 type IpAddr string
 type HabitatName string
 type HabitatStatus string

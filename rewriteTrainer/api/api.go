@@ -14,13 +14,16 @@ import (
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/tracker"
 	"gatoor/orca/base"
+	"gatoor/orca/rewriteTrainer/config"
 )
 
 const ORCA_VERSION = "0.1"
+
 type Api struct{}
+
 var ApiLogger = Logger.LoggerWithField(Logger.Logger, "module", "api")
 
-func (api Api) Init () {
+func (api Api) Init() {
 	ApiLogger.Infof("Initializing Api on Port %d", state_configuration.GlobalConfigurationState.Trainer.Port)
 
 	r := mux.NewRouter()
@@ -28,12 +31,13 @@ func (api Api) Init () {
 	r.HandleFunc("/push", pushHandler)
 
 	r.HandleFunc("/state/config", getStateConfiguration)
+	r.HandleFunc("/state/config/applications", getStateConfigurationApplications)
 	r.HandleFunc("/state/cloud", getStateCloud)
 	r.HandleFunc("/state/needs", getStateNeeds)
 
 	http.Handle("/", r)
 
-	go func () {
+	go func() {
 		err := http.ListenAndServe(fmt.Sprintf(":%d", state_configuration.GlobalConfigurationState.Trainer.Port), nil)
 		if err != nil {
 			ApiLogger.Fatalf("Api failed to start - %s", err)
@@ -91,6 +95,38 @@ func doHandlePush(hostInfo base.HostInfo, stats base.MetricsWrapper) {
 func getStateConfiguration(w http.ResponseWriter, r *http.Request) {
 	ApiLogger.Infof("Query to getStateConfiguration")
 	returnJson(w, state_configuration.GlobalConfigurationState.Snapshot())
+}
+
+func getStateConfigurationApplications(w http.ResponseWriter, r *http.Request) {
+	ApiLogger.Infof("Query to getStateConfigurationApplications")
+	if (r.Method == "POST") {
+		/* We need to create a new configuration object */
+		var object config.AppJsonConfiguration
+		decoder := json.NewDecoder(r.Body)
+		if err := decoder.Decode(&object); err != nil {
+			ApiLogger.Infof("An error occurred while reading the application information")
+		}
+
+		ApiLogger.Infof("Read new configuration for application %s", object.Name)
+		ApiLogger.Infof("version %s", object.Version)
+
+		var new_version = object.Version + 1
+		state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
+			Name: object.Name,
+			Type: object.Type,
+			Version: new_version,
+			TargetDeploymentCount: object.TargetDeploymentCount,
+			MinDeploymentCount: object.MinDeploymentCount,
+			//InstallCommands []base.OsCommand
+			//QueryStateCommand base.OsCommand
+			//RemoveCommand base.OsCommand
+			//RunCommand base.OsCommand
+			//StopCommand base.OsCommand
+			DockerConfig: object.DockerConfig,
+		})
+	}
+
+	returnJson(w, state_configuration.GlobalConfigurationState.AllAppsLatest())
 }
 
 func getStateCloud(w http.ResponseWriter, r *http.Request) {

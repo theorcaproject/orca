@@ -1,0 +1,7 @@
+{
+  "Type": "AWS",
+  "MinInstances": 2,
+  "MaxInstances": 3,
+  "AllowedInstanceTypes": ["t2.nano"],
+  "FundamentalInstanceType": "t2.nano"
+}
