@@ -30,7 +30,8 @@ type HabitatName string
 type HabitatStatus string
 type Status string
 type DeploymentCount int
-
+type LoadBalancerName string
+type NetworkName string
 
 type Command struct {
     Path string
@@ -164,6 +165,8 @@ type AppConfiguration struct {
     MinDeploymentCount    DeploymentCount
     DockerConfig          DockerConfig
     RawConfig             RawConfig
+    LoadBalancer LoadBalancerName
+    Network NetworkName
 }
 
 type RawConfig struct {

@@ -10,6 +10,8 @@
       "Repository": "nginx",
       "Reference": "docker.io"
     },
+    "LoadBalancer": "elb1",
+    "Network": "vpc-c123",
     "Needs": {
       "CpuNeeds": 200,
       "MemoryNeeds": 200,

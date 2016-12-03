@@ -123,6 +123,8 @@ func getStateConfigurationApplications(w http.ResponseWriter, r *http.Request) {
 			//RunCommand base.OsCommand
 			//StopCommand base.OsCommand
 			DockerConfig: object.DockerConfig,
+			LoadBalancer: object.LoadBalancer,
+			Network: object.Network,
 		})
 	}
 

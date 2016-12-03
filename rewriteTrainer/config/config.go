@@ -52,6 +52,8 @@ type AppJsonConfiguration struct {
 	//StopCommand base.OsCommand
 	DockerConfig base.DockerConfig
 	Needs needs.AppNeeds
+	LoadBalancer base.LoadBalancerName
+	Network base.NetworkName
 }
 
 type CloudJsonConfiguration struct {
@@ -142,6 +144,9 @@ func applyAppsConfig(appsConfs []AppJsonConfiguration) {
 			TargetDeploymentCount: aConf.MinDeploymentCount,
 			MinDeploymentCount: aConf.MinDeploymentCount,
 			DockerConfig: aConf.DockerConfig,
+			LoadBalancer: aConf.LoadBalancer,
+			Network: aConf.Network,
+
 			//InstallCommands: aConf.InstallCommands,
 			//QueryStateCommand: aConf.QueryStateCommand,
 			//RunCommand: aConf.RunCommand,
