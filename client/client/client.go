@@ -33,7 +33,6 @@ type Client interface {
 	AppMetrics(base.AppId, base.AppConfiguration, *types.AppsState, *types.Configuration, *types.AppsMetricsById) bool
 }
 
-
 func Init() {
 	ClientLogger.Info("Initializing Client...")
 	if Configuration.Type == types.DOCKER_CLIENT {
@@ -48,7 +47,6 @@ func Init() {
 	AppsMetricsById = make(map[base.AppId]map[string]base.AppStats)
 	ClientLogger.Infof("Initialized Client of Type %s", cli.Type())
 }
-
 
 func Handle(config base.PushConfiguration) {
 	ClientLogger.Infof("Received Configuration from trainer: %+v", config)

@@ -35,7 +35,7 @@ func ParsePush(r *http.Request) (base.HostInfo, base.MetricsWrapper, error) {
 	return wrapper.HostInfo, wrapper.Stats, nil
 }
 
-func RecordStats(host base.HostId, stats base.MetricsWrapper, time string) {
+func RecordStats(host base.HostId, stats base.MetricsWrapper, time string) {//TODO handle string version
 	MetricsLogger.WithField("host", host).Infof("Recording stats for host '%s'", host)
 	MetricsLogger.WithField("host", host).Infof("Stats: %+v", stats)
 	db.Audit.Add(db.BUCKET_AUDIT_RECEIVED_STATS, string(host) + "_" + time, stats)

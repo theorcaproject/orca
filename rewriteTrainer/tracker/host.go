@@ -61,6 +61,7 @@ type HostTracker map[base.HostId]HostTrackingInfo
 
 
 func (h *HostTracker) Update(hostId base.HostId, checkin time.Time) {
+	TrackerLogger.Infof("Checking in host %s at %s", hostId, checkin.Format(time.RFC3339Nano))
 	hostTrackerMutex.Lock()
 	defer hostTrackerMutex.Unlock()
 	if _, exists := (*h)[hostId]; !exists {
@@ -84,7 +85,13 @@ func (h *HostTracker) Get(hostId base.HostId) (HostTrackingInfo, error) {
 		return val, nil
 	}
 	return HostTrackingInfo{}, errors.New("Host does not exist")
+}
 
+func (h *HostTracker) Remove(hostId base.HostId) {
+	TrackerLogger.Infof("Removeing host %s from HostTracker", hostId)
+	hostTrackerMutex.Lock()
+	defer hostTrackerMutex.Unlock()
+	delete(*h, hostId)
 }
 
 func (h *HostTracker) CheckCheckinTimeout() {
@@ -134,6 +141,7 @@ func removeHostFromState(hostId base.HostId) {
 	TrackerLogger.Infof("Host %s has died. Removing it from all state objects", hostId)
 	state_cloud.GlobalAvailableInstances.Remove(hostId)
 	state_cloud.GlobalCloudLayout.Current.RemoveHost(hostId)
+	GlobalHostTracker.Remove(hostId)
 }
 
 
