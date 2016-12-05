@@ -42,7 +42,7 @@ func TestConfig_ApplyToState(t *testing.T) {
 	conf.Apps = []AppJsonConfiguration{
 		{
 			Name: "app1",
-			Version: "0.1",
+			Version: 1,
 			Type: base.APP_WORKER,
 			//InstallCommands: []base.OsCommand{
 			//	{
@@ -70,7 +70,7 @@ func TestConfig_ApplyToState(t *testing.T) {
 		},
 		{
 			Name: "app11",
-			Version: "0.1",
+			Version: 1,
 			Type: base.APP_WORKER,
 			//InstallCommands: []base.OsCommand{
 			//	{
@@ -98,7 +98,7 @@ func TestConfig_ApplyToState(t *testing.T) {
 		},
 		{
 			Name: "app2",
-			Version: "0.2",
+			Version: 2,
 			Type: base.APP_WORKER,
 			//InstallCommands: []base.OsCommand{
 			//	{

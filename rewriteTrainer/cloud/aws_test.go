@@ -50,7 +50,7 @@ func TestAWSProvider_SpawnInstance_TerminateInstance(t *testing.T) {
 		t.Error()
 	}
 
-	CurrentProviderConfig.AWSConfiguration.AMI = "ami-3df75e5d"
+	CurrentProviderConfig.AWSConfiguration.AMI = "ami-a8842dc8"
 
 	if aws.SpawnInstance("xyz") != "" {
 		t.Error()

@@ -22,7 +22,7 @@ func TestPlannerQueue_AllEmpty(t *testing.T) {
 		t.Error("should be all empty")
 	}
 
-	queue.Add("host1", "app1", state_cloud.AppsVersion{"1.0", 2})
+	queue.Add("host1", "app1", state_cloud.AppsVersion{1, 2})
 
 	if queue.AllEmpty() == true {
 		t.Error("should have elements")
@@ -36,7 +36,7 @@ func TestPlannerQueue_Empty(t *testing.T) {
 		t.Error("should be empty")
 	}
 
-	queue.Add("host1", "app1", state_cloud.AppsVersion{"1.0", 2})
+	queue.Add("host1", "app1", state_cloud.AppsVersion{1, 2})
 
 	if queue.Empty("somehost") == false {
 		t.Error("should be empty")
@@ -54,13 +54,13 @@ func TestPlannerQueue_Remove(t *testing.T) {
 		t.Error("should be empty")
 	}
 
-	queue.Add("host1", "app1", state_cloud.AppsVersion{"1.0", 2})
+	queue.Add("host1", "app1", state_cloud.AppsVersion{1, 2})
 
 	if queue.Empty("host1") == true {
 		t.Error("should not be empty")
 	}
 	elem, _ := queue.Get("host1")
-	if elem["app1"].Version.Version != "1.0" {
+	if elem["app1"].Version.Version != 1 {
 		t.Error("wrong version")
 	}
 	queue.SetState("host1", "app1", STATE_FAIL)
@@ -78,7 +78,7 @@ func TestPlannerQueue_Remove(t *testing.T) {
 		t.Error(queue.GetState("host1", "app1"))
 	}
 
-	if elem1["app1"].Version.Version == "1.0" {
+	if elem1["app1"].Version.Version == 1 {
 		t.Error("wrong version")
 	}
 
@@ -89,24 +89,24 @@ func TestPlannerQueue_Remove(t *testing.T) {
 
 func TestPlannerQueue_RemoveApp(t *testing.T) {
 	queue := NewPlannerQueue()
-	queue.Add("host1", "app1", state_cloud.AppsVersion{"1.0", 1})
-	queue.Add("host1", "app2", state_cloud.AppsVersion{"2.0", 1})
-	queue.Add("host2", "app1", state_cloud.AppsVersion{"1.1", 1})
-	queue.Add("host2", "app2", state_cloud.AppsVersion{"2.0", 1})
-	queue.Add("host3", "app1", state_cloud.AppsVersion{"1.0", 1})
+	queue.Add("host1", "app1", state_cloud.AppsVersion{1, 1})
+	queue.Add("host1", "app2", state_cloud.AppsVersion{3, 1})
+	queue.Add("host2", "app1", state_cloud.AppsVersion{2, 1})
+	queue.Add("host2", "app2", state_cloud.AppsVersion{3, 1})
+	queue.Add("host3", "app1", state_cloud.AppsVersion{1, 1})
 
 	h1, _ := queue.Get("host1")
 	if len(h1) != 2 {
 		t.Error(h1)
 	}
-	if h1["app1"].Version.Version != "1.0" {
+	if h1["app1"].Version.Version != 1 {
 		t.Error(h1)
 	}
 	h2, _ := queue.Get("host2")
 	if len(h2) != 2 {
 		t.Error(h2)
 	}
-	if h2["app1"].Version.Version != "1.1" {
+	if h2["app1"].Version.Version != 2 {
 		t.Error(h2)
 	}
 	h3, _ := queue.Get("host3")
@@ -114,7 +114,7 @@ func TestPlannerQueue_RemoveApp(t *testing.T) {
 		t.Error(h3)
 	}
 
-	queue.RemoveApp("app1", "1.0")
+	queue.RemoveApp("app1", 1)
 
 	h11, _ := queue.Get("host1")
 	if len(h11) != 1 {
@@ -133,10 +133,10 @@ func TestPlannerQueue_RemoveApp(t *testing.T) {
 func TestPlannerQueue_PopSuccessFailState(t *testing.T) {
 	queue := NewPlannerQueue()
 
-	queue.Add("host1", "app1", state_cloud.AppsVersion{"1.0", 2})
-	queue.Add("host2", "app1", state_cloud.AppsVersion{"10.0", 2})
-	queue.Add("host1", "app1", state_cloud.AppsVersion{"2.0", 2})
-	queue.Add("host1", "app1", state_cloud.AppsVersion{"2.0", 3})
+	queue.Add("host1", "app1", state_cloud.AppsVersion{1, 2})
+	queue.Add("host2", "app1", state_cloud.AppsVersion{10, 2})
+	queue.Add("host1", "app1", state_cloud.AppsVersion{3, 2})
+	queue.Add("host1", "app1", state_cloud.AppsVersion{3, 3})
 
 	if queue.Empty("host1") == true || queue.Empty("host2") == true{
 		t.Error("should have elements")
@@ -148,7 +148,7 @@ func TestPlannerQueue_PopSuccessFailState(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error")
 	}
-	if elem["app1"].Version.Version != "10.0" {
+	if elem["app1"].Version.Version != 10 {
 		t.Error("wrong version")
 	}
 
@@ -158,8 +158,8 @@ func TestPlannerQueue_PopSuccessFailState(t *testing.T) {
 	if err1 != nil {
 		t.Error("unexpected error")
 	}
-	if elem1["app1"].Version.Version != "1.0" {
-		t.Error("wrong version " + elem1["app1"].Version.Version)
+	if elem1["app1"].Version.Version != 1 {
+		t.Error(elem1["app1"].Version.Version)
 	}
 }
 
@@ -167,16 +167,16 @@ func TestPlannerQueue_PopSuccessFailState(t *testing.T) {
 func TestPlannerQueue_PopQueuedApplyingState(t *testing.T) {
 	queue := NewPlannerQueue()
 
-	queue.Add("host1", "app1", state_cloud.AppsVersion{"1.0", 2})
-	queue.Add("host2", "app1", state_cloud.AppsVersion{"10.0", 2})
-	queue.Add("host1", "app1", state_cloud.AppsVersion{"2.0", 2})
-	queue.Add("host1", "app1", state_cloud.AppsVersion{"2.0", 3})
+	queue.Add("host1", "app1", state_cloud.AppsVersion{1, 2})
+	queue.Add("host2", "app1", state_cloud.AppsVersion{10, 2})
+	queue.Add("host1", "app1", state_cloud.AppsVersion{3, 2})
+	queue.Add("host1", "app1", state_cloud.AppsVersion{3, 3})
 
 	elem1, err1 := queue.Get("host1")
 	if err1 != nil {
 		t.Error("unexpected error")
 	}
-	if elem1["app1"].Version.Version != "1.0" {
+	if elem1["app1"].Version.Version != 1 {
 		t.Error("wrong version")
 	}
 
@@ -187,7 +187,7 @@ func TestPlannerQueue_PopQueuedApplyingState(t *testing.T) {
 		t.Error("unexpected error")
 	}
 
-	if elem2["app1"].Version.Version != "1.0" {
+	if elem2["app1"].Version.Version != 1 {
 		t.Error("wrong version")
 	}
 	queue.SetState("host1", "app1", STATE_APPLYING)
@@ -197,7 +197,7 @@ func TestPlannerQueue_PopQueuedApplyingState(t *testing.T) {
 		t.Error("unexpected error")
 	}
 
-	if elem4["app1"].Version.Version != "1.0" {
+	if elem4["app1"].Version.Version != 1 {
 		t.Error("wrong version")
 	}
 	queue.SetState("host1", "app1", STATE_FAIL)
@@ -221,11 +221,11 @@ func initAppsDiff() (map[base.AppName]state_cloud.AppsVersion, map[base.AppName]
 
 func TestPlanner_appsDiff_Equal(t *testing.T) {
 	master, slave := initAppsDiff()
-	master["app1"] = state_cloud.AppsVersion{"1.0", 1}
-	master["app2"] = state_cloud.AppsVersion{"1.1", 2}
+	master["app1"] = state_cloud.AppsVersion{1, 1}
+	master["app2"] = state_cloud.AppsVersion{2, 2}
 
-	slave["app1"] = state_cloud.AppsVersion{"1.0", 1}
-	slave["app2"] = state_cloud.AppsVersion{"1.1", 2}
+	slave["app1"] = state_cloud.AppsVersion{1, 1}
+	slave["app2"] = state_cloud.AppsVersion{2, 2}
 
 	diff := appsDiff(master, slave)
 	if len(diff) != 0 {
@@ -237,11 +237,11 @@ func TestPlanner_appsDiff_Equal(t *testing.T) {
 func TestPlanner_appsDiff_Update(t *testing.T) {
 	master, slave := initAppsDiff()
 
-	master["app1"] = state_cloud.AppsVersion{"2.0", 1}
-	master["app2"] = state_cloud.AppsVersion{"2.1", 2}
+	master["app1"] = state_cloud.AppsVersion{3, 1}
+	master["app2"] = state_cloud.AppsVersion{21, 2}
 
-	slave["app1"] = state_cloud.AppsVersion{"1.0", 1}
-	slave["app2"] = state_cloud.AppsVersion{"1.1", 2}
+	slave["app1"] = state_cloud.AppsVersion{1, 1}
+	slave["app2"] = state_cloud.AppsVersion{2, 2}
 
 	diff := appsDiff(master, slave)
 
@@ -249,10 +249,10 @@ func TestPlanner_appsDiff_Update(t *testing.T) {
 		t.Error("found no diff")
 	}
 
-	if diff["app1"].Version != "2.0" {
+	if diff["app1"].Version != 3 {
 		t.Error("wrong version")
 	}
-	if diff["app2"].Version != "2.1" {
+	if diff["app2"].Version != 21 {
 		t.Error("wrong version")
 	}
 }
@@ -261,11 +261,11 @@ func TestPlanner_appsDiff_Update(t *testing.T) {
 func TestPlanner_appsDiff_ScaleUp(t *testing.T) {
 	master, slave := initAppsDiff()
 
-	master["app1"] = state_cloud.AppsVersion{"1.0", 2}
-	master["app2"] = state_cloud.AppsVersion{"1.1", 2}
+	master["app1"] = state_cloud.AppsVersion{1, 2}
+	master["app2"] = state_cloud.AppsVersion{2, 2}
 
-	slave["app1"] = state_cloud.AppsVersion{"1.0", 1}
-	slave["app2"] = state_cloud.AppsVersion{"1.1", 2}
+	slave["app1"] = state_cloud.AppsVersion{1, 1}
+	slave["app2"] = state_cloud.AppsVersion{2, 2}
 
 	diff := appsDiff(master, slave)
 
@@ -273,7 +273,7 @@ func TestPlanner_appsDiff_ScaleUp(t *testing.T) {
 		t.Error("found no diff")
 	}
 
-	if diff["app1"].Version != "1.0" {
+	if diff["app1"].Version != 1 {
 		t.Error("wrong version")
 	}
 	if diff["app1"].DeploymentCount != 2 {
@@ -285,10 +285,10 @@ func TestPlanner_appsDiff_ScaleUp(t *testing.T) {
 func TestPlanner_appsDiff_DeployNew(t *testing.T) {
 	master, slave := initAppsDiff()
 
-	master["app1"] = state_cloud.AppsVersion{"1.0", 1}
-	master["app2"] = state_cloud.AppsVersion{"1.1", 2}
+	master["app1"] = state_cloud.AppsVersion{1, 1}
+	master["app2"] = state_cloud.AppsVersion{2, 2}
 
-	slave["app1"] = state_cloud.AppsVersion{"1.0", 1}
+	slave["app1"] = state_cloud.AppsVersion{1, 1}
 
 	diff := appsDiff(master, slave)
 
@@ -296,7 +296,7 @@ func TestPlanner_appsDiff_DeployNew(t *testing.T) {
 		t.Error("found no diff")
 	}
 
-	if diff["app2"].Version != "1.1" {
+	if diff["app2"].Version != 2 {
 		t.Error("wrong version")
 	}
 }
@@ -305,17 +305,17 @@ func TestPlanner_appsDiff_DeployNew(t *testing.T) {
 func TestPlanner_appsDiff_RemoveApp(t *testing.T) {
 	master, slave := initAppsDiff()
 
-	master["app1"] = state_cloud.AppsVersion{"1.0", 1}
+	master["app1"] = state_cloud.AppsVersion{1, 1}
 
-	slave["app1"] = state_cloud.AppsVersion{"1.0", 1}
-	slave["app2"] = state_cloud.AppsVersion{"1.1", 2}
+	slave["app1"] = state_cloud.AppsVersion{1, 1}
+	slave["app2"] = state_cloud.AppsVersion{2, 2}
 
 	diff := appsDiff(master, slave)
 	if len(diff) != 1 {
 		t.Error("found no diff")
 	}
 
-	if diff["app2"].Version != "1.1" {
+	if diff["app2"].Version != 2 {
 		t.Error("wrong version")
 	}
 
@@ -328,11 +328,11 @@ func TestPlanner_appsDiff_RemoveApp(t *testing.T) {
 func TestPlanner_appsDiff_RollbackVersion(t *testing.T) {
 	master, slave := initAppsDiff()
 
-	master["app1"] = state_cloud.AppsVersion{"1.0", 1}
-	master["app2"] = state_cloud.AppsVersion{"1.1", 2}
+	master["app1"] = state_cloud.AppsVersion{1, 1}
+	master["app2"] = state_cloud.AppsVersion{2, 2}
 
-	slave["app1"] = state_cloud.AppsVersion{"1.0", 1}
-	slave["app2"] = state_cloud.AppsVersion{"2.0", 2}
+	slave["app1"] = state_cloud.AppsVersion{1, 1}
+	slave["app2"] = state_cloud.AppsVersion{3, 2}
 
 	diff := appsDiff(master, slave)
 
@@ -340,7 +340,7 @@ func TestPlanner_appsDiff_RollbackVersion(t *testing.T) {
 		t.Error("found no diff")
 	}
 
-	if diff["app2"].Version != "1.1" {
+	if diff["app2"].Version != 2 {
 		t.Error("wrong version")
 	}
 }
@@ -349,11 +349,11 @@ func TestPlanner_appsDiff_RollbackVersion(t *testing.T) {
 func TestPlanner_appsDiff_ScaleDown(t *testing.T) {
 	master, slave := initAppsDiff()
 
-	master["app1"] = state_cloud.AppsVersion{"1.0", 1}
-	master["app2"] = state_cloud.AppsVersion{"1.1", 1}
+	master["app1"] = state_cloud.AppsVersion{1, 1}
+	master["app2"] = state_cloud.AppsVersion{2, 1}
 
-	slave["app1"] = state_cloud.AppsVersion{"1.0", 1}
-	slave["app2"] = state_cloud.AppsVersion{"1.1", 2}
+	slave["app1"] = state_cloud.AppsVersion{1, 1}
+	slave["app2"] = state_cloud.AppsVersion{2, 2}
 
 	diff := appsDiff(master, slave)
 
@@ -361,7 +361,7 @@ func TestPlanner_appsDiff_ScaleDown(t *testing.T) {
 		t.Error("found no diff")
 	}
 
-	if diff["app2"].Version != "1.1" {
+	if diff["app2"].Version != 2 {
 		t.Error("wrong version")
 	}
 	if diff["app2"].DeploymentCount != 1 {
@@ -373,30 +373,30 @@ func TestPlanner_appsDiff_Combination(t *testing.T) {
 	master, slave := initAppsDiff()
 
 	//do nothing
-	master["app1"] = state_cloud.AppsVersion{"1.0", 1}
-	slave["app1"] = state_cloud.AppsVersion{"1.0", 1}
+	master["app1"] = state_cloud.AppsVersion{1, 1}
+	slave["app1"] = state_cloud.AppsVersion{1, 1}
 
 	// update
-	master["app2"] = state_cloud.AppsVersion{"2.0", 1}
-	slave["app2"] = state_cloud.AppsVersion{"1.0", 1}
+	master["app2"] = state_cloud.AppsVersion{3, 1}
+	slave["app2"] = state_cloud.AppsVersion{1, 1}
 
 	//rollback
-	master["app3"] = state_cloud.AppsVersion{"1.0", 1}
-	slave["app3"] = state_cloud.AppsVersion{"2.0", 1}
+	master["app3"] = state_cloud.AppsVersion{1, 1}
+	slave["app3"] = state_cloud.AppsVersion{3, 1}
 
 	//deploy new
-	master["app4"] = state_cloud.AppsVersion{"2.0", 1}
+	master["app4"] = state_cloud.AppsVersion{3, 1}
 
 	//remove
-	slave["app5"] = state_cloud.AppsVersion{"1.0", 1}
+	slave["app5"] = state_cloud.AppsVersion{1, 1}
 
 	//rollback scale up
-	master["app6"] = state_cloud.AppsVersion{"1.0", 2}
-	slave["app6"] = state_cloud.AppsVersion{"2.0", 1}
+	master["app6"] = state_cloud.AppsVersion{1, 2}
+	slave["app6"] = state_cloud.AppsVersion{3, 1}
 
 	//scale down
-	master["app7"] = state_cloud.AppsVersion{"1.0", 1}
-	slave["app7"] = state_cloud.AppsVersion{"1.0", 5}
+	master["app7"] = state_cloud.AppsVersion{1, 1}
+	slave["app7"] = state_cloud.AppsVersion{1, 5}
 
 
 	diff := appsDiff(master, slave)
@@ -405,42 +405,42 @@ func TestPlanner_appsDiff_Combination(t *testing.T) {
 		t.Error("found no diff")
 	}
 
-	if diff["app2"].Version != "2.0" {
+	if diff["app2"].Version != 3 {
 		t.Error("wrong version")
 	}
 	if diff["app2"].DeploymentCount != 1 {
 		t.Error("wrong deployment count")
 	}
 
-	if diff["app3"].Version != "1.0" {
+	if diff["app3"].Version != 1 {
 		t.Error("wrong version")
 	}
 	if diff["app3"].DeploymentCount != 1 {
 		t.Error("wrong deployment count")
 	}
 
-	if diff["app4"].Version != "2.0" {
+	if diff["app4"].Version != 3 {
 		t.Error("wrong version")
 	}
 	if diff["app4"].DeploymentCount != 1 {
 		t.Error("wrong deployment count")
 	}
 
-	if diff["app5"].Version != "1.0" {
+	if diff["app5"].Version != 1 {
 		t.Error("wrong version")
 	}
 	if diff["app5"].DeploymentCount != 0 {
 		t.Error("wrong deployment count")
 	}
 
-	if diff["app6"].Version != "1.0" {
+	if diff["app6"].Version != 1 {
 		t.Error("wrong version")
 	}
 	if diff["app6"].DeploymentCount != 2 {
 		t.Error("wrong deployment count")
 	}
 
-	if diff["app7"].Version != "1.0" {
+	if diff["app7"].Version != 1 {
 		t.Error("wrong version")
 	}
 	if diff["app7"].DeploymentCount != 1 {
@@ -455,12 +455,12 @@ func initDiff() LayoutDiff {
 	masterCloud.AddEmptyHost("host2")
 	slaveCloud.AddEmptyHost("host1")
 	slaveCloud.AddEmptyHost("host2")
-	masterCloud.AddApp("host1", "app1", "1.0", 1)
-	slaveCloud.AddApp("host1", "app1", "1.0", 1)
-	masterCloud.AddApp("host1", "app2", "2.0", 1)
-	slaveCloud.AddApp("host1", "app2", "1.0", 1)
-	masterCloud.AddApp("host2", "app1", "1.0", 10)
-	slaveCloud.AddApp("host2", "app1", "1.0", 2)
+	masterCloud.AddApp("host1", "app1", 1, 1)
+	slaveCloud.AddApp("host1", "app1", 1, 1)
+	masterCloud.AddApp("host1", "app2", 3, 1)
+	slaveCloud.AddApp("host1", "app2", 1, 1)
+	masterCloud.AddApp("host2", "app1", 1, 10)
+	slaveCloud.AddApp("host2", "app1", 1, 2)
 	return Diff(masterCloud, slaveCloud)
 }
 
@@ -471,10 +471,10 @@ func TestPlanner_Diff(t *testing.T) {
 		t.Error("no diff")
 	}
 
-	if diff["host1"]["app2"].DeploymentCount != 1 && diff["host1"]["app2"].Version != "2.0" {
+	if diff["host1"]["app2"].DeploymentCount != 1 && diff["host1"]["app2"].Version != 3 {
 		t.Error("host1 wrong diff")
 	}
-	if diff["host2"]["app1"].DeploymentCount != 10 && diff["host2"]["app1"].Version != "1.0" {
+	if diff["host2"]["app1"].DeploymentCount != 10 && diff["host2"]["app1"].Version != 1 {
 		t.Error("host1 wrong diff")
 	}
 }
@@ -483,8 +483,8 @@ func TestPlanner_Diff(t *testing.T) {
 func TestPlannerQueue_Snapshot(t *testing.T) {
 	queue := NewPlannerQueue()
 
-	queue.Add("host1", "app1", state_cloud.AppsVersion{"1.0", 2})
-	queue.Add("host2", "app1", state_cloud.AppsVersion{"10.0", 2})
+	queue.Add("host1", "app1", state_cloud.AppsVersion{1, 2})
+	queue.Add("host2", "app1", state_cloud.AppsVersion{10, 2})
 
 	snapshot := queue.Snapshot()
 
@@ -557,12 +557,12 @@ func TestPlannerQueue_Apply(t *testing.T) {
 	}
 
 	e := diff["host1"]["app2"]
-	e.Version = "2.1"
+	e.Version = 21
 	diff["host1"]["app2"] = e
 	queue.Apply(diff)
 
 	elem3, _ := queue.Get("host1")
-	if  elem3["app2"].Version.Version != "2.0" {
+	if  elem3["app2"].Version.Version != 3 {
 		t.Error("host1 applied change even though there was already a change in the queue")
 	}
 	if len(elem3) != 1 {
@@ -647,10 +647,10 @@ func TestPlanner_getGlobalMinNeeds(t *testing.T) {
 
 	conf.Apps = append(conf.Apps, config.AppJsonConfiguration{
 		Name: "app1",
-			Version: "1.1",
+			Version: 2,
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
-			MaxDeploymentCount: 10,
+			TargetDeploymentCount: 2,
 		//	InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -698,28 +698,10 @@ func TestPlanner_getGlobalCurrentNeeds(t *testing.T) {
 
 	conf.Apps = append(conf.Apps, config.AppJsonConfiguration{
 		Name: "app1",
-			Version: "1.1",
+			Version: 2,
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
-			MaxDeploymentCount: 10,
-		//	InstallCommands: []base.OsCommand{
-		//	{
-		//		Type: base.EXEC_COMMAND,
-		//		Command: base.Command{"ls", "/home"},
-		//	},
-		//	{
-		//		Type: base.FILE_COMMAND,
-		//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-		//	},
-		//},
-		//	QueryStateCommand: base.OsCommand{
-		//	Type: base.EXEC_COMMAND,
-		//	Command: base.Command{"wget", "http://localhost:1234/check"},
-		//},
-		//	RemoveCommand: base.OsCommand{
-		//	Type: base.EXEC_COMMAND,
-		//	Command: base.Command{"rm", "-rf /server/app1"},
-		//},
+			TargetDeploymentCount: 2,
 			Needs: needs.AppNeeds{
 			CpuNeeds: needs.CpuNeeds(11),
 			MemoryNeeds: needs.MemoryNeeds(22),
@@ -731,22 +713,22 @@ func TestPlanner_getGlobalCurrentNeeds(t *testing.T) {
 
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("host1")
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("host2")
-	state_cloud.GlobalCloudLayout.Current.AddApp("host1", "app1", "1.1", 10)
-	state_cloud.GlobalCloudLayout.Current.AddApp("host1", "app2", "0.2", 1)
-	state_cloud.GlobalCloudLayout.Current.AddApp("host2", "app1", "0.1", 4)
-	state_cloud.GlobalCloudLayout.Current.AddApp("host2", "app11", "0.1", 20)
+	state_cloud.GlobalCloudLayout.Current.AddApp("host1", "app1", 2, 10)
+	state_cloud.GlobalCloudLayout.Current.AddApp("host1", "app2", 25, 1)
+	state_cloud.GlobalCloudLayout.Current.AddApp("host2", "app1", 1, 4)
+	state_cloud.GlobalCloudLayout.Current.AddApp("host2", "app11", 1, 20)
 
 
 	cpu, mem, net := getGlobalCurrentNeeds()
 
-	if cpu != 235 {
-		t.Error("wrong cpu resources")
+	if cpu != 230 {
+		t.Error(cpu)
 	}
-	if mem != 345 {
-		t.Error("wrong mem resources")
+	if mem != 340 {
+		t.Error(mem)
 	}
-	if net != 455 {
-		t.Error("wrong net resources")
+	if net != 450 {
+		t.Error(net)
 	}
 }
 
@@ -754,12 +736,12 @@ func TestPlanner_wipeDesired(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	state_cloud.GlobalCloudLayout.Desired.AddEmptyHost("somehost1")
 	state_cloud.GlobalCloudLayout.Desired.AddEmptyHost("somehost2")
-	state_cloud.GlobalCloudLayout.Desired.AddApp("somehost1", "app1", "0.1", 10)
-	state_cloud.GlobalCloudLayout.Desired.AddApp("somehost2", "app1", "0.1", 10)
+	state_cloud.GlobalCloudLayout.Desired.AddApp("somehost1", "app1", 1, 10)
+	state_cloud.GlobalCloudLayout.Desired.AddApp("somehost2", "app1", 1, 10)
 
 	res, _ := state_cloud.GlobalCloudLayout.Desired.GetHost("somehost1")
 
-	if res.Apps["app1"].Version != "0.1" {
+	if res.Apps["app1"].Version != 1 {
 		t.Error(res.Apps["app1"].Version)
 	}
 	res2, _ := state_cloud.GlobalCloudLayout.Desired.GetHost("somehost2")
@@ -800,7 +782,7 @@ func TestPlanner_updateInstanceResources(t *testing.T) {
 	res, _ := state_cloud.GlobalAvailableInstances.GetResources("host1")
 
 	if res.TotalCpuResource != 100 {
-		t.Error(res.TotalCpuResource)
+		t.Error(state_cloud.GlobalAvailableInstances)
 	}
 	if res.UsedCpuResource != 10 {
 		t.Error(res.UsedCpuResource)
@@ -834,9 +816,9 @@ func TestPlanner_assignAppToHost(t *testing.T) {
 	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
 		TotalCpuResource: 100, TotalMemoryResource: 200, TotalNetworkResource: 300, UsedCpuResource: 10, UsedMemoryResource: 20, UsedNetworkResource: 30,
 	})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 50, MemoryNeeds: 60, NetworkNeeds: 70})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", 1, needs.AppNeeds{CpuNeeds: 50, MemoryNeeds: 60, NetworkNeeds: 70})
 
-	appConf := base.AppConfiguration{Name: "app1", Version: "1.0",}
+	appConf := base.AppConfiguration{Name: "app1", Version: 1,}
 
 	res, _ := state_cloud.GlobalAvailableInstances.GetResources("host1")
 
@@ -865,7 +847,7 @@ func TestPlanner_assignAppToHost(t *testing.T) {
 		t.Error(res.UsedNetworkResource)
 	}
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 550, MemoryNeeds: 60, NetworkNeeds: 70})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", 1, needs.AppNeeds{CpuNeeds: 550, MemoryNeeds: 60, NetworkNeeds: 70})
 	assignAppToHost("host1", appConf, 2)
 
 	if FailedAssigned[0].AppName != "app1" {
@@ -898,11 +880,11 @@ func TestPlanner_findHostWithResources_NoCurrent(t *testing.T) {
 func TestPlanner_findHostWithResources_WithCurrent(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("host1")
-	state_cloud.GlobalCloudLayout.Current.AddApp("host1", "app1", "1.0", 2)
+	state_cloud.GlobalCloudLayout.Current.AddApp("host1", "app1", 1, 2)
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("host2")
-	state_cloud.GlobalCloudLayout.Current.AddApp("host2", "app2", "2.0", 2)
+	state_cloud.GlobalCloudLayout.Current.AddApp("host2", "app2", 3, 2)
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("host3")
-	state_cloud.GlobalCloudLayout.Current.AddApp("host3", "app3", "2.0", 2)
+	state_cloud.GlobalCloudLayout.Current.AddApp("host3", "app3", 3, 2)
 
 	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
 		TotalCpuResource: 10.0, TotalMemoryResource: 20.0, TotalNetworkResource: 30.0, UsedCpuResource: 1.0, UsedMemoryResource: 2.0, UsedNetworkResource: 3.0,
@@ -937,7 +919,7 @@ func TestPlanner_findHostWithResources_WithCurrent(t *testing.T) {
 func TestPlanner_findHttpHostWithResources_NoCurrent(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	state_cloud.GlobalCloudLayout.Desired.AddEmptyHost("host1")
-	state_cloud.GlobalCloudLayout.Desired.AddApp("host1", "app1", "1.0", 2)
+	state_cloud.GlobalCloudLayout.Desired.AddApp("host1", "app1", 1, 2)
 	state_cloud.GlobalCloudLayout.Desired.AddEmptyHost("host2")
 
 	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
@@ -964,14 +946,14 @@ func TestPlanner_findHttpHostWithResources_NoCurrent(t *testing.T) {
 func TestPlanner_findHttpHostWithResources_WithCurrent(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("host1")
-	state_cloud.GlobalCloudLayout.Current.AddApp("host1", "app1", "1.0", 2)
+	state_cloud.GlobalCloudLayout.Current.AddApp("host1", "app1", 1, 2)
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("host2")
-	state_cloud.GlobalCloudLayout.Current.AddApp("host2", "app2", "2.0", 2)
+	state_cloud.GlobalCloudLayout.Current.AddApp("host2", "app2", 3, 2)
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("host3")
-	state_cloud.GlobalCloudLayout.Current.AddApp("host3", "app3", "2.0", 2)
+	state_cloud.GlobalCloudLayout.Current.AddApp("host3", "app3", 3, 2)
 
 	state_cloud.GlobalCloudLayout.Desired.AddEmptyHost("host1")
-	state_cloud.GlobalCloudLayout.Desired.AddApp("host1", "app1", "1.0", 2)
+	state_cloud.GlobalCloudLayout.Desired.AddApp("host1", "app1", 1, 2)
 	state_cloud.GlobalCloudLayout.Desired.AddEmptyHost("host2")
 	state_cloud.GlobalCloudLayout.Desired.AddEmptyHost("host3")
 
@@ -1054,10 +1036,10 @@ func TestPlanner_planHttp_moreInstancesThanNeeded(t *testing.T) {
 	state_cloud.GlobalAvailableInstances.Update("host2", resources)
 	state_cloud.GlobalAvailableInstances.Update("host3", resources)
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", 1, needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	appObj := base.AppConfiguration{
-		Name: "app1", Version: "1.0", TargetDeploymentCount: 2,
+		Name: "app1", Version: 1, TargetDeploymentCount: 2,
 	}
 
 	called := 0
@@ -1133,10 +1115,10 @@ func TestPlanner_planHttp_lessInstancesThanNeeded(t *testing.T) {
 
 	state_cloud.GlobalAvailableInstances.Update("host1", resources)
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", 1, needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	appObj := base.AppConfiguration{
-		Name: "app1", Version: "1.0", TargetDeploymentCount: 8,
+		Name: "app1", Version: 1, TargetDeploymentCount: 8,
 	}
 
 	called := 0
@@ -1191,10 +1173,10 @@ func TestPlanner_planWorker_moreInstancesThanNeeded(t *testing.T) {
 	state_cloud.GlobalAvailableInstances.Update("host2", resources)
 	state_cloud.GlobalAvailableInstances.Update("host3", resources)
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", 1, needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	appObj := base.AppConfiguration{
-		Name: "app1", Version: "1.0", TargetDeploymentCount: 5,
+		Name: "app1", Version: 1, TargetDeploymentCount: 5,
 	}
 
 	called := false
@@ -1265,10 +1247,10 @@ func TestPlanner_planWorker_lessInstancesThanNeeded(t *testing.T) {
 
 	state_cloud.GlobalAvailableInstances.Update("host1", resources)
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", 1, needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	appObj := base.AppConfiguration{
-		Name: "app1", Version: "1.0", TargetDeploymentCount: 20,
+		Name: "app1", Version: 1, TargetDeploymentCount: 20,
 	}
 
 	called := false
@@ -1312,17 +1294,17 @@ func TestPlanner_planWorker_lessInstancesThanNeeded(t *testing.T) {
 
 
 func TestPlanner_sortByTotalNeeds(t *testing.T) {
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app2", "2.0", needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app3", "3.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app4", "4.0", needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", 1, needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app2", 3, needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app3", 30, needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app4", 40, needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
 
 	apps := make(map[base.AppName]base.AppConfiguration)
 
-	apps["app1"] = base.AppConfiguration{Name: "app1", Version: "1.0"}
-	apps["app2"] = base.AppConfiguration{Name: "app2", Version: "2.0"}
-	apps["app3"] = base.AppConfiguration{Name: "app3", Version: "3.0"}
-	apps["app4"] = base.AppConfiguration{Name: "app4", Version: "4.0"}
+	apps["app1"] = base.AppConfiguration{Name: "app1", Version: 1}
+	apps["app2"] = base.AppConfiguration{Name: "app2", Version: 3}
+	apps["app3"] = base.AppConfiguration{Name: "app3", Version: 30}
+	apps["app4"] = base.AppConfiguration{Name: "app4", Version: 40}
 
 	sorted := sortByTotalNeeds(apps)
 
@@ -1337,25 +1319,25 @@ func TestPlanner_sortByTotalNeeds(t *testing.T) {
 
 
 func TestPlanner_appPlanningOrder(t *testing.T) {
-	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp2", "2.0", needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp3", "3.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp4", "4.0", needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp1", "1.0", needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 10.0, NetworkNeeds: 10.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp2", "2.0", needs.AppNeeds{CpuNeeds: 20.0, MemoryNeeds: 20.0, NetworkNeeds: 20.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp3", "3.0", needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 20.0, NetworkNeeds: 20.0,})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp4", "4.0", needs.AppNeeds{CpuNeeds: 100.0, MemoryNeeds: 10.0, NetworkNeeds: 10.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp1", 1, needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp2", 3, needs.AppNeeds{CpuNeeds: 2.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp3", 30, needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 2.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("httpApp4", 40, needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 1.0, NetworkNeeds: 1.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp1", 1, needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 10.0, NetworkNeeds: 10.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp2", 3, needs.AppNeeds{CpuNeeds: 20.0, MemoryNeeds: 20.0, NetworkNeeds: 20.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp3", 30, needs.AppNeeds{CpuNeeds: 10.0, MemoryNeeds: 20.0, NetworkNeeds: 20.0,})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("workerApp4", 40, needs.AppNeeds{CpuNeeds: 100.0, MemoryNeeds: 10.0, NetworkNeeds: 10.0,})
 
 	apps := make(map[base.AppName]base.AppConfiguration)
 
-	apps["httpApp1"] = base.AppConfiguration{Name: "httpApp1", Version: "1.0", Type: base.APP_HTTP}
-	apps["httpApp2"] = base.AppConfiguration{Name: "httpApp2", Version: "2.0", Type: base.APP_HTTP}
-	apps["httpApp3"] = base.AppConfiguration{Name: "httpApp3", Version: "3.0", Type: base.APP_HTTP}
-	apps["httpApp4"] = base.AppConfiguration{Name: "httpApp4", Version: "4.0", Type: base.APP_HTTP}
-	apps["workerApp1"] = base.AppConfiguration{Name: "workerApp1", Version: "1.0", Type: base.APP_WORKER}
-	apps["workerApp2"] = base.AppConfiguration{Name: "workerApp2", Version: "2.0", Type: base.APP_WORKER}
-	apps["workerApp3"] = base.AppConfiguration{Name: "workerApp3", Version: "3.0", Type: base.APP_WORKER}
-	apps["workerApp4"] = base.AppConfiguration{Name: "workerApp4", Version: "4.0", Type: base.APP_WORKER}
+	apps["httpApp1"] = base.AppConfiguration{Name: "httpApp1", Version: 1, Type: base.APP_HTTP}
+	apps["httpApp2"] = base.AppConfiguration{Name: "httpApp2", Version: 3, Type: base.APP_HTTP}
+	apps["httpApp3"] = base.AppConfiguration{Name: "httpApp3", Version: 30, Type: base.APP_HTTP}
+	apps["httpApp4"] = base.AppConfiguration{Name: "httpApp4", Version: 40, Type: base.APP_HTTP}
+	apps["workerApp1"] = base.AppConfiguration{Name: "workerApp1", Version: 1, Type: base.APP_WORKER}
+	apps["workerApp2"] = base.AppConfiguration{Name: "workerApp2", Version: 3, Type: base.APP_WORKER}
+	apps["workerApp3"] = base.AppConfiguration{Name: "workerApp3", Version: 30, Type: base.APP_WORKER}
+	apps["workerApp4"] = base.AppConfiguration{Name: "workerApp4", Version: 40, Type: base.APP_WORKER}
 
 	sortedHttp, sortedWorker := appPlanningOrder(apps)
 
@@ -1533,18 +1515,18 @@ func TestPlanner_handleFailedAssign_http(t *testing.T) {
 		TotalCpuResource: 10.0, TotalNetworkResource: 10.0, TotalMemoryResource: 10.0,
 	})
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", 1, needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 		Name: "app1",
 		Type: base.APP_HTTP,
-		Version: "1.0",
+		Version: 1,
 		TargetDeploymentCount: 100,
 	})
 
 	wipeDesired()
 	FailedAssigned = []FailedAssign{
-		FailedAssign{AppName: "app1", AppVersion: "1.0", DeploymentCount: 2, TargetHost: "somehost",},
+		FailedAssign{AppName: "app1", AppVersion: 1, DeploymentCount: 2, TargetHost: "somehost",},
 	}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {
@@ -1582,18 +1564,18 @@ func TestPlanner_handleFailedAssign_worker(t *testing.T) {
 	state_cloud.GlobalAvailableInstances.Update("host3", resources3)
 
 
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", 1, needs.AppNeeds{CpuNeeds: 1.0, MemoryNeeds: 2.0, NetworkNeeds: 3.0})
 
 	state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 		Name: "app1",
 		Type: base.APP_WORKER,
-		Version: "1.0",
+		Version: 1,
 		TargetDeploymentCount: 100,
 	})
 
 	wipeDesired()
 	FailedAssigned = []FailedAssign{
-		FailedAssign{AppName: "app1", AppVersion: "1.0", DeploymentCount: 2, TargetHost: "somehost",},
+		FailedAssign{AppName: "app1", AppVersion: 1, DeploymentCount: 2, TargetHost: "somehost",},
 	}
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 0 {

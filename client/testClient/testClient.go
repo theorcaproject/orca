@@ -24,31 +24,31 @@ func (c *Client) Type() types.ClientType {
 }
 
 func (c *Client) InstallApp(appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
-	return !strings.Contains(string(appConf.Version), "installfail")
+	return !strings.Contains(string(appConf.DockerConfig.Tag), "installfail")
 }
 
 func (c *Client) RunApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
-	return !strings.Contains(string(appConf.Version), "runfail")
+	return !strings.Contains(string(appConf.DockerConfig.Tag), "runfail")
 }
 
 func (c *Client) QueryApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
-	return !strings.Contains(string(appConf.Version), "queryfail")
+	return !strings.Contains(string(appConf.DockerConfig.Tag), "queryfail")
 }
 
 func (c *Client) StopApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
-	return !strings.Contains(string(appConf.Version), "stopfail")
+	return !strings.Contains(string(appConf.DockerConfig.Tag), "stopfail")
 }
 
 func (c *Client) DeleteApp(appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
-	return !strings.Contains(string(appConf.Version), "deletefail")
+	return !strings.Contains(string(appConf.DockerConfig.Tag), "deletefail")
 }
 
 func (c *Client) AppMetrics(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration, metrics *types.AppsMetricsById) bool {
-	if !strings.Contains(string(appConf.Version), "metrics=") {
+	if !strings.Contains(string(appConf.DockerConfig.Tag), "metrics=") {
 		return false
 	}
 	now := time.Now().UTC().Format(time.RFC3339Nano)
-	arr := strings.Split(strings.Split(string(appConf.Version), "metrics=")[1], "_")
+	arr := strings.Split(strings.Split(string(appConf.DockerConfig.Tag), "metrics=")[1], "_")
 	cpu, _ := strconv.Atoi(arr[0])
 	mem, _ := strconv.Atoi(arr[1])
 	net, _ := strconv.Atoi(arr[2])

@@ -19,7 +19,7 @@ func TestLayoutAddHost(t *testing.T) {
 	state.Current.AddHost("hostId1", state_cloud.CloudLayoutElement{
 		HostId: "hostId1",
 		IpAddress: "0.0.0.0",
-		HabitatVersion: "0.0",
+		HabitatVersion: 1,
 		Apps: make(map[base.AppName]state_cloud.AppsVersion),
 	})
 
@@ -40,13 +40,13 @@ func TestLayoutRemoveHost(t *testing.T) {
 	state.Current.AddHost("hostId1", state_cloud.CloudLayoutElement{
 		HostId: "hostId1",
 		IpAddress: "0.0.0.0",
-		HabitatVersion: "0.0",
+		HabitatVersion: 1,
 		Apps: make(map[base.AppName]state_cloud.AppsVersion),
 	})
 	state.Current.AddHost("hostId2", state_cloud.CloudLayoutElement{
 		HostId: "hostId2",
 		IpAddress: "0.0.0.0",
-		HabitatVersion: "0.0",
+		HabitatVersion: 1,
 		Apps: make(map[base.AppName]state_cloud.AppsVersion),
 	})
 	if val, err := state.Current.GetHost("hostId1"); err == nil {
@@ -76,16 +76,16 @@ func TestLayoutAddApp(t *testing.T) {
 	state.Current.AddHost("hostId1", state_cloud.CloudLayoutElement{
 		HostId: "hostId1",
 		IpAddress: "0.0.0.0",
-		HabitatVersion: "0.0",
+		HabitatVersion: 1,
 		Apps: make(map[base.AppName]state_cloud.AppsVersion),
 	})
-	state.Current.AddApp("hostId1", "someapp", "0.2", 1)
+	state.Current.AddApp("hostId1", "someapp", 2, 1)
 
 	if val, err := state.Current.GetHost("hostId1"); err == nil {
 		if val.HostId != "hostId1" {
 			t.Error()
 		}
-		if val.Apps["someapp"].Version != "0.2" {
+		if val.Apps["someapp"].Version != 2 {
 			t.Error()
 		}
 	} else {
@@ -98,17 +98,17 @@ func TestLayoutRemoveApp(t *testing.T) {
 	state.Current.AddHost("hostId1", state_cloud.CloudLayoutElement{
 		HostId: "hostId1",
 		IpAddress: "0.0.0.0",
-		HabitatVersion: "0.0",
+		HabitatVersion: 1,
 		Apps: make(map[base.AppName]state_cloud.AppsVersion),
 	})
-	state.Current.AddApp("hostId1", "someapp", "0.2", 1)
-	state.Current.AddApp("hostId1", "someapp2", "0.4", 5)
+	state.Current.AddApp("hostId1", "someapp", 2, 1)
+	state.Current.AddApp("hostId1", "someapp2", 4, 5)
 
 	if val, err := state.Current.GetHost("hostId1"); err == nil {
 		if val.HostId != "hostId1" {
 			t.Error()
 		}
-		if val.Apps["someapp"].Version!= "0.2" {
+		if val.Apps["someapp"].Version!= 2 {
 			t.Error()
 		}
 	} else {
@@ -121,7 +121,7 @@ func TestLayoutRemoveApp(t *testing.T) {
 		if val.HostId != "hostId1" {
 			t.Error()
 		}
-		if val.Apps["someapp"].Version == "0.2" {
+		if val.Apps["someapp"].Version == 2 {
 			t.Error()
 		}
 	} else {
@@ -132,7 +132,7 @@ func TestLayoutRemoveApp(t *testing.T) {
 		if val.HostId != "hostId1" {
 			t.Error()
 		}
-		if val.Apps["someapp2"].Version != "0.4" {
+		if val.Apps["someapp2"].Version != 4 {
 			t.Error()
 		}
 	} else {
@@ -151,26 +151,26 @@ func TestLayout_FindHostsWithApp(t *testing.T) {
 	state.Current.AddHost("hostId1", state_cloud.CloudLayoutElement{
 		HostId: "hostId1",
 		IpAddress: "0.0.0.0",
-		HabitatVersion: "0.0",
+		HabitatVersion: 1,
 		Apps: make(map[base.AppName]state_cloud.AppsVersion),
 	})
 	state.Current.AddHost("hostId2", state_cloud.CloudLayoutElement{
 		HostId: "hostId2",
 		IpAddress: "0.0.0.0",
-		HabitatVersion: "0.0",
+		HabitatVersion: 1,
 		Apps: make(map[base.AppName]state_cloud.AppsVersion),
 	})
 	state.Current.AddHost("hostId3", state_cloud.CloudLayoutElement{
 		HostId: "hostId3",
 		IpAddress: "0.0.0.0",
-		HabitatVersion: "0.0",
+		HabitatVersion: 1,
 		Apps: make(map[base.AppName]state_cloud.AppsVersion),
 	})
-	state.Current.AddApp("hostId1", "app1", "10.0", 10)
-	state.Current.AddApp("hostId1", "app2", "10.0", 10)
-	state.Current.AddApp("hostId2", "app1", "10.0", 10)
-	state.Current.AddApp("hostId2", "app2", "10.0", 10)
-	state.Current.AddApp("hostId3", "app1", "10.0", 10)
+	state.Current.AddApp("hostId1", "app1", 10, 10)
+	state.Current.AddApp("hostId1", "app2", 10, 10)
+	state.Current.AddApp("hostId2", "app1", 10, 10)
+	state.Current.AddApp("hostId2", "app2", 10, 10)
+	state.Current.AddApp("hostId3", "app1", 10, 10)
 
 	res := state.Current.FindHostsWithApp("app1")
 	if !res["hostId1"] || !res["hostId2"] || !res["hostId3"] {
@@ -254,16 +254,16 @@ func TestUpdateHost(t *testing.T) {
 	state := prepareLayoutState()
 	apps :=  make(map[base.AppName]state_cloud.AppsVersion)
 	apps["app1"] = state_cloud.AppsVersion{
-		"0.1", 5,
+		1, 5,
 	}
 	apps["app2"] = state_cloud.AppsVersion{
-		"0.2", 20,
+		2, 20,
 	}
 
 	state.Current.AddHost("hostId1", state_cloud.CloudLayoutElement{
 		HostId: "hostId1",
 		IpAddress: "0.0.0.0",
-		HabitatVersion: "0.0",
+		HabitatVersion: 1,
 		Apps: apps,
 	})
 
@@ -285,26 +285,26 @@ func TestUpdateHost(t *testing.T) {
 	appInfo1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "app1",
-		Version: "1.0",
+		Version: 1,
 		Status: base.STATUS_DEPLOYING,
 	}
 
 	appInfo2 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "app1",
-		Version: "1.0",
+		Version: 1,
 		Status: base.STATUS_RUNNING,
 	}
 	appInfo3 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "app2",
-		Version: "2.0",
+		Version: 2,
 		Status: base.STATUS_RUNNING,
 	}
 	appInfo4 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "app2",
-		Version: "2.0",
+		Version: 2,
 		Status: base.STATUS_RUNNING,
 	}
 
@@ -330,7 +330,7 @@ func TestUpdateHost(t *testing.T) {
 		if len(val2.Apps) != 2 {
 			t.Error(val2.Apps)
 		}
-		if val2.Apps["app2"].Version != "2.0" {
+		if val2.Apps["app2"].Version != 2 {
 			t.Error(val2.Apps["app2"].Version)
 		}
 		if val2.Apps["app2"].DeploymentCount != 2 {
@@ -381,11 +381,11 @@ func TestCloudLayout_AllNeeds(t *testing.T) {
 	layout := state_cloud.CloudLayout{}
 	layout.Wipe()
 	apps := make(map[base.AppName]state_cloud.AppsVersion)
-	apps["app1"] = state_cloud.AppsVersion{"1.0", 2}
-	apps["app2"] = state_cloud.AppsVersion{"1.0", 5}
+	apps["app1"] = state_cloud.AppsVersion{1, 2}
+	apps["app2"] = state_cloud.AppsVersion{1, 5}
 	layout.AddHost("host1", state_cloud.CloudLayoutElement{HostId: "host1", Apps: apps})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds:10, MemoryNeeds:5, NetworkNeeds:1})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app2", "1.0", needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", 1, needs.AppNeeds{CpuNeeds:10, MemoryNeeds:5, NetworkNeeds:1})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app2", 1, needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1})
 	ns := layout.AllNeeds()
 	if ns.CpuNeeds != 25 || ns.MemoryNeeds != 15 || ns.NetworkNeeds != 7 {
 		t.Error(ns)
@@ -396,11 +396,11 @@ func TestCloudLayout_Needs(t *testing.T) {
 	layout := state_cloud.CloudLayout{}
 	layout.Wipe()
 	apps := make(map[base.AppName]state_cloud.AppsVersion)
-	apps["app1"] = state_cloud.AppsVersion{"1.0", 2}
-	apps["app2"] = state_cloud.AppsVersion{"1.0", 5}
+	apps["app1"] = state_cloud.AppsVersion{1, 2}
+	apps["app2"] = state_cloud.AppsVersion{1, 5}
 	layout.AddHost("host1", state_cloud.CloudLayoutElement{HostId: "host1", Apps: apps})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", "1.0", needs.AppNeeds{CpuNeeds:10, MemoryNeeds:5, NetworkNeeds:1})
-	state_needs.GlobalAppsNeedState.UpdateNeeds("app2", "1.0", needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", 1, needs.AppNeeds{CpuNeeds:10, MemoryNeeds:5, NetworkNeeds:1})
+	state_needs.GlobalAppsNeedState.UpdateNeeds("app2", 1, needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1})
 	ns := layout.Needs("app1")
 	if ns.CpuNeeds != 20 || ns.MemoryNeeds != 10 || ns.NetworkNeeds != 2 {
 		t.Error(ns)

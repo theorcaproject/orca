@@ -31,10 +31,10 @@ func applySampleConfig() {
 
 	httpApp1 := config.AppJsonConfiguration{
 		Name: "httpApp_1",
-		Version: "http_1.0",
+		Version: 1,
 		Type: base.APP_HTTP,
+		TargetDeploymentCount: 3,
 		MinDeploymentCount: 3,
-		MaxDeploymentCount: 10,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -62,10 +62,10 @@ func applySampleConfig() {
 
 	httpApp1_v2 := config.AppJsonConfiguration{
 		Name: "httpApp_1",
-		Version: "http_1.1",
+		Version: 2,
 		Type: base.APP_HTTP,
+		TargetDeploymentCount: 2,
 		MinDeploymentCount: 2,
-		MaxDeploymentCount: 10,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -93,10 +93,10 @@ func applySampleConfig() {
 
 	httpApp2 := config.AppJsonConfiguration{
 		Name: "httpApp_2",
-		Version: "http_2.0",
+		Version: 3,
 		Type: base.APP_HTTP,
 		MinDeploymentCount: 4,
-		MaxDeploymentCount: 10,
+		TargetDeploymentCount: 4,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -124,10 +124,10 @@ func applySampleConfig() {
 
 	workerApp1 := config.AppJsonConfiguration{
 		Name: "workerApp_1",
-		Version: "worker_1.0",
+		Version: 7,
 		Type: base.APP_WORKER,
 		MinDeploymentCount: 1,
-		MaxDeploymentCount: 1,
+		TargetDeploymentCount: 1,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -155,10 +155,10 @@ func applySampleConfig() {
 
 	workerApp1_v2 := config.AppJsonConfiguration{
 		Name: "workerApp_1",
-		Version: "worker_1.1",
+		Version: 8,
 		Type: base.APP_WORKER,
 		MinDeploymentCount: 1,
-		MaxDeploymentCount: 1,
+		TargetDeploymentCount: 1,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -186,10 +186,10 @@ func applySampleConfig() {
 
 	workerApp2 := config.AppJsonConfiguration{
 		Name: "workerApp_2",
-		Version: "worker_2.0",
+		Version: 9,
 		Type: base.APP_WORKER,
 		MinDeploymentCount: 5,
-		MaxDeploymentCount: 10,
+		TargetDeploymentCount: 5,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -217,10 +217,10 @@ func applySampleConfig() {
 
 	workerApp3 := config.AppJsonConfiguration{
 		Name: "workerApp_3",
-		Version: "worker_3.0",
+		Version: 10,
 		Type: base.APP_WORKER,
 		MinDeploymentCount: 100,
-		MaxDeploymentCount: 200,
+		TargetDeploymentCount: 100,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -321,11 +321,11 @@ func testInitConfig(t *testing.T) {
 	if len(state_needs.GlobalAppsNeedState) != 5 {
 		t.Error("init state_needs wrong len")
 	}
-	elem , _ := state_needs.GlobalAppsNeedState.Get("httpApp_1", "http_1.1")
+	elem , _ := state_needs.GlobalAppsNeedState.Get("httpApp_1", 2)
 	if elem.CpuNeeds != 2 {
 		t.Error("wrong needs")
 	}
-	elem2 , _ := state_needs.GlobalAppsNeedState.Get("workerApp_3", "worker_3.0")
+	elem2 , _ := state_needs.GlobalAppsNeedState.Get("workerApp_3", 10)
 	if elem2.MemoryNeeds != 2 {
 		t.Error("wrong needs")
 	}
@@ -367,22 +367,22 @@ func TestResponder_GetConfigForHost_Integration(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("emptyHost")
 
 	//httpApp_1 already deployed MinDeploymentCount
-	state_cloud.GlobalCloudLayout.Current.AddApp("cpuHost_1", "httpApp_1", "http_1.0", 1)
-	state_cloud.GlobalCloudLayout.Current.AddApp("cpuHost_2", "httpApp_1", "http_1.1", 1)
+	state_cloud.GlobalCloudLayout.Current.AddApp("cpuHost_1", "httpApp_1", 1, 1)
+	state_cloud.GlobalCloudLayout.Current.AddApp("cpuHost_2", "httpApp_1", 2, 1)
 
 	//httpApp_2 missing 1 app for MinDeploymentCount
-	state_cloud.GlobalCloudLayout.Current.AddApp("generalHost_1", "httpApp_2", "http_2.0", 1)
-	state_cloud.GlobalCloudLayout.Current.AddApp("generalHost_2", "httpApp_2", "http_2.0", 1)
-	state_cloud.GlobalCloudLayout.Current.AddApp("generalHost_3", "httpApp_2", "http_2.0", 1)
+	state_cloud.GlobalCloudLayout.Current.AddApp("generalHost_1", "httpApp_2", 3, 1)
+	state_cloud.GlobalCloudLayout.Current.AddApp("generalHost_2", "httpApp_2", 3, 1)
+	state_cloud.GlobalCloudLayout.Current.AddApp("generalHost_3", "httpApp_2", 3, 1)
 
 	//workerApp_1 missing
 
 	//workerApp_2 already deployed MinDeploymentCount all on one host
-	state_cloud.GlobalCloudLayout.Current.AddApp("cpuHost_1", "workerApp_2", "worker_2.0", 5)
+	state_cloud.GlobalCloudLayout.Current.AddApp("cpuHost_1", "workerApp_2", 9, 5)
 
 	//workerApp_3 missing 90 for MinDeploymentCount
-	state_cloud.GlobalCloudLayout.Current.AddApp("generalHost_2", "workerApp_3", "worker_3.0", 5)
-	state_cloud.GlobalCloudLayout.Current.AddApp("generalHost_3", "workerApp_3", "worker_3.0", 5)
+	state_cloud.GlobalCloudLayout.Current.AddApp("generalHost_2", "workerApp_3", 10, 5)
+	state_cloud.GlobalCloudLayout.Current.AddApp("generalHost_3", "workerApp_3", 10, 5)
 
 
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 7 {
@@ -403,13 +403,13 @@ func TestResponder_GetConfigForHost_Integration(t *testing.T) {
 
 	//check httpApp_1 update
 	host, _ := state_cloud.GlobalCloudLayout.Desired.GetHost("cpuHost_1")
-	if  host.Apps["httpApp_1"].Version != "http_1.1" ||  host.Apps["httpApp_1"].DeploymentCount != 1 {
+	if  host.Apps["httpApp_1"].Version != 2 ||  host.Apps["httpApp_1"].DeploymentCount != 1 {
 		t.Error(state_cloud.GlobalCloudLayout.Desired)
 	}
 
 	diff := planner.Diff(state_cloud.GlobalCloudLayout.Desired, state_cloud.GlobalCloudLayout.Current)
 
-	if diff["cpuHost_1"]["httpApp_1"].Version != "http_1.1" || diff["cpuHost_1"]["httpApp_1"].DeploymentCount != 1 {
+	if diff["cpuHost_1"]["httpApp_1"].Version != 2 || diff["cpuHost_1"]["httpApp_1"].DeploymentCount != 1 {
 		t.Error(diff["cpuHost_1"])
 	}
 	if len(diff["emptyHost"]) != 0{

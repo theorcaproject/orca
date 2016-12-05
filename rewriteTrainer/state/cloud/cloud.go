@@ -258,9 +258,9 @@ func (c *CloudLayout) UpdateHost(hostInfo base.HostInfo) {
 
 var AvailableInstancesLogger = StateCloudLogger.WithField("type", "AvailableInstances")
 
-func (a AvailableInstances) HostHasResourcesForApp (hostId base.HostId, ns needs.AppNeeds) bool{
+func (a *AvailableInstances) HostHasResourcesForApp (hostId base.HostId, ns needs.AppNeeds) bool{
 	availableInstancesMutex.Lock()
-	res := a[hostId]
+	res := (*a)[hostId]
 	if int(res.TotalCpuResource - res.UsedCpuResource) >= int(ns.CpuNeeds) &&
 		int(res.TotalMemoryResource - res.UsedMemoryResource) >= int(ns.MemoryNeeds) &&
 		int(res.TotalNetworkResource - res.UsedNetworkResource) >= int(ns.NetworkNeeds) {
@@ -275,43 +275,46 @@ func (p ResourceObjList) Len() int { return len(p) }
 func (p ResourceObjList) Less(i, j int) bool { return p[i].CombinedAvailableResources < p[j].CombinedAvailableResources}
 func (p ResourceObjList) Swap(i, j int){ p[i], p[j] = p[j], p[i] }
 
-func (a AvailableInstances) Update(hostId base.HostId, resources InstanceResources) {
+func (a *AvailableInstances) Update(hostId base.HostId, resources InstanceResources) {
 	AvailableInstancesLogger.Infof("Updating host '%s': '%+v'", hostId, resources)
 	availableInstancesMutex.Lock()
 	defer availableInstancesMutex.Unlock()
-	a[hostId] = resources
+	if (*a) == nil {
+		(*a) = make(map[base.HostId]InstanceResources)
+	}
+	(*a)[hostId] = resources
 }
 
-func (a AvailableInstances) GetResources(hostId base.HostId) (InstanceResources, error){
+func (a *AvailableInstances) GetResources(hostId base.HostId) (InstanceResources, error){
 	availableInstancesMutex.Lock()
-	if _, exists := a[hostId]; !exists {
+	if _, exists := (*a)[hostId]; !exists {
 		AvailableInstancesLogger.Warnf("Instance '%s' does not exist", hostId)
 		availableInstancesMutex.Unlock()
 		return InstanceResources{}, errors.New("Host does not exist")
 	}
-	AvailableInstancesLogger.Debugf("GetResources for host '%s': %+v", hostId, a[hostId])
-	res := a[hostId]
+	AvailableInstancesLogger.Debugf("GetResources for host '%s': %+v", hostId, (*a)[hostId])
+	res := (*a)[hostId]
 	availableInstancesMutex.Unlock()
 	return res, nil
 }
 
-func (a AvailableInstances) Remove(hostId base.HostId) {
+func (a *AvailableInstances) Remove(hostId base.HostId) {
 	AvailableInstancesLogger.Infof("Deleting instance '%s'", hostId)
 	availableInstancesMutex.Lock()
 	defer availableInstancesMutex.Unlock()
-	if _, exists := a[hostId]; !exists {
+	if _, exists := (*a)[hostId]; !exists {
 		AvailableInstancesLogger.Warnf("Instance '%s' does not exist", hostId)
 		return
 	}
 	AvailableInstancesLogger.Debugf("Remove host '%s'", hostId)
-	delete(a, hostId)
+	delete((*a), hostId)
 }
 
-func (a AvailableInstances) GlobalResourceConsumption() InstanceResources {
+func (a *AvailableInstances) GlobalResourceConsumption() InstanceResources {
 	availableInstancesMutex.Lock()
 	defer availableInstancesMutex.Unlock()
 	var availableCpu, availableMemory , availableNetwork, usedCpu, usedMemory, usedNetwork int
-	for _, elem := range a {
+	for _, elem := range (*a) {
 		availableCpu += int(elem.TotalCpuResource)
 		availableMemory += int(elem.TotalMemoryResource)
 		availableNetwork += int(elem.TotalNetworkResource)

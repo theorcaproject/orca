@@ -11,7 +11,7 @@ func TestClient_InstallApp(t *testing.T) {
 	cli.Init()
 	appConf := base.AppConfiguration{}
 	appConf.Name = "nginx"
-	appConf.Version = "latest"
+	appConf.Version = 1
 	appConf.DockerConfig.Reference = "docker.io"
 	appConf.DockerConfig.Repository = "nginx"
 	appsState := types.AppsState{}
@@ -27,7 +27,7 @@ func TestClient_RunStopApp(t *testing.T) {
 
 	appConf := base.AppConfiguration{}
 	appConf.Name = "nginx"
-	appConf.Version = "latest"
+	appConf.Version = 1
 	appConf.DockerConfig.Reference = "docker.io"
 	appConf.DockerConfig.Repository = "nginx"
 	appsState := types.AppsState{}
@@ -56,7 +56,7 @@ func TestClient_QueryApp(t *testing.T) {
 
 	appConf := base.AppConfiguration{}
 	appConf.Name = "nginx"
-	appConf.Version = "latest"
+	appConf.Version = 1
 	appConf.DockerConfig.Reference = "docker.io"
 	appConf.DockerConfig.Repository = "nginx"
 	appsState := types.AppsState{}
@@ -86,7 +86,7 @@ func TestClient_AppMetrics(t *testing.T) {
 
 	appConf := base.AppConfiguration{}
 	appConf.Name = "nginx"
-	appConf.Version = "latest"
+	appConf.Version = 1
 	appConf.DockerConfig.Reference = "docker.io"
 	appConf.DockerConfig.Repository = "nginx"
 	appsState := types.AppsState{}
@@ -113,7 +113,7 @@ func TestClient_DeleteApp(t *testing.T) {
 
 	appConf := base.AppConfiguration{}
 	appConf.Name = "nginx"
-	appConf.Version = "latest"
+	appConf.Version = 1
 	appConf.DockerConfig.Reference = "docker.io"
 	appConf.DockerConfig.Repository = "nginx"
 	appsState := types.AppsState{}

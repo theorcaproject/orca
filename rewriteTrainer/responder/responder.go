@@ -120,7 +120,8 @@ func handleEmptyHost(hostInfo base.HostInfo) {
 		}
 	}
 	if !isNew {
-		cloud.CurrentProvider.TerminateInstance(hostInfo.HostId)
+		ResponderLogger.Warnf("TODO empty host %s, add logic to kill host if not needed", hostInfo.HostId)
+		//cloud.CurrentProvider.TerminateInstance(hostInfo.HostId)
 	}
 }
 
