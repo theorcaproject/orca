@@ -30,7 +30,7 @@ func ubuntu1604(clientConfig types.Configuration) []string {
 
 	return []string{
 		"echo orca | sudo -S addgroup --system supervisor",
-		"echo orca | sudo -S apt-get update",
+		//"echo orca | sudo -S apt-get update",
 		"echo orca | sudo -S apt-get install -y git golang supervisor docker.io",
 		"echo orca | sudo -S sh -c \"echo " + SUPERVISOR_CONFIG + "\"",
 		"echo orca | sudo -S sh -c \"echo " + ORCA_SUPERVISOR_CONFIG + "\"",
@@ -56,21 +56,21 @@ func ubuntu1604(clientConfig types.Configuration) []string {
 }
 
 func InstallNewInstance(clientConfig types.Configuration, ipAddr base.IpAddr) bool {
-	InstallerLogger.Infof("Starting install on host %s:%d", clientConfig.HostId, ipAddr)
+	InstallerLogger.Infof("Starting install on host %s:%s", clientConfig.HostId, ipAddr)
 	userName := "ubuntu"
 	session, addr := orcaSSh.Connect(userName, string(ipAddr) + ":22")
 	if session == nil {
-		InstallerLogger.Infof("Install on host %s:%d failed: No session", clientConfig.HostId, ipAddr)
+		InstallerLogger.Infof("Install on host %s:%s failed: No session", clientConfig.HostId, ipAddr)
 		return false
 	}
 	instance := ubuntu1604(clientConfig)
 	for _, cmd := range instance {
 		res := orcaSSh.ExecuteSshCommand(session, addr, cmd)
 		if !res {
-			InstallerLogger.Infof("Install on host %s:%d failed", clientConfig.HostId, ipAddr)
+			InstallerLogger.Infof("Install on host %s:%s failed", clientConfig.HostId, ipAddr)
 			return false
 		}
 	}
-	InstallerLogger.Infof("Install on host %s:%d success", clientConfig.HostId, ipAddr)
+	InstallerLogger.Infof("Install on host %s:%s success", clientConfig.HostId, ipAddr)
 	return true
 }
