@@ -98,10 +98,10 @@ func checkScaling(hostInfo base.HostInfo, queued map[base.AppName]planner.AppsUp
 		for appName, count := range appsCount {
 			if queued[appName].State != planner.STATE_QUEUED && queued[appName].State != planner.UpdateState("") {
 				if int(queued[appName].Version.DeploymentCount) != count {
-					ResponderLogger.Warnf("Scaling up of app %s:%s on host %s is not done. Should be %d but is %d", appName, queued[appName].Version.Version, hostInfo.HostId, queued[appName].Version.DeploymentCount, count)
+					ResponderLogger.Warnf("Scaling up of app %s:%d on host %s is not done. Should be %d but is %d", appName, queued[appName].Version.Version, hostInfo.HostId, queued[appName].Version.DeploymentCount, count)
 					return false
 				} else {
-					ResponderLogger.Infof("Scaling up of app %s:%s on host %s successful", appName, queued[appName].Version.Version, hostInfo.HostId)
+					ResponderLogger.Infof("Scaling up of app %s:%d on host %s successful", appName, queued[appName].Version.Version, hostInfo.HostId)
 				}
 			}
 		}

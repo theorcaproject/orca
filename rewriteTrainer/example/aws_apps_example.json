@@ -4,7 +4,7 @@
     "Version": 1.0,
     "Type": "http",
     "MinDeploymentCount": 2,
-    "MaxDeploymentCount": 4,
+    "TargetDeploymentCount": 4,
     "DockerConfig": {
       "Tag": "latest",
       "Repository": "nginx",
@@ -21,7 +21,7 @@
     "Version": 1.0,
     "Type": "worker",
     "MinDeploymentCount": 4,
-    "MaxDeploymentCount": 4,
+    "TargetDeploymentCount": 4,
     "DockerConfig": {
       "Tag": "latest",
       "Repository": "ubuntu",
