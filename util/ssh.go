@@ -13,7 +13,7 @@ import (
 const (
 	SSH_PEM_PATH = "/orca/config/orca_test_us.pem"
 	CONNECT_RETRY_AMOUNT = 15
-	EXECUTE_RETRY_AMOUNT = 3
+	EXECUTE_RETRY_AMOUNT = 20
 )
 
 var Logger = log.LoggerWithField(log.AuditLogger, "Type", "ssh")
