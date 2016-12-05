@@ -66,7 +66,7 @@ func (c *Client) InstallApp(appConf base.AppConfiguration, appsState *types.Apps
 func (c *Client) RunApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
 	DockerLogger.Infof("Running docker app %s - %s:%d with tag %s", appId, appConf.Name, appConf.Version, appConf.DockerConfig.Tag)
 
-	config := DockerClient.Config{AttachStdout: true, AttachStdin: true, Image: fmt.Sprintf("%s:%d", appConf.Name, appConf.DockerConfig.Tag)}
+	config := DockerClient.Config{AttachStdout: true, AttachStdin: true, Image: fmt.Sprintf("%s:%s", appConf.Name, appConf.DockerConfig.Tag)}
 	opts := DockerClient.CreateContainerOptions{Name: string(appId), Config: &config}
 	container, containerErr := DockerCli().CreateContainer(opts)
 	if containerErr != nil {
