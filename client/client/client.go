@@ -251,6 +251,7 @@ func PollMetrics() {
 func generateCombinedMetrics() base.AppMetrics {
 	combined := base.AppMetrics{}
 	metrics := AppsMetricsById.All()
+	ClientLogger.Infof("inner metrics %+v", metrics)
 	for id, metricsbyTime := range metrics {
 		app := AppsState.Get(id)
 		for time, metrics := range metricsbyTime {

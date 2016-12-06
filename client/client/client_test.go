@@ -559,13 +559,14 @@ func TestGenerateCombinedMetrics(t *testing.T) {
 	}
 	res := generateCombinedMetrics()
 
-	if len(res) != 1 || len(res["app1"][1]) != 2 {
+	if len(res) != 2 || len(res["app1"][1]) != 2 {
 		t.Error(res)
 	}
 
 	if len(AppsMetricsById) != 0 {
 		t.Error(AppsMetricsById)
 	}
+
 }
 
 
