@@ -57,18 +57,18 @@ func Handle(config base.PushConfiguration) {
 	existingAppsVersion := AppsState.GetAllWithVersion(config.AppConfiguration.Name, config.AppConfiguration.Version)
 	if len(existingAppsVersion) > 0 {
 		if len(existingAppsVersion) != int(config.DeploymentCount) {
-			ClientLogger.Infof("Configuration for existing app version %s:%d DeploymentCount new %f; old %s", config.AppConfiguration.Name, config.AppConfiguration.Version, config.DeploymentCount, len(existingAppsVersion))
+			ClientLogger.Infof("Configuration for existing app version %s:%d DeploymentCount new %d; old %s", config.AppConfiguration.Name, config.AppConfiguration.Version, config.DeploymentCount, len(existingAppsVersion))
 			scaleApp(existingAppsVersion, config)
 		}
-		ClientLogger.Infof("Configuration for existing app version %s:%d DeploymentCount %f matches, skipping", config.AppConfiguration.Name, config.AppConfiguration.Version, config.DeploymentCount)
+		ClientLogger.Infof("Configuration for existing app version %s:%d DeploymentCount %d matches, skipping", config.AppConfiguration.Name, config.AppConfiguration.Version, config.DeploymentCount)
 	} else {
 		existingApps := AppsState.GetAll(config.AppConfiguration.Name)
 		if len(existingApps) > 0 {
-			ClientLogger.Infof("Configuration for different version of app %s. From %f to %f", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version)
+			ClientLogger.Infof("Configuration for different version of app %s. From %d to %d", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version)
 			if !updateApp(existingApps, config) {
-				 ClientLogger.Warnf("Update of app %s from %s to %s failed.", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version)
+				 ClientLogger.Warnf("Update of app %s from %d to %d failed.", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version)
 				 if !rollbackApp(AppsConfiguration.Get(existingApps[0].Id), config.DeploymentCount) {
-				 	 ClientLogger.Warnf("Rollback of app %s from %f to %f failed. Doing nothing", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version)
+				 	 ClientLogger.Warnf("Rollback of app %s from %d to %d failed. Doing nothing", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version)
 					 return
 				 }
 			}
@@ -84,23 +84,23 @@ func newApp(config base.PushConfiguration) bool {
 }
 
 func rollbackApp(config base.AppConfiguration, count base.DeploymentCount) bool {
-	ClientLogger.Infof("Starting rollback of app %s to %f", config.Name, config.Version)
+	ClientLogger.Infof("Starting rollback of app %s to %d", config.Name, config.Version)
 	pushConf := base.PushConfiguration{DeploymentCount: count, AppConfiguration: config}
 	StopAll(config.Name)
 	DeleteApp(pushConf)
 	res := installAndRun(pushConf)
-	ClientLogger.Infof("Finished rollback of app %s to %f. Success=%t", config.Name, config.Version, res)
+	ClientLogger.Infof("Finished rollback of app %s to %d. Success=%t", config.Name, config.Version, res)
 	return res
 }
 
 func updateApp(existingApps []base.AppInfo, config base.PushConfiguration) bool {
-	ClientLogger.Infof("Starting update app %s:%d to %f", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version)
+	ClientLogger.Infof("Starting update app %s:%d to %d", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version)
 	for _, app := range existingApps {
 		StopApp(app.Id)
 	}
 	DeleteApp(config)
 	res := installAndRun(config)
-	ClientLogger.Infof("Finished update app %s:%d to %f. Success=%t", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version, res)
+	ClientLogger.Infof("Finished update app %s:%d to %d. Success=%t", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version, res)
 	return res
 }
 
