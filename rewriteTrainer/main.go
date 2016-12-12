@@ -13,7 +13,6 @@ import (
 	"gatoor/orca/rewriteTrainer/planner"
 	"time"
 	"flag"
-	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/audit"
 )
 
