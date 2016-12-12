@@ -134,6 +134,8 @@ func applyAppsConfig(appsConfs []base.AppConfiguration) {
 			DockerConfig: aConf.DockerConfig,
 			LoadBalancer: aConf.LoadBalancer,
 			Network: aConf.Network,
+			PortMappings: aConf.PortMappings,
+			Needs: aConf.Needs,
 
 			//InstallCommands: aConf.InstallCommands,
 			//QueryStateCommand: aConf.QueryStateCommand,

@@ -162,6 +162,11 @@ type HabitatConfiguration struct {
     InstallCommands []OsCommand
 }
 
+type PortMapping struct {
+    HostPort string
+    ContainerPort string
+}
+
 type AppConfiguration struct {
     Name                  AppName
     Type                  AppType
@@ -173,6 +178,7 @@ type AppConfiguration struct {
     LoadBalancer LoadBalancerName
     Network NetworkName
     Needs needs.AppNeeds
+    PortMappings []PortMapping
 }
 
 type ProviderType string

@@ -78,10 +78,19 @@ func (a *AWSProvider) Init() {
 	}
 
 	//TODO: When the cloud provider init is called, we use the aws api based on the credentials set to populate below:
-	//CurrentProviderConfig.AWSConfiguration.InstanceTypes = []InstanceType{}
-	//CurrentProviderConfig.AWSConfiguration.InstanceResources = make(map[InstanceType]state_cloud.InstanceResources)
-	//CurrentProviderConfig.AWSConfiguration.InstanceSafety = make(map[InstanceType]SafeInstance)
-	//CurrentProviderConfig.AWSConfiguration.InstanceCost = make(map[InstanceType]Cost)
+	a.ProviderConfiguration.AWSConfiguration.InstanceTypes = []base.InstanceType{"t2.micro"}
+	a.ProviderConfiguration.AWSConfiguration.InstanceResources = make(map[base.InstanceType]base.InstanceResources)
+	a.ProviderConfiguration.AWSConfiguration.InstanceResources["t2.micro"] = base.InstanceResources{
+		TotalCpuResource:100,
+		TotalMemoryResource:100,
+		TotalNetworkResource:100,
+	}
+	a.ProviderConfiguration.AWSConfiguration.InstanceSafety = make(map[base.InstanceType]base.SafeInstance)
+	a.ProviderConfiguration.AWSConfiguration.InstanceSafety["t2.micro"] = true
+
+	a.ProviderConfiguration.AWSConfiguration.InstanceCost = make(map[base.InstanceType]base.Cost)
+	a.ProviderConfiguration.AWSConfiguration.InstanceCost["t2.micro"] = 1.0
+
 }
 
 func (a *AWSProvider) SpawnInstance(ty base.InstanceType) base.HostId {

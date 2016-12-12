@@ -164,6 +164,7 @@ func getStateConfigurationApplications(w http.ResponseWriter, r *http.Request) {
 			LoadBalancer: object.LoadBalancer,
 			Network: object.Network,
 			Needs: object.Needs,
+			PortMappings: object.PortMappings,
 		})
 
 		apiInstance.ConfigManager.Save()
