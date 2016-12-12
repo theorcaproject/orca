@@ -118,6 +118,8 @@ func getStateConfigurationCloudProviders(w http.ResponseWriter, r *http.Request)
 		state_configuration.GlobalConfigurationState.CloudProvider.MinInstances = object.MinInstances
 		state_configuration.GlobalConfigurationState.CloudProvider.MaxInstances = object.MaxInstances
 		state_configuration.GlobalConfigurationState.CloudProvider.Type = object.Type
+		state_configuration.GlobalConfigurationState.CloudProvider.SSHKey = object.SSHKey
+		state_configuration.GlobalConfigurationState.CloudProvider.SSHUser = object.SSHUser
 
 		if (object.Type == "AWS") {
 			state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.AMI = object.AWSConfiguration.AMI

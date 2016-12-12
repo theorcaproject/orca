@@ -1,8 +1,58 @@
 [
   {
+    "Name": "dudes",
+    "Type": "",
+    "Version": 1,
+    "TargetDeploymentCount": 0,
+    "MinDeploymentCount": 0,
+    "DockerConfig": {
+      "Tag": "",
+      "Repository": "",
+      "Reference": ""
+    },
+    "RawConfig": {
+      "InstallCommands": null,
+      "RunCommand": {
+        "Type": "",
+        "Command": {
+          "Path": "",
+          "Args": ""
+        }
+      },
+      "QueryStateCommand": {
+        "Type": "",
+        "Command": {
+          "Path": "",
+          "Args": ""
+        }
+      },
+      "RemoveCommand": {
+        "Type": "",
+        "Command": {
+          "Path": "",
+          "Args": ""
+        }
+      },
+      "StopCommand": {
+        "Type": "",
+        "Command": {
+          "Path": "",
+          "Args": ""
+        }
+      }
+    },
+    "LoadBalancer": "",
+    "Network": "",
+    "Needs": {
+      "MemoryNeeds": 0,
+      "CpuNeeds": 0,
+      "NetworkNeeds": 0
+    }
+  },
+  {
     "Name": "nginx",
     "Type": "http",
-    "Version": 3,
+    "Version": 7,
     "TargetDeploymentCount": 1,
     "MinDeploymentCount": 2,
     "DockerConfig": {

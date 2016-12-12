@@ -70,6 +70,7 @@ var (
 
 func (j *JsonConfiguration) Init(configurationRoot string){
 	j.configRoot = configurationRoot
+	state_configuration.GlobalConfigurationState.ConfigurationRootPath = configurationRoot
 }
 
 func (j *JsonConfiguration) Load() {
@@ -114,6 +115,8 @@ func applyAvailableInstances(instances []base.HostId) {
 
 func applyCloudProviderConfiguration(conf base.ProviderConfiguration) {
 	Logger.InitLogger.Infof("Applying CloudProvider config: %+v", conf)
+	state_configuration.GlobalConfigurationState.CloudProvider.SSHKey = conf.SSHKey
+	state_configuration.GlobalConfigurationState.CloudProvider.SSHUser = conf.SSHUser
 	state_configuration.GlobalConfigurationState.CloudProvider.Type = conf.Type
 	state_configuration.GlobalConfigurationState.CloudProvider.MaxInstances = conf.MaxInstances
 	state_configuration.GlobalConfigurationState.CloudProvider.MinInstances = conf.MinInstances

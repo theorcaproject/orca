@@ -50,9 +50,9 @@ var CurrentProvider Provider
 func Init() {
 	AWSLogger.Infof("Initializing CloudProvider of type %s", state_configuration.GlobalConfigurationState.CloudProvider.Type)
 	if state_configuration.GlobalConfigurationState.CloudProvider.Type == PROVIDER_AWS {
-		CurrentProvider = &AWSProvider{}
+		CurrentProvider = &AWSProvider{ProviderConfiguration: state_configuration.GlobalConfigurationState.CloudProvider}
 	} else {
-		CurrentProvider = &TestProvider{}
+		CurrentProvider = &TestProvider{ProviderConfiguration: state_configuration.GlobalConfigurationState.CloudProvider}
 	}
 	CurrentProvider.Init()
 
@@ -73,6 +73,8 @@ func spawnToMinInstances() {
 
 
 type TestProvider struct {
+	ProviderConfiguration base.ProviderConfiguration
+
 	Type base.ProviderType
 	InstanceTypes []base.InstanceType
 	SpawnList []base.HostId

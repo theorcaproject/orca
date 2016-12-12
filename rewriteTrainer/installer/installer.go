@@ -55,10 +55,9 @@ func ubuntu1604(clientConfig types.Configuration) []string {
 	}
 }
 
-func InstallNewInstance(clientConfig types.Configuration, ipAddr base.IpAddr) bool {
+func InstallNewInstance(clientConfig types.Configuration, ipAddr base.IpAddr, sshKey string, sshUser string) bool {
 	InstallerLogger.Infof("Starting install on host %s:%s", clientConfig.HostId, ipAddr)
-	userName := "ubuntu"
-	session, addr := orcaSSh.Connect(userName, string(ipAddr) + ":22")
+	session, addr := orcaSSh.Connect(sshUser, string(ipAddr) + ":22", sshKey)
 	if session == nil {
 		InstallerLogger.Infof("Install on host %s:%s failed: No session", clientConfig.HostId, ipAddr)
 		return false

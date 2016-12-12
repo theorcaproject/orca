@@ -213,6 +213,8 @@ type AWSConfiguration struct {
 
 type ProviderConfiguration struct {
     Type ProviderType
+    SSHKey string
+    SSHUser string
     MinInstances InstanceCount
     MaxInstances InstanceCount
     AWSConfiguration AWSConfiguration
