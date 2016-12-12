@@ -5,6 +5,7 @@ import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"strings"
 	"strconv"
+	"fmt"
 )
 
 type ProviderType string
@@ -42,6 +43,7 @@ type ProviderConfiguration struct {
 	Type ProviderType
 	MinInstances InstanceCount
 	MaxInstances InstanceCount
+	BaseInstanceType InstanceType
 	AWSConfiguration AWSConfiguration
 }
 
@@ -81,7 +83,7 @@ func spawnToMinInstances() {
 	if len(state_cloud.GlobalAvailableInstances) < int(CurrentProviderConfig.MinInstances) {
 		AWSLogger.Infof("Not enough instances available. Spawning more, available:%d min:%d", len(state_cloud.GlobalAvailableInstances), CurrentProviderConfig.MinInstances)
 		for i := len(state_cloud.GlobalAvailableInstances); i < int(CurrentProviderConfig.MinInstances); i++ {
-			CurrentProvider.SpawnInstanceSync("t2.micro")
+			CurrentProvider.SpawnInstanceSync(CurrentProviderConfig.BaseInstanceType)
 		}
 	} else {
 		AWSLogger.Infof("Enough instances available, going on")
@@ -110,7 +112,10 @@ func (a *TestProvider) Init() {
 func (a *TestProvider) GetResources(ty InstanceType) state_cloud.InstanceResources {
 
 	if !strings.Contains(string(ty), "metrics=") {
-		return state_cloud.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: 10, TotalNetworkResource:10, TotalCpuResource:10}
+		if string(ty) == "orcaClient_2" {
+			return state_cloud.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: 3000, TotalNetworkResource:1500, TotalCpuResource:4000}
+		}
+		return state_cloud.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: 1000, TotalNetworkResource:1000, TotalCpuResource:1000}
 	}
 	arr := strings.Split(strings.Split(string(ty), "metrics=")[1], "_")
 	cpu, _ := strconv.Atoi(arr[0])
@@ -152,13 +157,15 @@ func (a *TestProvider) GetInstanceType(hostId base.HostId) InstanceType{
 	return InstanceType(hostId)
 }
 
+var instanceCount = 0
+
 func (a *TestProvider) SpawnInstanceSync(ty InstanceType) base.HostId {
 	AWSLogger.Infof("Trying to spawn a single instance of type '%s'", ty)
-	AWSLogger.Errorf("NOT IMPLEMENTED")
-	AWSLogger.Errorf("NOT IMPLEMENTED")
-	AWSLogger.Errorf("NOT IMPLEMENTED")
-	return ""
+	//installOrcaClient("orcaClient_1", "192.168.2.132", state_configuration.GlobalConfigurationState.Trainer.Ip)
+	instanceCount++
+	return base.HostId(fmt.Sprintf("%s_%d", ty, instanceCount))
 }
+
 
 func (a *TestProvider) SpawnInstanceLike(hostId base.HostId) base.HostId{
 	AWSLogger.Errorf("NOT IMPLEMENTED")

@@ -30,6 +30,7 @@ func (api Api) Init() {
 
 	r.HandleFunc("/push", pushHandler)
 
+	r.HandleFunc("/state", getState)
 	r.HandleFunc("/state/config", getStateConfiguration)
 	r.HandleFunc("/state/config/applications", getStateConfigurationApplications)
 	r.HandleFunc("/state/cloud", getStateCloud)
@@ -90,6 +91,22 @@ func doHandlePush(hostInfo base.HostInfo, stats base.MetricsWrapper) {
 	tracker.GlobalHostTracker.Update(hostInfo.HostId, time)
 
 	responder.CheckAppState(hostInfo)
+}
+
+type AllState struct {
+	Configuration state_configuration.ConfigurationState
+	Cloud state_cloud.CloudLayoutAll
+	Needs state_needs.AppsNeedState
+}
+
+func getState(w http.ResponseWriter, r *http.Request) {
+	ApiLogger.Infof("Query to getState")
+	all := AllState{
+		Configuration: state_configuration.GlobalConfigurationState.Snapshot(),
+		Cloud: state_cloud.GlobalCloudLayout.Snapshot(),
+		Needs: state_needs.GlobalAppsNeedState.Snapshot(),
+	}
+	returnJson(w, all)
 }
 
 func getStateConfiguration(w http.ResponseWriter, r *http.Request) {

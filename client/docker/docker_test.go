@@ -115,7 +115,7 @@ func TestClient_AppMetrics(t *testing.T) {
 	}
 
 	if len(metrics.All()) != 3 {
-		t.Error(metrics.All())
+		t.Error(metrics.All()["supperapp1"])
 	}
 
 	if !cli.StopApp("superapp1", appConf, &appsState, &conf) {
