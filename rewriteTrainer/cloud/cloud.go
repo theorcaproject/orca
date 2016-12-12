@@ -5,11 +5,8 @@ import (
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"strings"
 	"strconv"
+	"gatoor/orca/rewriteTrainer/state/configuration"
 )
-
-type ProviderType string
-type InstanceType string
-type InstanceCount int
 
 const (
 	PROVIDER_TEST = "TEST"
@@ -24,49 +21,35 @@ const (
 	PROVIDER_EVENT_READY = "PROVIDER_EVENT_READY"
 )
 
-
-type MinInstanceCount int
-type MaxInstanceCount int
-type Cost int
-
-type InstanceStatus string
 type ProviderEventType string
-type SafeInstance bool
+type InstanceStatus string
 
 type ProviderEvent struct {
 	HostId base.HostId
 	Type ProviderEventType
 }
 
-type ProviderConfiguration struct {
-	Type ProviderType
-	MinInstances InstanceCount
-	MaxInstances InstanceCount
-	AWSConfiguration AWSConfiguration
-}
-
 type Provider interface {
 	Init()
-	SpawnInstances([]InstanceType) bool
-	SpawnInstance(InstanceType) base.HostId
-	SpawnInstanceSync(InstanceType) base.HostId
+	SpawnInstances([]base.InstanceType) bool
+	SpawnInstance(base.InstanceType) base.HostId
+	SpawnInstanceSync(base.InstanceType) base.HostId
 	SpawnInstanceLike(base.HostId) base.HostId
 	GetIp(base.HostId) base.IpAddr
-	GetResources(InstanceType) state_cloud.InstanceResources
-	GetInstanceType(base.HostId) InstanceType
-	SuitableInstanceTypes(state_cloud.InstanceResources) []InstanceType
+	GetResources(base.InstanceType) base.InstanceResources
+	GetInstanceType(base.HostId) base.InstanceType
+	SuitableInstanceTypes(base.InstanceResources) []base.InstanceType
 	CheckInstance(base.HostId) InstanceStatus
 	TerminateInstance(base.HostId) bool
 	GetSpawnLog() []base.HostId
 	RemoveFromSpawnLog(base.HostId)
 }
 
-var CurrentProviderConfig ProviderConfiguration
 var CurrentProvider Provider
 
 func Init() {
-	AWSLogger.Infof("Initializing CloudProvider of type %s", CurrentProviderConfig.Type)
-	if CurrentProviderConfig.Type == PROVIDER_AWS {
+	AWSLogger.Infof("Initializing CloudProvider of type %s", state_configuration.GlobalConfigurationState.CloudProvider.Type)
+	if state_configuration.GlobalConfigurationState.CloudProvider.Type == PROVIDER_AWS {
 		CurrentProvider = &AWSProvider{}
 	} else {
 		CurrentProvider = &TestProvider{}
@@ -78,9 +61,9 @@ func Init() {
 }
 
 func spawnToMinInstances() {
-	if len(state_cloud.GlobalAvailableInstances) < int(CurrentProviderConfig.MinInstances) {
-		AWSLogger.Infof("Not enough instances available. Spawning more, available:%d min:%d", len(state_cloud.GlobalAvailableInstances), CurrentProviderConfig.MinInstances)
-		for i := len(state_cloud.GlobalAvailableInstances); i < int(CurrentProviderConfig.MinInstances); i++ {
+	if len(state_cloud.GlobalAvailableInstances) < int(state_configuration.GlobalConfigurationState.CloudProvider.MinInstances) {
+		AWSLogger.Infof("Not enough instances available. Spawning more, available:%d min:%d", len(state_cloud.GlobalAvailableInstances), state_configuration.GlobalConfigurationState.CloudProvider.MinInstances)
+		for i := len(state_cloud.GlobalAvailableInstances); i < int(state_configuration.GlobalConfigurationState.CloudProvider.MinInstances); i++ {
 			CurrentProvider.SpawnInstanceSync("t2.micro")
 		}
 	} else {
@@ -90,13 +73,13 @@ func spawnToMinInstances() {
 
 
 type TestProvider struct {
-	Type ProviderType
-	InstanceTypes []InstanceType
+	Type base.ProviderType
+	InstanceTypes []base.InstanceType
 	SpawnList []base.HostId
 	KillList []base.HostId
 }
 
-var testInstanceResouces = map[InstanceType]state_cloud.InstanceResources{
+var testInstanceResouces = map[base.InstanceType]base.InstanceResources{
 	"test": {TotalCpuResource: 10, TotalMemoryResource: 10, TotalNetworkResource: 10},
 }
 
@@ -104,23 +87,23 @@ var testInstanceResouces = map[InstanceType]state_cloud.InstanceResources{
 
 func (a *TestProvider) Init() {
 	a.Type = PROVIDER_TEST
-	a.InstanceTypes = []InstanceType{"test", "otherstuff"}
+	a.InstanceTypes = []base.InstanceType{"test", "otherstuff"}
 }
 
-func (a *TestProvider) GetResources(ty InstanceType) state_cloud.InstanceResources {
+func (a *TestProvider) GetResources(ty base.InstanceType) base.InstanceResources {
 
 	if !strings.Contains(string(ty), "metrics=") {
-		return state_cloud.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: 10, TotalNetworkResource:10, TotalCpuResource:10}
+		return base.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: 10, TotalNetworkResource:10, TotalCpuResource:10}
 	}
 	arr := strings.Split(strings.Split(string(ty), "metrics=")[1], "_")
 	cpu, _ := strconv.Atoi(arr[0])
 	mem, _ := strconv.Atoi(arr[1])
 	net, _ := strconv.Atoi(arr[2])
 
-	return state_cloud.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: state_cloud.MemoryResource(mem), TotalNetworkResource:state_cloud.NetworkResource(net), TotalCpuResource:state_cloud.CpuResource(cpu)}
+	return base.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: base.MemoryResource(mem), TotalNetworkResource:base.NetworkResource(net), TotalCpuResource:base.CpuResource(cpu)}
 }
 
-func (a *TestProvider) SpawnInstance(ty InstanceType) base.HostId {
+func (a *TestProvider) SpawnInstance(ty base.InstanceType) base.HostId {
 	AWSLogger.Infof("Trying to spawn a single instance of type '%s'", ty)
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
@@ -148,11 +131,11 @@ func (a *TestProvider) TerminateInstance(hostId base.HostId) bool{
 	return true
 }
 
-func (a *TestProvider) GetInstanceType(hostId base.HostId) InstanceType{
-	return InstanceType(hostId)
+func (a *TestProvider) GetInstanceType(hostId base.HostId) base.InstanceType{
+	return base.InstanceType(hostId)
 }
 
-func (a *TestProvider) SpawnInstanceSync(ty InstanceType) base.HostId {
+func (a *TestProvider) SpawnInstanceSync(ty base.InstanceType) base.HostId {
 	AWSLogger.Infof("Trying to spawn a single instance of type '%s'", ty)
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
@@ -168,7 +151,7 @@ func (a *TestProvider) SpawnInstanceLike(hostId base.HostId) base.HostId{
 	return "new_" + hostId
 }
 
-func (a *TestProvider) SpawnInstances(tys []InstanceType) bool{
+func (a *TestProvider) SpawnInstances(tys []base.InstanceType) bool{
 	AWSLogger.Infof("Trying to spawn %d instances", len(tys))
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
@@ -180,11 +163,8 @@ func (a *TestProvider) GetIp(hostId base.HostId) base.IpAddr {
 	return ""
 }
 
-func (a *TestProvider) SuitableInstanceTypes(resources state_cloud.InstanceResources) []InstanceType {
-
-
-
-	res := []InstanceType{}
+func (a *TestProvider) SuitableInstanceTypes(resources base.InstanceResources) []base.InstanceType {
+	res := []base.InstanceType{}
 	return res
 }
 

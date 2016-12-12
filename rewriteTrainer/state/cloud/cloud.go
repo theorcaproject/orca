@@ -21,20 +21,6 @@ type CloudLayout struct {
 	Layout map[base.HostId]CloudLayoutElement
 }
 
-type Resource int
-
-type CpuResource Resource
-type MemoryResource Resource
-type NetworkResource Resource
-
-type InstanceResources struct {
-	UsedCpuResource CpuResource
-	UsedMemoryResource MemoryResource
-	UsedNetworkResource NetworkResource
-	TotalCpuResource CpuResource
-	TotalMemoryResource MemoryResource
-	TotalNetworkResource NetworkResource
-}
 
 type ResourceObjList []ResourceObj
 
@@ -44,7 +30,7 @@ type ResourceObj struct {
 }
 
 
-type AvailableInstances map[base.HostId]InstanceResources
+type AvailableInstances map[base.HostId]base.InstanceResources
 
 type CloudLayoutAll struct {
 	Current CloudLayout
@@ -275,22 +261,22 @@ func (p ResourceObjList) Len() int { return len(p) }
 func (p ResourceObjList) Less(i, j int) bool { return p[i].CombinedAvailableResources < p[j].CombinedAvailableResources}
 func (p ResourceObjList) Swap(i, j int){ p[i], p[j] = p[j], p[i] }
 
-func (a *AvailableInstances) Update(hostId base.HostId, resources InstanceResources) {
+func (a *AvailableInstances) Update(hostId base.HostId, resources base.InstanceResources) {
 	AvailableInstancesLogger.Infof("Updating host '%s': '%+v'", hostId, resources)
 	availableInstancesMutex.Lock()
 	defer availableInstancesMutex.Unlock()
 	if (*a) == nil {
-		(*a) = make(map[base.HostId]InstanceResources)
+		(*a) = make(map[base.HostId]base.InstanceResources)
 	}
 	(*a)[hostId] = resources
 }
 
-func (a *AvailableInstances) GetResources(hostId base.HostId) (InstanceResources, error){
+func (a *AvailableInstances) GetResources(hostId base.HostId) (base.InstanceResources, error){
 	availableInstancesMutex.Lock()
 	if _, exists := (*a)[hostId]; !exists {
 		AvailableInstancesLogger.Warnf("Instance '%s' does not exist", hostId)
 		availableInstancesMutex.Unlock()
-		return InstanceResources{}, errors.New("Host does not exist")
+		return base.InstanceResources{}, errors.New("Host does not exist")
 	}
 	AvailableInstancesLogger.Debugf("GetResources for host '%s': %+v", hostId, (*a)[hostId])
 	res := (*a)[hostId]
@@ -310,7 +296,7 @@ func (a *AvailableInstances) Remove(hostId base.HostId) {
 	delete((*a), hostId)
 }
 
-func (a *AvailableInstances) GlobalResourceConsumption() InstanceResources {
+func (a *AvailableInstances) GlobalResourceConsumption() base.InstanceResources {
 	availableInstancesMutex.Lock()
 	defer availableInstancesMutex.Unlock()
 	var availableCpu, availableMemory , availableNetwork, usedCpu, usedMemory, usedNetwork int
@@ -322,13 +308,13 @@ func (a *AvailableInstances) GlobalResourceConsumption() InstanceResources {
 		usedMemory += int(elem.UsedMemoryResource)
 		usedNetwork += int(elem.UsedNetworkResource)
 	}
-	return InstanceResources{
-		TotalCpuResource: CpuResource(availableCpu),
-		TotalMemoryResource: MemoryResource(availableMemory),
-		TotalNetworkResource: NetworkResource(availableNetwork),
-		UsedCpuResource: CpuResource(usedCpu),
-		UsedMemoryResource: MemoryResource(usedMemory),
-		UsedNetworkResource: NetworkResource(usedNetwork),
+	return base.InstanceResources{
+		TotalCpuResource: base.CpuResource(availableCpu),
+		TotalMemoryResource: base.MemoryResource(availableMemory),
+		TotalNetworkResource: base.NetworkResource(availableNetwork),
+		UsedCpuResource: base.CpuResource(usedCpu),
+		UsedMemoryResource: base.MemoryResource(usedMemory),
+		UsedNetworkResource: base.NetworkResource(usedNetwork),
 	}
 }
 
