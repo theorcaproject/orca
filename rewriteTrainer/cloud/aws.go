@@ -279,7 +279,7 @@ func (a *AWSProvider) CheckInstance(hostId base.HostId) InstanceStatus {
 
 func (a *AWSProvider) TerminateInstance(hostId base.HostId) bool {
 	AWSLogger.Warnf("Trying to terminate instance %s", hostId)
-	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Region)}))
 	_, err := svc.TerminateInstances(&ec2.TerminateInstancesInput{
 		InstanceIds: aws.StringSlice([]string{string(hostId)}),
 	})
