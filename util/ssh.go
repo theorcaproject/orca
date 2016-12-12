@@ -12,7 +12,7 @@ import (
 
 const (
 	SSH_PEM_PATH = "/orca/config/orca_test_us.pem"
-	CONNECT_RETRY_AMOUNT = 15
+	CONNECT_RETRY_AMOUNT = 60
 	EXECUTE_RETRY_AMOUNT = 20
 )
 

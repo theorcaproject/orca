@@ -13,6 +13,7 @@ import (
 	"gatoor/orca/client/types"
 	"fmt"
 	"gatoor/orca/rewriteTrainer/state/configuration"
+	"os"
 )
 
 var AWSLogger = Logger.LoggerWithField(Logger.Logger, "module", "aws")
@@ -83,6 +84,10 @@ func (a *AWSProvider) Init() {
 
 func (a *AWSProvider) SpawnInstance(ty base.InstanceType) base.HostId {
 	AWSLogger.Warnf("Trying to spawn a single instance of type '%s' in region %s with AMI %s", ty, state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Region, state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.AMI)
+
+	//TODO: This is amazingly shitty, but because the aws api sucks and I have no patience its the approach for now
+	os.Setenv("AWS_ACCESS_KEY_ID", state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Key)
+	os.Setenv("AWS_SECRET_ACCESS_KEY", state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Secret)
 
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Region)}))
 
@@ -179,7 +184,7 @@ func (a *AWSProvider) GetIp(hostId base.HostId) base.IpAddr {
 		AWSLogger.Infof("Got IpAddress for instance %s failed: %s", hostId, err)
 		return ""
 	}
-	ip := base.IpAddr(*info.PrivateIpAddress)
+	ip := base.IpAddr(*info.PublicIpAddress)
 	AWSLogger.Infof("Got IpAddress %s for instance %s", ip, hostId)
 	return ip
 }
