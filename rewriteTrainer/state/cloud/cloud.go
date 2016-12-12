@@ -8,6 +8,8 @@ import (
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"sync"
 	"gatoor/orca/rewriteTrainer/needs"
+	"gatoor/orca/rewriteTrainer/audit"
+	"fmt"
 )
 
 var StateCloudLogger = Logger.LoggerWithField(Logger.Logger, "module", "state_cloud")
@@ -104,7 +106,16 @@ func (c *CloudLayout) AddHost(host base.HostId, elem CloudLayoutElement) {
 	StateCloudLogger.WithField("type", c.Type).Infof("Adding host '%s': '%+v'", host, elem)
 	cloudLayoutMutex.Lock()
 	defer cloudLayoutMutex.Unlock()
-	(*c).Layout[host] = elem
+
+	if _, ok := (*c).Layout[host]; !ok {
+		audit.Audit.AddEvent(map[string]string{
+			"message": fmt.Sprintf("New host discovered, '%s': '%+v'", host, elem),
+			"subsystem": "cloud",
+			"level": "info",
+		})
+	}
+
+ 	(*c).Layout[host] = elem
 }
 
 func (c *CloudLayout) DeploymentCount(app base.AppName, version base.Version) (base.DeploymentCount, base.DeploymentCount) {

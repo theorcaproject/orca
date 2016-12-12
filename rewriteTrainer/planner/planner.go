@@ -271,7 +271,6 @@ func InitialPlan() {
 	}
 
 	doPlan()
-
 	PlannerLogger.Info("Finished initialPlan()")
 }
 

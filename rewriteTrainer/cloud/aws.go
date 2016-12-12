@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"os"
+	"gatoor/orca/rewriteTrainer/audit"
 )
 
 var AWSLogger = Logger.LoggerWithField(Logger.Logger, "module", "aws")
@@ -77,6 +78,10 @@ func (a *AWSProvider) Init() {
 		AWSLogger.Errorf("Missing AWS credential environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY")
 	}
 
+	//TODO: This is amazingly shitty, but because the aws api sucks and I have no patience its the approach for now
+	os.Setenv("AWS_ACCESS_KEY_ID", a.ProviderConfiguration.AWSConfiguration.Key)
+	os.Setenv("AWS_SECRET_ACCESS_KEY", a.ProviderConfiguration.AWSConfiguration.Secret)
+
 	//TODO: When the cloud provider init is called, we use the aws api based on the credentials set to populate below:
 	a.ProviderConfiguration.AWSConfiguration.InstanceTypes = []base.InstanceType{"t2.micro"}
 	a.ProviderConfiguration.AWSConfiguration.InstanceResources = make(map[base.InstanceType]base.InstanceResources)
@@ -94,11 +99,11 @@ func (a *AWSProvider) Init() {
 }
 
 func (a *AWSProvider) SpawnInstance(ty base.InstanceType) base.HostId {
-	AWSLogger.Warnf("Trying to spawn a single instance of type '%s' in region %s with AMI %s", ty, a.ProviderConfiguration.AWSConfiguration.Region, a.ProviderConfiguration.AWSConfiguration.AMI)
-
-	//TODO: This is amazingly shitty, but because the aws api sucks and I have no patience its the approach for now
-	os.Setenv("AWS_ACCESS_KEY_ID", a.ProviderConfiguration.AWSConfiguration.Key)
-	os.Setenv("AWS_SECRET_ACCESS_KEY", a.ProviderConfiguration.AWSConfiguration.Secret)
+	audit.Audit.AddEvent(map[string]string{
+		"message": fmt.Sprintf("Trying to spawn a single instance of type '%s' in region %s with AMI %s", ty, a.ProviderConfiguration.AWSConfiguration.Region, a.ProviderConfiguration.AWSConfiguration.AMI),
+		"subsystem": "cloud.aws",
+		"level": "info",
+	})
 
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.ProviderConfiguration.AWSConfiguration.Region)}))
 
@@ -112,12 +117,21 @@ func (a *AWSProvider) SpawnInstance(ty base.InstanceType) base.HostId {
 	})
 
 	if err != nil {
-		AWSLogger.Errorf("Could not spawn instance of type %s: %s", ty, err)
+		audit.Audit.AddEvent(map[string]string{
+			"message": fmt.Sprintf("Could not spawn instance of type %s: %s", ty, err),
+			"subsystem": "cloud.aws",
+			"level": "error",
+		})
+
 		return ""
 	}
 
 	id := base.HostId(*runResult.Instances[0].InstanceId)
-	AWSLogger.Infof("Spawned a single instance of type '%s'. Id=%s", ty, id)
+	audit.Audit.AddEvent(map[string]string{
+		"message": fmt.Sprintf("Spawned a single instance of type '%s'. Id=%s", ty, id),
+		"subsystem": "cloud.aws",
+		"level": "info",
+	})
 	a.SpawnLog.Add(id)
 
 	return id
@@ -296,17 +310,32 @@ func (a *AWSProvider) CheckInstance(hostId base.HostId) InstanceStatus {
 }
 
 func (a *AWSProvider) TerminateInstance(hostId base.HostId) bool {
-	AWSLogger.Warnf("Trying to terminate instance %s", hostId)
+	audit.Audit.AddEvent(map[string]string{
+		"message": fmt.Sprintf("Trying to terminate instance %s", hostId),
+		"subsystem": "cloud.aws",
+		"level": "error",
+	})
+
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.ProviderConfiguration.AWSConfiguration.Region)}))
 	_, err := svc.TerminateInstances(&ec2.TerminateInstancesInput{
 		InstanceIds: aws.StringSlice([]string{string(hostId)}),
 	})
 
 	if err != nil {
-		AWSLogger.Errorf("Could not terminate instance %s: %s", hostId, err)
+		audit.Audit.AddEvent(map[string]string{
+			"message": fmt.Sprintf("Could not terminate instance %s: %s", hostId, err),
+			"subsystem": "cloud.aws",
+			"level": "error",
+		})
+
 		return false
 	}
-	AWSLogger.Infof("Terminated instance %s", hostId)
+	audit.Audit.AddEvent(map[string]string{
+		"message": fmt.Sprintf("Terminated instance %s", hostId),
+		"subsystem": "cloud.aws",
+		"level": "error",
+	})
+
 	a.SpawnLog.Remove(hostId)
 	return true
 
