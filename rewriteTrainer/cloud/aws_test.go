@@ -5,7 +5,7 @@ import (
 	"testing"
 	"gatoor/orca/base"
 	"time"
-	"gatoor/orca/rewriteTrainer/state/cloud"
+	"gatoor/orca/rewriteTrainer/state/configuration"
 )
 
 //These Tests require an AWS Account. Configure it via ORCA_AWS_KEY and ORCA_AWS_SECRET environment variables
@@ -13,16 +13,16 @@ import (
 
 func before () AWSProvider {
 	aws := AWSProvider{}
-	CurrentProviderConfig = ProviderConfiguration{
+	state_configuration.GlobalConfigurationState.CloudProvider = base.ProviderConfiguration{
 		Type: PROVIDER_AWS, MinInstances: 1, MaxInstances: 3,
-		AWSConfiguration: AWSConfiguration{
+		AWSConfiguration: base.AWSConfiguration{
 			Region: "us-west-2",
 			AMI: "unknown",
 			SecurityGroupId: "sg-cdf3cfb4",
-			InstanceTypes: []InstanceType{},
-			InstanceCost: make(map[InstanceType]Cost),
-			InstanceResources: make(map[InstanceType]state_cloud.InstanceResources),
-			InstanceSafety: make(map[InstanceType]SafeInstance),
+			InstanceTypes: []base.InstanceType{},
+			InstanceCost: make(map[base.InstanceType]base.Cost),
+			InstanceResources: make(map[base.InstanceType]base.InstanceResources),
+			InstanceSafety: make(map[base.InstanceType]base.SafeInstance),
 			SuitableInstanceSafetyFactor: 2.0,
 		},
 	}
@@ -50,7 +50,7 @@ func TestAWSProvider_SpawnInstance_TerminateInstance(t *testing.T) {
 		t.Error()
 	}
 
-	CurrentProviderConfig.AWSConfiguration.AMI = "ami-a8842dc8"
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.AMI = "ami-a8842dc8"
 
 	if aws.SpawnInstance("xyz") != "" {
 		t.Error()
@@ -127,7 +127,7 @@ func TestAWSProvider_SpawnInstance_TerminateInstance(t *testing.T) {
 
 	ty := aws.GetInstanceType(id2)
 
-	if ty != InstanceType("t2.nano") {
+	if ty != base.InstanceType("t2.nano") {
 		t.Error(ty)
 	}
 
@@ -144,21 +144,21 @@ func TestAWSProvider_SpawnInstance_TerminateInstance(t *testing.T) {
 func TestAWSProvider_SuitableInstanceTypes(t *testing.T) {
 	aws := before()
 
-	CurrentProviderConfig.AWSConfiguration.InstanceTypes = []InstanceType{"i1", "i10", "i20", "i100", "i50"}
-	CurrentProviderConfig.AWSConfiguration.SuitableInstanceSafetyFactor = 2.0
-	CurrentProviderConfig.AWSConfiguration.InstanceResources["i1"] = state_cloud.InstanceResources{TotalCpuResource: 1, TotalMemoryResource: 1, TotalNetworkResource: 1}
-	CurrentProviderConfig.AWSConfiguration.InstanceResources["i10"] = state_cloud.InstanceResources{TotalCpuResource: 10, TotalMemoryResource: 10, TotalNetworkResource: 10}
-	CurrentProviderConfig.AWSConfiguration.InstanceResources["i20"] = state_cloud.InstanceResources{TotalCpuResource: 20, TotalMemoryResource: 20, TotalNetworkResource: 20}
-	CurrentProviderConfig.AWSConfiguration.InstanceResources["i50"] = state_cloud.InstanceResources{TotalCpuResource: 50, TotalMemoryResource: 50, TotalNetworkResource: 50}
-	CurrentProviderConfig.AWSConfiguration.InstanceResources["i100"] = state_cloud.InstanceResources{TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100}
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceTypes = []base.InstanceType{"i1", "i10", "i20", "i100", "i50"}
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.SuitableInstanceSafetyFactor = 2.0
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceResources["i1"] = base.InstanceResources{TotalCpuResource: 1, TotalMemoryResource: 1, TotalNetworkResource: 1}
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceResources["i10"] = base.InstanceResources{TotalCpuResource: 10, TotalMemoryResource: 10, TotalNetworkResource: 10}
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceResources["i20"] = base.InstanceResources{TotalCpuResource: 20, TotalMemoryResource: 20, TotalNetworkResource: 20}
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceResources["i50"] = base.InstanceResources{TotalCpuResource: 50, TotalMemoryResource: 50, TotalNetworkResource: 50}
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceResources["i100"] = base.InstanceResources{TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100}
 
-	CurrentProviderConfig.AWSConfiguration.InstanceCost["i1"] = 1
-	CurrentProviderConfig.AWSConfiguration.InstanceCost["i10"] = 10
-	CurrentProviderConfig.AWSConfiguration.InstanceCost["i20"] = 20
-	CurrentProviderConfig.AWSConfiguration.InstanceCost["i50"] = 5
-	CurrentProviderConfig.AWSConfiguration.InstanceCost["i100"] = 100
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceCost["i1"] = 1
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceCost["i10"] = 10
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceCost["i20"] = 20
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceCost["i50"] = 5
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceCost["i100"] = 100
 
-	instances := aws.SuitableInstanceTypes(state_cloud.InstanceResources{TotalCpuResource: 10, TotalMemoryResource: 10, TotalNetworkResource: 10})
+	instances := aws.SuitableInstanceTypes(base.InstanceResources{TotalCpuResource: 10, TotalMemoryResource: 10, TotalNetworkResource: 10})
 
 	if len(instances) != 3 {
 		t.Error(instances)
@@ -167,26 +167,26 @@ func TestAWSProvider_SuitableInstanceTypes(t *testing.T) {
 		t.Error(instances)
 	}
 
-	instances = aws.SuitableInstanceTypes(state_cloud.InstanceResources{TotalCpuResource: 60, TotalMemoryResource: 10, TotalNetworkResource: 10})
+	instances = aws.SuitableInstanceTypes(base.InstanceResources{TotalCpuResource: 60, TotalMemoryResource: 10, TotalNetworkResource: 10})
 	if len(instances) != 0 {
 		t.Error(instances)
 	}
 
-	instances = aws.SuitableInstanceTypes(state_cloud.InstanceResources{TotalCpuResource: 10, TotalMemoryResource: 60, TotalNetworkResource: 10})
+	instances = aws.SuitableInstanceTypes(base.InstanceResources{TotalCpuResource: 10, TotalMemoryResource: 60, TotalNetworkResource: 10})
 	if len(instances) != 0 {
 		t.Error(instances)
 	}
 
-	instances = aws.SuitableInstanceTypes(state_cloud.InstanceResources{TotalCpuResource: 10, TotalMemoryResource: 10, TotalNetworkResource: 60})
+	instances = aws.SuitableInstanceTypes(base.InstanceResources{TotalCpuResource: 10, TotalMemoryResource: 10, TotalNetworkResource: 60})
 	if len(instances) != 0 {
 		t.Error(instances)
 	}
 
-	instances = aws.SuitableInstanceTypes(state_cloud.InstanceResources{TotalCpuResource: 20, TotalMemoryResource: 10, TotalNetworkResource: 10})
+	instances = aws.SuitableInstanceTypes(base.InstanceResources{TotalCpuResource: 20, TotalMemoryResource: 10, TotalNetworkResource: 10})
 	if len(instances) != 2 {
 		t.Error(instances)
 	}
-	instances = aws.SuitableInstanceTypes(state_cloud.InstanceResources{TotalCpuResource: 0, TotalMemoryResource: 0, TotalNetworkResource: 0})
+	instances = aws.SuitableInstanceTypes(base.InstanceResources{TotalCpuResource: 0, TotalMemoryResource: 0, TotalNetworkResource: 0})
 	if len(instances) != 5 {
 		t.Error(instances)
 	}

@@ -22,7 +22,7 @@ func applySampleConfig() {
 	conf.Trainer.Port = 5000
 	conf.Trainer.Policies.TRY_TO_REMOVE_HOSTS = true
 
-	httpApp1 := config.AppJsonConfiguration{
+	httpApp1 := base.AppConfiguration{
 		Name: "httpApp_1",
 		Version: 1,
 		Type: base.APP_HTTP,
@@ -53,7 +53,7 @@ func applySampleConfig() {
 		},
 	}
 
-	httpApp1_v2 := config.AppJsonConfiguration{
+	httpApp1_v2 := base.AppConfiguration{
 		Name: "httpApp_1",
 		Version: 2,
 		Type: base.APP_HTTP,
@@ -84,7 +84,7 @@ func applySampleConfig() {
 		},
 	}
 
-	httpApp2 := config.AppJsonConfiguration{
+	httpApp2 := base.AppConfiguration{
 		Name: "httpApp_2",
 		Version: 3,
 		Type: base.APP_HTTP,
@@ -115,7 +115,7 @@ func applySampleConfig() {
 		},
 	}
 
-	workerApp1 := config.AppJsonConfiguration{
+	workerApp1 := base.AppConfiguration{
 		Name: "workerApp_1",
 		Version: 4,
 		Type: base.APP_WORKER,
@@ -146,7 +146,7 @@ func applySampleConfig() {
 		},
 	}
 
-	workerApp1_v2 := config.AppJsonConfiguration{
+	workerApp1_v2 := base.AppConfiguration{
 		Name: "workerApp_1",
 		Version: 5,
 		Type: base.APP_WORKER,
@@ -177,7 +177,7 @@ func applySampleConfig() {
 		},
 	}
 
-	workerApp2 := config.AppJsonConfiguration{
+	workerApp2 := base.AppConfiguration{
 		Name: "workerApp_2",
 		Version: 6,
 		Type: base.APP_WORKER,
@@ -208,7 +208,7 @@ func applySampleConfig() {
 		},
 	}
 
-	workerApp3 := config.AppJsonConfiguration{
+	workerApp3 := base.AppConfiguration{
 		Name: "workerApp_3",
 		Version: 7,
 		Type: base.APP_WORKER,
@@ -241,7 +241,7 @@ func applySampleConfig() {
 
 
 
-	conf.Apps = []config.AppJsonConfiguration{
+	conf.Apps = []base.AppConfiguration{
 		httpApp1, httpApp1_v2, httpApp2,
 		workerApp1, workerApp1_v2, workerApp2, workerApp3,
 	}
@@ -259,37 +259,37 @@ func initTrainer() {
 }
 
 func initCloudProvider() {
-	state_cloud.GlobalAvailableInstances.Update("cpuHost_1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("cpuHost_1", base.InstanceResources{
 		TotalCpuResource: 500,
 		TotalMemoryResource: 100,
 		TotalNetworkResource: 100,
 	})
-	state_cloud.GlobalAvailableInstances.Update("cpuHost_2", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("cpuHost_2", base.InstanceResources{
 		TotalCpuResource: 501,
 		TotalMemoryResource: 101,
 		TotalNetworkResource: 101,
 	})
-	state_cloud.GlobalAvailableInstances.Update("memoryHost_1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("memoryHost_1", base.InstanceResources{
 		TotalCpuResource: 200,
 		TotalMemoryResource: 300,
 		TotalNetworkResource: 100,
 	})
-	state_cloud.GlobalAvailableInstances.Update("generalHost_1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("generalHost_1", base.InstanceResources{
 		TotalCpuResource: 101,
 		TotalMemoryResource: 101,
 		TotalNetworkResource: 101,
 	})
-	state_cloud.GlobalAvailableInstances.Update("generalHost_2", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("generalHost_2", base.InstanceResources{
 		TotalCpuResource: 102,
 		TotalMemoryResource: 102,
 		TotalNetworkResource: 102,
 	})
-	state_cloud.GlobalAvailableInstances.Update("generalHost_3", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("generalHost_3", base.InstanceResources{
 		TotalCpuResource: 103,
 		TotalMemoryResource: 103,
 		TotalNetworkResource: 103,
 	})
-	state_cloud.GlobalAvailableInstances.Update("emptyHost", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("emptyHost", base.InstanceResources{
 		TotalCpuResource: 1000,
 		TotalMemoryResource: 1000,
 		TotalNetworkResource: 1000,
@@ -650,7 +650,7 @@ func TestPlannerIntegration_initialPlan_BigAssDeployment(t *testing.T) {
 	appCount := 0
 
 	for i:= 1; i <= 4000; i++ {
-		state_cloud.GlobalAvailableInstances.Update(base.HostId("filllerHost_" + fmt.Sprint(i)), state_cloud.InstanceResources{
+		state_cloud.GlobalAvailableInstances.Update(base.HostId("filllerHost_" + fmt.Sprint(i)), base.InstanceResources{
 			TotalCpuResource: 500,
 			TotalMemoryResource: 100,
 			TotalNetworkResource: 100,

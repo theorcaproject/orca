@@ -8,7 +8,6 @@ import (
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"gatoor/orca/rewriteTrainer/example"
 	"gatoor/orca/rewriteTrainer/state/needs"
-	"gatoor/orca/rewriteTrainer/config"
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/needs"
 	"gatoor/orca/rewriteTrainer/tracker"
@@ -585,8 +584,8 @@ func TestPlanner_initialPlan(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	state_needs.GlobalAppsNeedState = make(map[base.AppName]state_needs.AppNeedVersion)
 
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{TotalCpuResource: 10.0, TotalMemoryResource: 10.0, TotalNetworkResource: 10.0,})
-	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{TotalCpuResource: 20.0, TotalMemoryResource: 20.0, TotalNetworkResource: 20.0,})
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{TotalCpuResource: 10.0, TotalMemoryResource: 10.0, TotalNetworkResource: 10.0,})
+	state_cloud.GlobalAvailableInstances.Update("host2", base.InstanceResources{TotalCpuResource: 20.0, TotalMemoryResource: 20.0, TotalNetworkResource: 20.0,})
 
 	config := example.ExampleJsonConfig()
 	config.ApplyToState()
@@ -625,8 +624,8 @@ func TestPlanner_initialPlan(t *testing.T) {
 func TestPlanner_getGlobalResources(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{TotalCpuResource: 10.0, TotalMemoryResource: 10.0, TotalNetworkResource: 10.0,})
-	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{TotalCpuResource: 21.0, TotalMemoryResource: 22.0, TotalNetworkResource: 23.0,})
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{TotalCpuResource: 10.0, TotalMemoryResource: 10.0, TotalNetworkResource: 10.0,})
+	state_cloud.GlobalAvailableInstances.Update("host2", base.InstanceResources{TotalCpuResource: 21.0, TotalMemoryResource: 22.0, TotalNetworkResource: 23.0,})
 
 	cpu, mem, net := getGlobalResources()
 
@@ -645,7 +644,7 @@ func TestPlanner_getGlobalMinNeeds(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
 	conf := example.ExampleJsonConfig()
 
-	conf.Apps = append(conf.Apps, config.AppJsonConfiguration{
+	conf.Apps = append(conf.Apps, base.AppConfiguration{
 		Name: "app1",
 			Version: 2,
 			Type: base.APP_WORKER,
@@ -696,7 +695,7 @@ func TestPlanner_getGlobalCurrentNeeds(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
 	conf := example.ExampleJsonConfig()
 
-	conf.Apps = append(conf.Apps, config.AppJsonConfiguration{
+	conf.Apps = append(conf.Apps, base.AppConfiguration{
 		Name: "app1",
 			Version: 2,
 			Type: base.APP_WORKER,
@@ -750,7 +749,7 @@ func TestPlanner_wipeDesired(t *testing.T) {
 		t.Error(res2.Apps["app1"].DeploymentCount)
 	}
 
-	state_cloud.GlobalAvailableInstances.Update("newhost", state_cloud.InstanceResources{})
+	state_cloud.GlobalAvailableInstances.Update("newhost", base.InstanceResources{})
 	wipeDesired()
 
 	elem, _ := state_cloud.GlobalCloudLayout.Desired.GetHost("somehost1")
@@ -775,7 +774,7 @@ func TestPlanner_wipeDesired(t *testing.T) {
 
 
 func TestPlanner_updateInstanceResources(t *testing.T) {
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{
 		TotalCpuResource: 100, TotalMemoryResource: 200, TotalNetworkResource: 300, UsedCpuResource: 10, UsedMemoryResource: 20, UsedNetworkResource: 30,
 	})
 
@@ -813,7 +812,7 @@ func TestPlanner_updateInstanceResources(t *testing.T) {
 }
 
 func TestPlanner_assignAppToHost(t *testing.T) {
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{
 		TotalCpuResource: 100, TotalMemoryResource: 200, TotalNetworkResource: 300, UsedCpuResource: 10, UsedMemoryResource: 20, UsedNetworkResource: 30,
 	})
 	state_needs.GlobalAppsNeedState.UpdateNeeds("app1", 1, needs.AppNeeds{CpuNeeds: 50, MemoryNeeds: 60, NetworkNeeds: 70})
@@ -857,11 +856,11 @@ func TestPlanner_assignAppToHost(t *testing.T) {
 
 func TestPlanner_findHostWithResources_NoCurrent(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{
 		TotalCpuResource: 100, TotalMemoryResource: 200, TotalNetworkResource: 300, UsedCpuResource: 90, UsedMemoryResource: 190, UsedNetworkResource: 290,
 	})
 
-	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host2", base.InstanceResources{
 		TotalCpuResource: 100, TotalMemoryResource: 200, TotalNetworkResource: 300, UsedCpuResource: 10, UsedMemoryResource: 20, UsedNetworkResource: 30,
 	})
 
@@ -886,15 +885,15 @@ func TestPlanner_findHostWithResources_WithCurrent(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("host3")
 	state_cloud.GlobalCloudLayout.Current.AddApp("host3", "app3", 3, 2)
 
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{
 		TotalCpuResource: 10.0, TotalMemoryResource: 20.0, TotalNetworkResource: 30.0, UsedCpuResource: 1.0, UsedMemoryResource: 2.0, UsedNetworkResource: 3.0,
 	})
 
-	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host2", base.InstanceResources{
 		TotalCpuResource: 10.0, TotalMemoryResource: 20.0, TotalNetworkResource: 30.0, UsedCpuResource: 1.0, UsedMemoryResource: 2.0, UsedNetworkResource: 3.0,
 	})
 
-	state_cloud.GlobalAvailableInstances.Update("host3", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host3", base.InstanceResources{
 		TotalCpuResource: 1000.0, TotalMemoryResource: 2000.0, TotalNetworkResource: 3000.0, UsedCpuResource: 1.0, UsedMemoryResource: 2.0, UsedNetworkResource: 3.0,
 	})
 
@@ -922,11 +921,11 @@ func TestPlanner_findHttpHostWithResources_NoCurrent(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Desired.AddApp("host1", "app1", 1, 2)
 	state_cloud.GlobalCloudLayout.Desired.AddEmptyHost("host2")
 
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{
 		TotalCpuResource: 10.0, TotalMemoryResource: 20.0, TotalNetworkResource: 30.0, UsedCpuResource: 1.0, UsedMemoryResource: 1.0, UsedNetworkResource: 2.0,
 	})
 
-	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host2", base.InstanceResources{
 		TotalCpuResource: 10.0, TotalMemoryResource: 20.0, TotalNetworkResource: 30.0, UsedCpuResource: 1.0, UsedMemoryResource: 2.0, UsedNetworkResource: 3.0,
 	})
 
@@ -957,15 +956,15 @@ func TestPlanner_findHttpHostWithResources_WithCurrent(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Desired.AddEmptyHost("host2")
 	state_cloud.GlobalCloudLayout.Desired.AddEmptyHost("host3")
 
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{
 		TotalCpuResource: 10.0, TotalMemoryResource: 20.0, TotalNetworkResource: 30.0, UsedCpuResource: 1.0, UsedMemoryResource: 2.0, UsedNetworkResource: 3.0,
 	})
 
-	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host2", base.InstanceResources{
 		TotalCpuResource: 10.0, TotalMemoryResource: 20.0, TotalNetworkResource: 30.0, UsedCpuResource: 1.0, UsedMemoryResource: 2.0, UsedNetworkResource: 3.0,
 	})
 
-	state_cloud.GlobalAvailableInstances.Update("host3", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host3", base.InstanceResources{
 		TotalCpuResource: 1000.0, TotalMemoryResource: 2000.0, TotalNetworkResource: 3000.0, UsedCpuResource: 1.0, UsedMemoryResource: 2.0, UsedNetworkResource: 3.0,
 	})
 
@@ -989,7 +988,7 @@ func TestPlanner_findHttpHostWithResources_WithCurrent(t *testing.T) {
 
 
 func TestPlanner_maxDeploymentOnHost(t *testing.T) {
-	resources := state_cloud.InstanceResources{
+	resources := base.InstanceResources{
 		TotalCpuResource: 10.0, TotalNetworkResource: 10.0, TotalMemoryResource: 10.0,
 		UsedCpuResource: 1.0, UsedNetworkResource: 1.0, UsedMemoryResource: 1.0,
 	}
@@ -1028,7 +1027,7 @@ func TestPlanner_planHttp_moreInstancesThanNeeded(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	FailedAssigned = []FailedAssign{}
 	MissingAssigned = []MissingAssign{}
-	resources := state_cloud.InstanceResources{
+	resources := base.InstanceResources{
 		TotalCpuResource: 10.0, TotalNetworkResource: 10.0, TotalMemoryResource: 10.0,
 	}
 
@@ -1109,7 +1108,7 @@ func TestPlanner_planHttp_lessInstancesThanNeeded(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	FailedAssigned = []FailedAssign{}
 	MissingAssigned = []MissingAssign{}
-	resources := state_cloud.InstanceResources{
+	resources := base.InstanceResources{
 		TotalCpuResource: 10, TotalNetworkResource: 10, TotalMemoryResource: 10,
 	}
 
@@ -1164,7 +1163,7 @@ func TestPlanner_planWorker_moreInstancesThanNeeded(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	FailedAssigned = []FailedAssign{}
 	MissingAssigned = []MissingAssign{}
-	resources := state_cloud.InstanceResources{
+	resources := base.InstanceResources{
 		TotalCpuResource: 10.0, TotalNetworkResource: 10.0, TotalMemoryResource: 10.0,
 	}
 
@@ -1241,7 +1240,7 @@ func TestPlanner_planWorker_lessInstancesThanNeeded(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	FailedAssigned = []FailedAssign{}
 	MissingAssigned = []MissingAssign{}
-	resources := state_cloud.InstanceResources{
+	resources := base.InstanceResources{
 		TotalCpuResource: 10.0, TotalNetworkResource: 10.0, TotalMemoryResource: 10.0,
 	}
 
@@ -1364,24 +1363,24 @@ func TestPlanner_sortByAvailableResources(t *testing.T) {
 	HOST_UPPER_WATERMARK = 0.1
 	state_cloud.GlobalCloudLayout.Init()
 	state_configuration.GlobalConfigurationState.Trainer.Policies.TRY_TO_REMOVE_HOSTS = true
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{
 		TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100,
 		UsedCpuResource: 100, UsedMemoryResource: 100, UsedNetworkResource: 100,
 	})
-	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host2", base.InstanceResources{
 		TotalCpuResource: 1000, TotalMemoryResource: 100, TotalNetworkResource: 100,
 		UsedCpuResource: 0, UsedMemoryResource: 0, UsedNetworkResource: 0,
 	})
-	state_cloud.GlobalAvailableInstances.Update("host3", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host3", base.InstanceResources{
 		TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100,
 		UsedCpuResource: 0, UsedMemoryResource: 50, UsedNetworkResource: 0,
 	})
-	state_cloud.GlobalAvailableInstances.Update("host4", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host4", base.InstanceResources{
 		TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100,
 		UsedCpuResource: 0, UsedMemoryResource: 50, UsedNetworkResource: 50,
 	})
 
-	state_cloud.GlobalAvailableInstances.Update("host5", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host5", base.InstanceResources{
 		TotalCpuResource: 1000, TotalMemoryResource: 100, TotalNetworkResource: 100,
 		UsedCpuResource: 0, UsedMemoryResource: 100, UsedNetworkResource: 0,
 	})
@@ -1401,24 +1400,24 @@ func TestPlanner_sortByAvailableResources_reverse(t *testing.T) {
 	HOST_UPPER_WATERMARK = 0.1
 	state_cloud.GlobalCloudLayout.Init()
 	state_configuration.GlobalConfigurationState.Trainer.Policies.TRY_TO_REMOVE_HOSTS = false
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{
 		TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100,
 		UsedCpuResource: 100, UsedMemoryResource: 100, UsedNetworkResource: 100,
 	})
-	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host2", base.InstanceResources{
 		TotalCpuResource: 1000, TotalMemoryResource: 100, TotalNetworkResource: 100,
 		UsedCpuResource: 0, UsedMemoryResource: 0, UsedNetworkResource: 0,
 	})
-	state_cloud.GlobalAvailableInstances.Update("host3", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host3", base.InstanceResources{
 		TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100,
 		UsedCpuResource: 0, UsedMemoryResource: 50, UsedNetworkResource: 0,
 	})
-	state_cloud.GlobalAvailableInstances.Update("host4", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host4", base.InstanceResources{
 		TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100,
 		UsedCpuResource: 0, UsedMemoryResource: 50, UsedNetworkResource: 50,
 	})
 
-	state_cloud.GlobalAvailableInstances.Update("host5", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host5", base.InstanceResources{
 		TotalCpuResource: 1000, TotalMemoryResource: 100, TotalNetworkResource: 100,
 		UsedCpuResource: 0, UsedMemoryResource: 100, UsedNetworkResource: 0,
 	})
@@ -1435,7 +1434,7 @@ func TestPlanner_sortByAvailableResources_reverse(t *testing.T) {
 }
 
 func TestPlanner_checkWatermark(t *testing.T) {
-	resources := state_cloud.InstanceResources{
+	resources := base.InstanceResources{
 		TotalCpuResource: 100,
 		TotalMemoryResource: 100,
 		TotalNetworkResource: 100,
@@ -1448,7 +1447,7 @@ func TestPlanner_checkWatermark(t *testing.T) {
 		t.Error("should be false")
 	}
 
-	resources1 := state_cloud.InstanceResources{
+	resources1 := base.InstanceResources{
 		TotalCpuResource: 100,
 		TotalMemoryResource: 100,
 		TotalNetworkResource: 100,
@@ -1461,7 +1460,7 @@ func TestPlanner_checkWatermark(t *testing.T) {
 		t.Error("should be true")
 	}
 
-	resources2 := state_cloud.InstanceResources{
+	resources2 := base.InstanceResources{
 		TotalCpuResource: 100,
 		TotalMemoryResource: 100,
 		TotalNetworkResource: 100,
@@ -1474,7 +1473,7 @@ func TestPlanner_checkWatermark(t *testing.T) {
 		t.Error("should be false")
 	}
 
-	resources3 := state_cloud.InstanceResources{
+	resources3 := base.InstanceResources{
 		TotalCpuResource: 100,
 		TotalMemoryResource: 100,
 		TotalNetworkResource: 100,
@@ -1487,7 +1486,7 @@ func TestPlanner_checkWatermark(t *testing.T) {
 		t.Error("should be false")
 	}
 
-	resources4 := state_cloud.InstanceResources{
+	resources4 := base.InstanceResources{
 		TotalCpuResource: 100,
 		TotalMemoryResource: 100,
 		TotalNetworkResource: 1000000,
@@ -1505,13 +1504,13 @@ func TestPlanner_handleFailedAssign_http(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	state_configuration.GlobalConfigurationState.Init()
 
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{
 		TotalCpuResource: 8.0, TotalNetworkResource: 10.0, TotalMemoryResource: 10.0,
 	})
-	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host2", base.InstanceResources{
 		TotalCpuResource: 9.0, TotalNetworkResource: 10.0, TotalMemoryResource: 10.0,
 	})
-	state_cloud.GlobalAvailableInstances.Update("host3", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("host3", base.InstanceResources{
 		TotalCpuResource: 10.0, TotalNetworkResource: 10.0, TotalMemoryResource: 10.0,
 	})
 
@@ -1553,10 +1552,10 @@ func TestPlanner_handleFailedAssign_http(t *testing.T) {
 func TestPlanner_handleFailedAssign_worker(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	state_configuration.GlobalConfigurationState.Init()
-	resources := state_cloud.InstanceResources{
+	resources := base.InstanceResources{
 		TotalCpuResource: 10.0, TotalNetworkResource: 10.0, TotalMemoryResource: 10.0,
 	}
-	resources3 := state_cloud.InstanceResources{
+	resources3 := base.InstanceResources{
 		TotalCpuResource: 5.0, TotalNetworkResource: 8.0, TotalMemoryResource: 10.0,
 	}
 	state_cloud.GlobalAvailableInstances.Update("host1", resources)
@@ -1610,8 +1609,8 @@ func TestPlanner_MultiplePlanningSteps_noChanges(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
 	state_needs.GlobalAppsNeedState = make(map[base.AppName]state_needs.AppNeedVersion)
 
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100,})
-	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{TotalCpuResource: 200, TotalMemoryResource: 200, TotalNetworkResource: 200,})
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100,})
+	state_cloud.GlobalAvailableInstances.Update("host2", base.InstanceResources{TotalCpuResource: 200, TotalMemoryResource: 200, TotalNetworkResource: 200,})
 
 	config := example.ExampleJsonConfig()
 	config.ApplyToState()
@@ -1660,8 +1659,8 @@ func TestPlanner_MultiplePlanningSteps_hostKilledByEventAndNewHostSpawned(t *tes
 	state_cloud.GlobalCloudLayout.Init()
 	state_needs.GlobalAppsNeedState = make(map[base.AppName]state_needs.AppNeedVersion)
 
-	state_cloud.GlobalAvailableInstances.Update("host1", state_cloud.InstanceResources{TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100,})
-	state_cloud.GlobalAvailableInstances.Update("host2", state_cloud.InstanceResources{TotalCpuResource: 200, TotalMemoryResource: 200, TotalNetworkResource: 200,})
+	state_cloud.GlobalAvailableInstances.Update("host1", base.InstanceResources{TotalCpuResource: 100, TotalMemoryResource: 100, TotalNetworkResource: 100,})
+	state_cloud.GlobalAvailableInstances.Update("host2", base.InstanceResources{TotalCpuResource: 200, TotalMemoryResource: 200, TotalNetworkResource: 200,})
 
 	config := example.ExampleJsonConfig()
 	config.ApplyToState()

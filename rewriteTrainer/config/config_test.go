@@ -39,7 +39,7 @@ func TestConfig_ApplyToState(t *testing.T) {
 	conf.Trainer.Port = 5000
 
 
-	conf.Apps = []AppJsonConfiguration{
+	conf.Apps = []base.AppConfiguration{
 		{
 			Name: "app1",
 			Version: 1,
@@ -158,8 +158,8 @@ func Test_applyAwsConfiguration(t *testing.T) {
 	applyCloudProviderConfiguration(j.CloudProvider)
 	cloud.Init()
 
-	if cloud.CurrentProviderConfig.Type != "AWS" {
-		t.Error(cloud.CurrentProviderConfig)
+	if state_configuration.GlobalConfigurationState.CloudProvider.Type != "AWS" {
+		t.Error(state_configuration.GlobalConfigurationState.CloudProvider)
 	}
 
 	awsProvider := cloud.CurrentProvider.(*cloud.AWSProvider)
@@ -167,7 +167,7 @@ func Test_applyAwsConfiguration(t *testing.T) {
 		t.Error(cloud.CurrentProvider)
 	}
 
-	if cloud.CurrentProviderConfig.AWSConfiguration.InstanceCost["t2.nano"] != 65 {
-		t.Error(cloud.CurrentProviderConfig)
+	if state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceCost["t2.nano"] != 65 {
+		t.Error(state_configuration.GlobalConfigurationState.CloudProvider)
 	}
 }

@@ -53,6 +53,8 @@ func (api Api) Init() {
 }
 
 func returnJson(w http.ResponseWriter, obj interface{}) {
+	fmt.Printf("%+v", obj)
+
 	j, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		ApiLogger.Errorf("Json serialization failed - %s", err)
@@ -179,6 +181,7 @@ func getStateNeeds(w http.ResponseWriter, r *http.Request) {
 
 func getAuditEvents(w http.ResponseWriter, r *http.Request) {
 	ApiLogger.Infof("Query to getAuditEvents")
+
 	returnJson(w, audit.Audit.ListEvents(nil))
 }
 

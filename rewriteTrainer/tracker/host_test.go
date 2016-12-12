@@ -6,6 +6,7 @@ import (
 	"time"
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/state/cloud"
+	"gatoor/orca/base"
 )
 
 
@@ -147,7 +148,7 @@ func TestHostCrashHandler_checkinHost(t *testing.T) {
 func Test_removeHostFromState(t *testing.T) {
 	state_cloud.GlobalCloudLayout.Init()
         state_cloud.GlobalCloudLayout.Current.AddEmptyHost("lamehost")
-	state_cloud.GlobalAvailableInstances.Update("lamehost", state_cloud.InstanceResources{})
+	state_cloud.GlobalAvailableInstances.Update("lamehost", base.InstanceResources{})
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 1 {
 		t.Error(state_cloud.GlobalCloudLayout.Current.Layout)
 	}
