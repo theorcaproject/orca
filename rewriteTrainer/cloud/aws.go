@@ -1,10 +1,8 @@
 package cloud
 
 import (
-	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/base"
 	Logger "gatoor/orca/rewriteTrainer/log"
-	"os"
 	"errors"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -43,36 +41,23 @@ func (s SpawnLog) Remove(hostId base.HostId) {
 }
 
 type AWSProvider struct {
-	Type ProviderType
+	Type base.ProviderType
 	SpawnLog SpawnLog
 }
 
-type AWSConfiguration struct {
-	Key string
-	Secret string
-	Region string
-	AMI string
-	SecurityGroupId string
-	InstanceTypes []InstanceType
-	InstanceCost map[InstanceType]Cost
-	InstanceResources map[InstanceType]state_cloud.InstanceResources
-	InstanceSafety map[InstanceType]SafeInstance
-	SuitableInstanceSafetyFactor float32
-}
-
 func (a *AWSProvider) CheckCredentials() bool {
-	if CurrentProviderConfig.AWSConfiguration.Key == "" || CurrentProviderConfig.AWSConfiguration.Secret == "" {
+	if state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Key == "" || state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Secret == "" {
 		AWSLogger.Errorf("No AWS Credentials set")
 		return false
 	}
-	AWSLogger.Infof("Checking AwsCredentials: Key='%s' Secret='%s...'", CurrentProviderConfig.AWSConfiguration.Key, CurrentProviderConfig.AWSConfiguration.Secret[:4])
+	AWSLogger.Infof("Checking AwsCredentials: Key='%s' Secret='%s...'", state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Key, state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Secret[:4])
 
 	sess, err := session.NewSession()
 	if err != nil {
 		AWSLogger.Errorf("AwsCredentials fail: %s", err)
 		return false
 	}
-	svc := ec2.New(sess, &aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)})
+	svc := ec2.New(sess, &aws.Config{Region: aws.String(state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Region)})
 
 	_, err = svc.DescribeInstances(nil)
 	if err != nil {
@@ -85,28 +70,28 @@ func (a *AWSProvider) CheckCredentials() bool {
 
 func (a *AWSProvider) Init() {
 	a.Type = PROVIDER_AWS
+	if state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Key == "" || state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Secret == "" {
+		AWSLogger.Errorf("Missing AWS credential environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY")
+	}
+
+	//TODO: When the cloud provider init is called, we use the aws api based on the credentials set to populate below:
 	//CurrentProviderConfig.AWSConfiguration.InstanceTypes = []InstanceType{}
 	//CurrentProviderConfig.AWSConfiguration.InstanceResources = make(map[InstanceType]state_cloud.InstanceResources)
 	//CurrentProviderConfig.AWSConfiguration.InstanceSafety = make(map[InstanceType]SafeInstance)
 	//CurrentProviderConfig.AWSConfiguration.InstanceCost = make(map[InstanceType]Cost)
-	CurrentProviderConfig.AWSConfiguration.Key = os.Getenv("AWS_ACCESS_KEY_ID")
-	CurrentProviderConfig.AWSConfiguration.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
-	if CurrentProviderConfig.AWSConfiguration.Key == "" || CurrentProviderConfig.AWSConfiguration.Secret == "" {
-		AWSLogger.Errorf("Missing AWS credential environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY")
-	}
 }
 
-func (a *AWSProvider) SpawnInstance(ty InstanceType) base.HostId {
-	AWSLogger.Warnf("Trying to spawn a single instance of type '%s' in region %s with AMI %s", ty, CurrentProviderConfig.AWSConfiguration.Region, CurrentProviderConfig.AWSConfiguration.AMI)
+func (a *AWSProvider) SpawnInstance(ty base.InstanceType) base.HostId {
+	AWSLogger.Warnf("Trying to spawn a single instance of type '%s' in region %s with AMI %s", ty, state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Region, state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.AMI)
 
-	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Region)}))
 
 	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{
-		ImageId:      aws.String(CurrentProviderConfig.AWSConfiguration.AMI),
+		ImageId:      aws.String(state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.AMI),
 		InstanceType: aws.String(string(ty)),
 		MinCount:     aws.Int64(1),
 		MaxCount:     aws.Int64(1),
-		SecurityGroupIds: aws.StringSlice([]string{string(CurrentProviderConfig.AWSConfiguration.SecurityGroupId)}),
+		SecurityGroupIds: aws.StringSlice([]string{string(state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.SecurityGroupId)}),
 	})
 
 	if err != nil {
@@ -122,7 +107,7 @@ func (a *AWSProvider) SpawnInstance(ty InstanceType) base.HostId {
 }
 
 func (a *AWSProvider) waitOnInstanceReady(hostId base.HostId) bool {
-	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Region)}))
 
 	if err := svc.WaitUntilInstanceRunning(&ec2.DescribeInstancesInput{InstanceIds: aws.StringSlice([]string{string(hostId)}), }); err != nil {
 		AWSLogger.Errorf("WaitOnInstanceReady for %s failed: %s", hostId, err)
@@ -144,7 +129,7 @@ func installOrcaClient(hostId base.HostId, ip base.IpAddr, trainerIp base.IpAddr
 	installer.InstallNewInstance(clientConf, ip)
 }
 
-func (a AWSProvider) SpawnInstanceSync(ty InstanceType) base.HostId {
+func (a AWSProvider) SpawnInstanceSync(ty base.InstanceType) base.HostId {
 	AWSLogger.Infof("Spawning Instance synchronously, type %s", ty)
 	id := a.SpawnInstance(ty)
 	if id == "" {
@@ -167,7 +152,7 @@ func (a *AWSProvider) SpawnInstanceLike(hostId base.HostId) base.HostId{
 	return hostId
 }
 
-func (a *AWSProvider) SpawnInstances(tys []InstanceType) bool {
+func (a *AWSProvider) SpawnInstances(tys []base.InstanceType) bool {
 	AWSLogger.Infof("Trying to spawn %d instances", len(tys))
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
@@ -176,7 +161,7 @@ func (a *AWSProvider) SpawnInstances(tys []InstanceType) bool {
 }
 
 func (a *AWSProvider) getInstanceInfo(hostId base.HostId) (*ec2.Instance, error) {
-	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Region)}))
 	res, err := svc.DescribeInstances(&ec2.DescribeInstancesInput{InstanceIds: aws.StringSlice([]string{string(hostId)}), })
 	if err != nil {
 		return &ec2.Instance{}, err
@@ -199,19 +184,19 @@ func (a *AWSProvider) GetIp(hostId base.HostId) base.IpAddr {
 	return ip
 }
 
-func (a *AWSProvider) GetInstanceType(hostId base.HostId) InstanceType {
+func (a *AWSProvider) GetInstanceType(hostId base.HostId) base.InstanceType {
 	AWSLogger.Infof("Getting InstanceType of instance %s", hostId)
 	info, err := a.getInstanceInfo(hostId)
 	if err != nil {
 		AWSLogger.Infof("Got InstanceType for instance %s failed: %s", hostId, err)
 		return ""
 	}
-	ty := InstanceType(*info.InstanceType)
+	ty := base.InstanceType(*info.InstanceType)
 	AWSLogger.Infof("Got InstanceType %s for instance %s", ty, hostId)
 	return ty
 }
 
-func checkResources(available state_cloud.InstanceResources, needed state_cloud.InstanceResources, safety float32) bool {
+func checkResources(available base.InstanceResources, needed base.InstanceResources, safety float32) bool {
 	if float32(available.TotalCpuResource) < float32(needed.TotalCpuResource) * safety {
 		return false
 	}
@@ -225,13 +210,13 @@ func checkResources(available state_cloud.InstanceResources, needed state_cloud.
 }
 
 
-func (a *AWSProvider) GetResources(ty InstanceType) state_cloud.InstanceResources {
-	return CurrentProviderConfig.AWSConfiguration.InstanceResources[ty]
+func (a *AWSProvider) GetResources(ty base.InstanceType) base.InstanceResources {
+	return state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceResources[ty]
 }
 
 type CostSort struct {
-	InstanceType InstanceType
-	Cost Cost
+	InstanceType base.InstanceType
+	Cost base.Cost
 }
 
 type CostSorts []CostSort
@@ -248,7 +233,7 @@ func (slice CostSorts) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
 }
 
-func sortByCost(tys []InstanceType, costMap map[InstanceType]Cost) []InstanceType {
+func sortByCost(tys []base.InstanceType, costMap map[base.InstanceType]base.Cost) []base.InstanceType {
 	sorted := CostSorts{}
 	for _, ty := range tys {
 		if _, exists := costMap[ty]; exists {
@@ -256,29 +241,29 @@ func sortByCost(tys []InstanceType, costMap map[InstanceType]Cost) []InstanceTyp
 		}
 	}
 	sort.Sort(sorted)
-	res := []InstanceType{}
+	res := []base.InstanceType{}
 	for _, t := range sorted {
 		res = append(res, t.InstanceType)
 	}
 	return res
 }
 
-func (a *AWSProvider) SuitableInstanceTypes(resources state_cloud.InstanceResources) []InstanceType {
+func (a *AWSProvider) SuitableInstanceTypes(resources base.InstanceResources) []base.InstanceType {
 	AWSLogger.Infof("Get Suitable Instances for needs: %+v", resources)
-	suitableInstances := []InstanceType{}
-	for _, ty := range CurrentProviderConfig.AWSConfiguration.InstanceTypes {
-		if checkResources(a.GetResources(ty), resources, CurrentProviderConfig.AWSConfiguration.SuitableInstanceSafetyFactor) {
+	suitableInstances := []base.InstanceType{}
+	for _, ty := range state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceTypes {
+		if checkResources(a.GetResources(ty), resources, state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.SuitableInstanceSafetyFactor) {
 			suitableInstances = append(suitableInstances, ty)
 		}
 	}
-	suitableInstances = sortByCost(suitableInstances, CurrentProviderConfig.AWSConfiguration.InstanceCost)
+	suitableInstances = sortByCost(suitableInstances, state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.InstanceCost)
 	AWSLogger.Infof("Suitable Instances for needs %+v: %v", resources, suitableInstances)
 	return suitableInstances
 }
 
 func (a *AWSProvider) CheckInstance(hostId base.HostId) InstanceStatus {
 	AWSLogger.Infof("Checking instance %s", hostId)
-	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Region)}))
 	res, err := svc.DescribeInstanceStatus(&ec2.DescribeInstanceStatusInput{InstanceIds: aws.StringSlice([]string{string(hostId)})})
 	if err != nil {
 		AWSLogger.Infof("Checking instance %s failed:%s", hostId, err)

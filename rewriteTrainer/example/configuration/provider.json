@@ -2,6 +2,16 @@
   "Type": "AWS",
   "MinInstances": 2,
   "MaxInstances": 3,
-  "AllowedInstanceTypes": ["t2.nano"],
-  "FundamentalInstanceType": "t2.nano"
+  "AWSConfiguration": {
+    "Key": "key123123",
+    "Secret": "secret123123",
+    "Region": "us-east-1a",
+    "AMI": "ami-123123",
+    "SecurityGroupId": "sg-123123",
+    "InstanceTypes": null,
+    "InstanceCost": null,
+    "InstanceResources": null,
+    "InstanceSafety": null,
+    "SuitableInstanceSafetyFactor": 0
+  }
 }

@@ -2,7 +2,6 @@ package config
 
 import (
 	"gatoor/orca/base"
-	"gatoor/orca/rewriteTrainer/cloud"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"os"
@@ -11,61 +10,28 @@ import (
 	"fmt"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"gatoor/orca/rewriteTrainer/state/cloud"
-	"gatoor/orca/rewriteTrainer/needs"
+	"io/ioutil"
 )
 
 
 type JsonConfiguration struct {
-	Trainer TrainerJsonConfiguration
+	configRoot string
+
+	Trainer base.TrainerConfigurationState
 	AvailableInstances []base.HostId
-	//Habitats []HabitatJsonConfiguration
-	Apps []AppJsonConfiguration
-	CloudProvider cloud.ProviderConfiguration
+	Habitats []base.HabitatConfiguration
+	Apps []base.AppConfiguration
+	CloudProvider base.ProviderConfiguration
 }
 
-type TrainerJsonConfiguration struct {
-	Port int
-	Ip base.IpAddr
-	Policies TrainerPolicies
-}
+func loadConfigFromFile(filename string, conf interface{}) {
+	Logger.InitLogger.Infof("Loading config file from %s", filename)
+	file, err := os.Open(filename)
+	if err != nil {
+		Logger.InitLogger.Fatalf("Could not open config file %s - %s", filename, err)
+		return
+	}
 
-type TrainerPolicies struct {
-	TRY_TO_REMOVE_HOSTS bool
-}
-
-type HabitatJsonConfiguration struct {
-	Name base.HabitatName
-	Version base.Version
-	InstallCommands []base.OsCommand
-}
-
-type AppJsonConfiguration struct {
-	Name base.AppName
-	Version base.Version
-	Type base.AppType
-	TargetDeploymentCount base.DeploymentCount
-	MinDeploymentCount base.DeploymentCount
-	//InstallCommands []base.OsCommand
-	//QueryStateCommand base.OsCommand
-	//RemoveCommand base.OsCommand
-	//RunCommand base.OsCommand
-	//StopCommand base.OsCommand
-	DockerConfig base.DockerConfig
-	Needs needs.AppNeeds
-	LoadBalancer base.LoadBalancerName
-	Network base.NetworkName
-}
-
-type CloudJsonConfiguration struct {
-	Provider cloud.Provider
-	InstanceType cloud.InstanceType
-	MinInstanceCount cloud.MinInstanceCount
-	MaxInstanceCount cloud.MaxInstanceCount
-}
-
-
-
-func loadConfigFromFile(file *os.File, conf interface{}) {
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(conf); err != nil {
 		extra := ""
@@ -77,11 +43,22 @@ func loadConfigFromFile(file *os.File, conf interface{}) {
 		Logger.InitLogger.Fatalf("error parsing JSON object in config file %s%s\n%v",
 			file.Name(), extra, err)
 	}
+	file.Close()
+}
+
+func saveConfigToFile(filename string, conf interface{}) {
+	res, err := json.MarshalIndent(conf, "", "  ")
+	if err != nil {
+		Logger.InitLogger.Errorf("JsonConfiguration Derialize failed: %s; %+v", err, conf)
+	}
+	var result = string(res)
+	err = ioutil.WriteFile(filename, []byte(result), 0644)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (j *JsonConfiguration) Check() {
-
-
 }
 
 var (
@@ -91,21 +68,29 @@ var (
 	CLOUD_PROVIDER_CONFIGURATION_FILE = "provider.json"
 )
 
-func (j *JsonConfiguration) Load(configurationRoot string) {
-	configFiles := make(map[string]interface{})
-	configFiles[configurationRoot + TRAINER_CONFIGURATION_FILE] = &j.Trainer
-	configFiles[configurationRoot + APPS_CONFIGURATION_FILE] = &j.Apps
-	configFiles[configurationRoot + AVAILABLE_INSTANCES_CONFIGURATION_FILE] = &j.AvailableInstances
-	configFiles[configurationRoot + CLOUD_PROVIDER_CONFIGURATION_FILE] = &j.CloudProvider
-	for key, interf := range configFiles {
-		Logger.InitLogger.Infof("Loading config file from %s", key)
-		file, err := os.Open(key)
-		if err != nil {
-			Logger.InitLogger.Fatalf("Could not open config file %s - %s", key, err)
-		}
-		loadConfigFromFile(file, interf)
-		file.Close()
+func (j *JsonConfiguration) Init(configurationRoot string){
+	j.configRoot = configurationRoot
+}
+
+func (j *JsonConfiguration) Load() {
+	loadConfigFromFile(j.configRoot + TRAINER_CONFIGURATION_FILE, &j.Trainer)
+	loadConfigFromFile(j.configRoot + APPS_CONFIGURATION_FILE, &j.Apps)
+	loadConfigFromFile(j.configRoot + AVAILABLE_INSTANCES_CONFIGURATION_FILE, &j.AvailableInstances)
+	loadConfigFromFile(j.configRoot + CLOUD_PROVIDER_CONFIGURATION_FILE, &j.CloudProvider)
+}
+
+func (j *JsonConfiguration) Save() {
+	Logger.InitLogger.Infof("Saving all configuration files")
+	saveConfigToFile(j.configRoot + TRAINER_CONFIGURATION_FILE, state_configuration.GlobalConfigurationState.Trainer)
+
+	var buffer = make([]base.AppConfiguration, 0)
+	for _, application := range state_configuration.GlobalConfigurationState.AllAppsLatest() {
+		buffer = append(buffer, application)
 	}
+
+	saveConfigToFile(j.configRoot + APPS_CONFIGURATION_FILE, buffer)
+	//loadConfigFromFile(j.configRoot + AVAILABLE_INSTANCES_CONFIGURATION_FILE + ".saved", state_configuration.GlobalConfigurationState.)
+	saveConfigToFile(j.configRoot + CLOUD_PROVIDER_CONFIGURATION_FILE, state_configuration.GlobalConfigurationState.CloudProvider)
 }
 
 
@@ -123,25 +108,25 @@ func (j *JsonConfiguration)  ApplyToState() {
 func applyAvailableInstances(instances []base.HostId) {
 	Logger.InitLogger.Infof("Applying AvailableInstances config: %+v", instances)
 	for _, hostId := range instances {
-		state_cloud.GlobalAvailableInstances.Update(hostId, state_cloud.InstanceResources{UsedCpuResource:0, UsedMemoryResource:0, UsedNetworkResource:0, TotalCpuResource: 20, TotalMemoryResource: 20, TotalNetworkResource: 20})
+		state_cloud.GlobalAvailableInstances.Update(hostId, base.InstanceResources{UsedCpuResource:0, UsedMemoryResource:0, UsedNetworkResource:0, TotalCpuResource: 20, TotalMemoryResource: 20, TotalNetworkResource: 20})
 	}
 }
 
-func applyCloudProviderConfiguration(conf cloud.ProviderConfiguration) {
+func applyCloudProviderConfiguration(conf base.ProviderConfiguration) {
 	Logger.InitLogger.Infof("Applying CloudProvider config: %+v", conf)
-	cloud.CurrentProviderConfig.Type = conf.Type
-	cloud.CurrentProviderConfig.MaxInstances = conf.MaxInstances
-	cloud.CurrentProviderConfig.MinInstances = conf.MinInstances
-	cloud.CurrentProviderConfig.AWSConfiguration = conf.AWSConfiguration
+	state_configuration.GlobalConfigurationState.CloudProvider.Type = conf.Type
+	state_configuration.GlobalConfigurationState.CloudProvider.MaxInstances = conf.MaxInstances
+	state_configuration.GlobalConfigurationState.CloudProvider.MinInstances = conf.MinInstances
+	state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration = conf.AWSConfiguration
 }
 
-func applyAppsConfig(appsConfs []AppJsonConfiguration) {
+func applyAppsConfig(appsConfs []base.AppConfiguration) {
 	for _, aConf := range appsConfs {
 		state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 			Name: aConf.Name,
 			Type: aConf.Type,
 			Version: aConf.Version,
-			TargetDeploymentCount: aConf.MinDeploymentCount,
+			TargetDeploymentCount: aConf.TargetDeploymentCount,
 			MinDeploymentCount: aConf.MinDeploymentCount,
 			DockerConfig: aConf.DockerConfig,
 			LoadBalancer: aConf.LoadBalancer,
@@ -156,7 +141,7 @@ func applyAppsConfig(appsConfs []AppJsonConfiguration) {
 	}
 }
 
-func applyHabitatConfig (habitatConfs []HabitatJsonConfiguration) {
+func applyHabitatConfig (habitatConfs []base.HabitatConfiguration) {
 	for _, hConf := range habitatConfs {
 		state_configuration.GlobalConfigurationState.ConfigureHabitat(base.HabitatConfiguration{
 			Name: hConf.Name,
@@ -166,14 +151,14 @@ func applyHabitatConfig (habitatConfs []HabitatJsonConfiguration) {
 	}
 }
 
-func applyTrainerConfig (trainerConf TrainerJsonConfiguration) {
+func applyTrainerConfig (trainerConf base.TrainerConfigurationState) {
 	state_configuration.GlobalConfigurationState.Trainer.Port = trainerConf.Port
 	state_configuration.GlobalConfigurationState.Trainer.Ip = trainerConf.Ip
 	state_configuration.GlobalConfigurationState.Trainer.Policies.TRY_TO_REMOVE_HOSTS = trainerConf.Policies.TRY_TO_REMOVE_HOSTS
 }
 
 //TODO use WeeklyNeeds
-func applyNeeds(appConfs []AppJsonConfiguration) {
+func applyNeeds(appConfs []base.AppConfiguration) {
 	for _, aNeeds := range appConfs {
 		state_needs.GlobalAppsNeedState.UpdateNeeds(aNeeds.Name, aNeeds.Version, aNeeds.Needs)
 	}

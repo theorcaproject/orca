@@ -234,14 +234,14 @@ func Plan() {
 	PlannerLogger.Info("Finished Plan()")
 }
 
-func getGlobalMissingResources() state_cloud.InstanceResources {
+func getGlobalMissingResources() base.InstanceResources {
 	neededCpu, neededMem, neededNet := getGlobalMinNeeds()
 	availableCpu, availableMem, availableNet := getGlobalResources()
 
-	res := state_cloud.InstanceResources{
-		TotalCpuResource: state_cloud.CpuResource(int(neededCpu) - int(availableCpu)),
-		TotalMemoryResource: state_cloud.MemoryResource(int(neededMem) - int(availableMem)),
-		TotalNetworkResource: state_cloud.NetworkResource(int(neededNet) - int(availableNet)),
+	res := base.InstanceResources{
+		TotalCpuResource: base.CpuResource(int(neededCpu) - int(availableCpu)),
+		TotalMemoryResource: base.MemoryResource(int(neededMem) - int(availableMem)),
+		TotalNetworkResource: base.NetworkResource(int(neededNet) - int(availableNet)),
 	}
 	return res
 }
@@ -407,7 +407,7 @@ func assignSurplusResources() {
 }
 
 type HostFinderFunc func (ns needs.AppNeeds, app base.AppName, sortedHosts []base.HostId, goodHosts map[base.HostId]bool) base.HostId
-type DeploymentCountFunc func (resources state_cloud.InstanceResources, ns needs.AppNeeds) base.DeploymentCount
+type DeploymentCountFunc func (resources base.InstanceResources, ns needs.AppNeeds) base.DeploymentCount
 
 func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploymentCountFunc DeploymentCountFunc, ignoreFailures bool) bool {
 	success := true
@@ -469,13 +469,13 @@ func planWorker(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, ign
 }
 
 func planHttp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, ignoreFailures bool) bool {
-	httpDeploymentCountFunc := func(resources state_cloud.InstanceResources, needs needs.AppNeeds) base.DeploymentCount {
+	httpDeploymentCountFunc := func(resources base.InstanceResources, needs needs.AppNeeds) base.DeploymentCount {
 		return 1
 	}
 	return planApp(appObj, hostFinderFunc, httpDeploymentCountFunc, ignoreFailures)
 }
 
-func maxDeploymentOnHost(resources state_cloud.InstanceResources, ns needs.AppNeeds) base.DeploymentCount {
+func maxDeploymentOnHost(resources base.InstanceResources, ns needs.AppNeeds) base.DeploymentCount {
 	availCpu := int(resources.TotalCpuResource - resources.UsedCpuResource)
 	availMem := int(resources.TotalMemoryResource - resources.UsedMemoryResource)
 	availNet := int(resources.TotalNetworkResource - resources.UsedNetworkResource)
@@ -608,9 +608,9 @@ func updateInstanceResources(hostId base.HostId, needs needs.AppNeeds)  {
 	if err != nil {
 		return
 	}
-	current.UsedCpuResource += state_cloud.CpuResource(needs.CpuNeeds)
-	current.UsedMemoryResource += state_cloud.MemoryResource(needs.MemoryNeeds)
-	current.UsedNetworkResource += state_cloud.NetworkResource(needs.NetworkNeeds)
+	current.UsedCpuResource += base.CpuResource(needs.CpuNeeds)
+	current.UsedMemoryResource += base.MemoryResource(needs.MemoryNeeds)
+	current.UsedNetworkResource += base.NetworkResource(needs.NetworkNeeds)
 	state_cloud.GlobalAvailableInstances.Update(hostId, current)
 }
 
@@ -623,10 +623,10 @@ func SaveDesired() {
 }
 
 
-func getGlobalResources() (state_cloud.CpuResource, state_cloud.MemoryResource, state_cloud.NetworkResource) {
-	var totalCpuResources state_cloud.CpuResource
-	var totalMemoryResources state_cloud.MemoryResource
-	var totalNetworkResources state_cloud.NetworkResource
+func getGlobalResources() (base.CpuResource, base.MemoryResource, base.NetworkResource) {
+	var totalCpuResources base.CpuResource
+	var totalMemoryResources base.MemoryResource
+	var totalNetworkResources base.NetworkResource
 
 	for _, resources := range state_cloud.GlobalAvailableInstances {
 		totalCpuResources += resources.TotalCpuResource

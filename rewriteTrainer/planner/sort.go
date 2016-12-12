@@ -18,7 +18,7 @@ import (
 
 type HostPair struct {
 	Key base.HostId
-	Val state_cloud.InstanceResources
+	Val base.InstanceResources
 }
 
 type HostList []HostPair
@@ -38,7 +38,7 @@ func (p HostList) Swap(i, j int){ p[i], p[j] = p[j], p[i] }
 
 var HOST_UPPER_WATERMARK float32 = 0.2
 
-func checkWatermark(resources state_cloud.InstanceResources, hostId base.HostId) bool{
+func checkWatermark(resources base.InstanceResources, hostId base.HostId) bool{
 	if float32(resources.TotalCpuResource - resources.UsedCpuResource) / float32(resources.TotalCpuResource) <= HOST_UPPER_WATERMARK {
 		PlannerLogger.Debugf("Hit Cpu Watermark for host '%s'", hostId)
 		return false

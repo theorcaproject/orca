@@ -13,6 +13,7 @@ import (
 	"gatoor/orca/rewriteTrainer/planner"
 	"time"
 	"flag"
+	"gatoor/orca/base"
 )
 
 
@@ -22,12 +23,14 @@ func main() {
 	var configurationRoot = flag.String("configroot", "/orca/config/", "Configuration Root Directory")
 	flag.Parse()
 
+	var baseConfiguration config.JsonConfiguration
+
 	Logger.InitLogger.Info("Starting trainer...")
 	initState()
-	initConfig(*configurationRoot)
+	initConfig(&baseConfiguration, *configurationRoot)
 	cloud.Init()
 	db.Init("")
-	initApi()
+	initApi(&baseConfiguration)
 	waitForCheckin()
 	scheduler.Start()
 	planner.InitialPlan()
@@ -50,16 +53,17 @@ func initState() {
 	state_needs.GlobalAppsNeedState = state_needs.AppsNeedState{}
 }
 
-func initConfig(configurationRoot string) {
-	var baseConfiguration config.JsonConfiguration
-	baseConfiguration.Load(configurationRoot)
+func initConfig(baseConfiguration *config.JsonConfiguration, configurationRoot string) {
+	baseConfiguration.Init(configurationRoot)
+	baseConfiguration.Load()
 	baseConfiguration.Check()
 	baseConfiguration.ApplyToState()
 }
 
 
-func initApi() {
+func initApi(baseConfiguration *config.JsonConfiguration) {
 	var a api.Api
+	a.ConfigManager = baseConfiguration
 	a.Init()
 }
 
@@ -423,37 +427,37 @@ func applySampleConfig() {
 
 
 func initCloudProvider() {
-	state_cloud.GlobalAvailableInstances.Update("cpuHost_1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("cpuHost_1", base.InstanceResources{
 		TotalCpuResource: 500,
 		TotalMemoryResource: 100,
 		TotalNetworkResource: 100,
 	})
-	state_cloud.GlobalAvailableInstances.Update("cpuHost_2", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("cpuHost_2", base.InstanceResources{
 		TotalCpuResource: 501,
 		TotalMemoryResource: 101,
 		TotalNetworkResource: 101,
 	})
-	state_cloud.GlobalAvailableInstances.Update("memoryHost_1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("memoryHost_1", base.InstanceResources{
 		TotalCpuResource: 200,
 		TotalMemoryResource: 300,
 		TotalNetworkResource: 100,
 	})
-	state_cloud.GlobalAvailableInstances.Update("generalHost_1", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("generalHost_1", base.InstanceResources{
 		TotalCpuResource: 101,
 		TotalMemoryResource: 101,
 		TotalNetworkResource: 101,
 	})
-	state_cloud.GlobalAvailableInstances.Update("generalHost_2", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("generalHost_2", base.InstanceResources{
 		TotalCpuResource: 102,
 		TotalMemoryResource: 102,
 		TotalNetworkResource: 102,
 	})
-	state_cloud.GlobalAvailableInstances.Update("generalHost_3", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("generalHost_3", base.InstanceResources{
 		TotalCpuResource: 103,
 		TotalMemoryResource: 103,
 		TotalNetworkResource: 103,
 	})
-	state_cloud.GlobalAvailableInstances.Update("emptyHost", state_cloud.InstanceResources{
+	state_cloud.GlobalAvailableInstances.Update("emptyHost", base.InstanceResources{
 		TotalCpuResource: 1000,
 		TotalMemoryResource: 1000,
 		TotalNetworkResource: 1000,

@@ -19,11 +19,15 @@ import (
 
 const ORCA_VERSION = "0.1"
 
-type Api struct{}
+type Api struct{
+	ConfigManager *config.JsonConfiguration
+}
 
 var ApiLogger = Logger.LoggerWithField(Logger.Logger, "module", "api")
+var apiInstance Api
 
 func (api Api) Init() {
+	apiInstance = api
 	ApiLogger.Infof("Initializing Api on Port %d", state_configuration.GlobalConfigurationState.Trainer.Port)
 
 	r := mux.NewRouter()
@@ -32,6 +36,7 @@ func (api Api) Init() {
 
 	r.HandleFunc("/state/config", getStateConfiguration)
 	r.HandleFunc("/state/config/applications", getStateConfigurationApplications)
+	r.HandleFunc("/state/config/cloud", getStateConfigurationCloudProviders)
 	r.HandleFunc("/state/cloud", getStateCloud)
 	r.HandleFunc("/state/needs", getStateNeeds)
 
@@ -97,11 +102,38 @@ func getStateConfiguration(w http.ResponseWriter, r *http.Request) {
 	returnJson(w, state_configuration.GlobalConfigurationState.Snapshot())
 }
 
+func getStateConfigurationCloudProviders(w http.ResponseWriter, r *http.Request) {
+	ApiLogger.Infof("Query to getStateConfigurationCloudProviders")
+	if (r.Method == "POST") {
+		var object base.ProviderConfiguration
+		decoder := json.NewDecoder(r.Body)
+		if err := decoder.Decode(&object); err != nil {
+			ApiLogger.Infof("An error occurred while reading the application information")
+		}
+
+		state_configuration.GlobalConfigurationState.CloudProvider.MinInstances = object.MinInstances
+		state_configuration.GlobalConfigurationState.CloudProvider.MaxInstances = object.MaxInstances
+		state_configuration.GlobalConfigurationState.CloudProvider.Type = object.Type
+
+		if (object.Type == "AWS") {
+			state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.AMI = object.AWSConfiguration.AMI
+			state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Key = object.AWSConfiguration.Key
+			state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Secret = object.AWSConfiguration.Secret
+			state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Region = object.AWSConfiguration.Region
+			state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.SecurityGroupId= object.AWSConfiguration.SecurityGroupId
+		}
+
+		apiInstance.ConfigManager.Save()
+	}
+
+	returnJson(w, state_configuration.GlobalConfigurationState.CloudProvider)
+}
+
 func getStateConfigurationApplications(w http.ResponseWriter, r *http.Request) {
 	ApiLogger.Infof("Query to getStateConfigurationApplications")
 	if (r.Method == "POST") {
 		/* We need to create a new configuration object */
-		var object config.AppJsonConfiguration
+		var object base.AppConfiguration
 		decoder := json.NewDecoder(r.Body)
 		if err := decoder.Decode(&object); err != nil {
 			ApiLogger.Infof("An error occurred while reading the application information")
@@ -126,6 +158,8 @@ func getStateConfigurationApplications(w http.ResponseWriter, r *http.Request) {
 			LoadBalancer: object.LoadBalancer,
 			Network: object.Network,
 		})
+
+		apiInstance.ConfigManager.Save()
 	}
 
 	returnJson(w, state_configuration.GlobalConfigurationState.AllAppsLatest())

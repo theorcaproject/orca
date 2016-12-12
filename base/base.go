@@ -1,12 +1,10 @@
 package base
 
 import (
-    //linuxproc "github.com/c9s/goprocinfo/linux"
-)
-import (
     "time"
     "sync"
     "fmt"
+    "gatoor/orca/rewriteTrainer/needs"
 )
 
 const (
@@ -167,6 +165,50 @@ type AppConfiguration struct {
     RawConfig             RawConfig
     LoadBalancer LoadBalancerName
     Network NetworkName
+    Needs needs.AppNeeds
+}
+
+type ProviderType string
+type InstanceType string
+type Cost float32
+type InstanceCount int
+type SafeInstance bool
+
+type Resource int
+type CpuResource Resource
+type MemoryResource Resource
+type NetworkResource Resource
+
+type InstanceResources struct {
+    UsedCpuResource CpuResource
+    UsedMemoryResource MemoryResource
+    UsedNetworkResource NetworkResource
+    TotalCpuResource CpuResource
+    TotalMemoryResource MemoryResource
+    TotalNetworkResource NetworkResource
+}
+
+type AWSConfiguration struct {
+    Key string
+    Secret string
+    Region string
+    AMI string
+    SecurityGroupId string
+
+    // Transient Fields that are populated by the system when the aws provider is inited
+    InstanceTypes []InstanceType
+    InstanceCost map[InstanceType]Cost
+    InstanceResources map[InstanceType]InstanceResources
+    InstanceSafety map[InstanceType]SafeInstance
+    SuitableInstanceSafetyFactor float32
+}
+
+
+type ProviderConfiguration struct {
+    Type ProviderType
+    MinInstances InstanceCount
+    MaxInstances InstanceCount
+    AWSConfiguration AWSConfiguration
 }
 
 type RawConfig struct {
@@ -181,6 +223,16 @@ type DockerConfig struct {
     Tag string
     Repository string
     Reference string
+}
+
+type TrainerPolicies struct {
+    TRY_TO_REMOVE_HOSTS bool
+}
+
+type TrainerConfigurationState struct {
+    Port int
+    Policies TrainerPolicies
+    Ip IpAddr
 }
 
 var appsMetricsMutex = &sync.Mutex{}

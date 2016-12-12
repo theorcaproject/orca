@@ -13,9 +13,10 @@ var configurationStateMutex = &sync.Mutex{}
 
 
 type ConfigurationState struct {
-	Trainer TrainerConfigurationState
+	Trainer base.TrainerConfigurationState
 	Apps AppsConfigurationState
 	Habitats HabitatsConfigurationState
+	CloudProvider ProviderConfigurationState
 }
 
 func (c *ConfigurationState) Init() {
@@ -23,9 +24,9 @@ func (c *ConfigurationState) Init() {
 	defer configurationStateMutex.Unlock()
 	c.Apps = AppsConfigurationState{}
 	c.Habitats = HabitatsConfigurationState{}
-	c.Trainer = TrainerConfigurationState{
+	c.Trainer = base.TrainerConfigurationState{
 		Port: 5000,
-		Policies: TrainerPolicies{
+		Policies: base.TrainerPolicies{
 			TRY_TO_REMOVE_HOSTS: true,
 		},
 	}
@@ -96,18 +97,7 @@ func (c *ConfigurationState) ConfigureHabitat (conf base.HabitatConfiguration) {
 	c.Habitats[conf.Name][conf.Version] = conf
 }
 
-type TrainerPolicies struct {
-	TRY_TO_REMOVE_HOSTS bool
-}
-
-type TrainerConfigurationState struct {
-	Port int
-	Policies TrainerPolicies
-	Ip base.IpAddr
-}
-
 type AppsConfigurationState map[base.AppName]AppConfigurationVersions
-
 type AppConfigurationVersions map[base.Version]base.AppConfiguration
 
 func (a AppConfigurationVersions) LatestVersion() base.Version {
@@ -124,7 +114,7 @@ func (a AppConfigurationVersions) LatestVersion() base.Version {
 }
 
 type HabitatsConfigurationState map[base.HabitatName]HabitatConfigurationVersions
-
 type HabitatConfigurationVersions map[base.Version]base.HabitatConfiguration
+type ProviderConfigurationState base.ProviderConfiguration
 
 
