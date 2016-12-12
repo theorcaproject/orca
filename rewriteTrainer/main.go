@@ -14,6 +14,7 @@ import (
 	"time"
 	"flag"
 	"gatoor/orca/base"
+	"gatoor/orca/rewriteTrainer/audit"
 )
 
 
@@ -23,6 +24,10 @@ func main() {
 	var configurationRoot = flag.String("configroot", "/orca/config/", "Configuration Root Directory")
 	flag.Parse()
 
+	audit.Audit.Init()
+	audit.Audit.AddEvent(map[string]string{
+		"message": "Orca Trainer Started",
+	})
 	var baseConfiguration config.JsonConfiguration
 
 	Logger.InitLogger.Info("Starting trainer...")

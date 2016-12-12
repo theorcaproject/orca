@@ -15,6 +15,7 @@ import (
 	"gatoor/orca/rewriteTrainer/tracker"
 	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/config"
+	"gatoor/orca/rewriteTrainer/audit"
 )
 
 const ORCA_VERSION = "0.1"
@@ -39,6 +40,7 @@ func (api Api) Init() {
 	r.HandleFunc("/state/config/cloud", getStateConfigurationCloudProviders)
 	r.HandleFunc("/state/cloud", getStateCloud)
 	r.HandleFunc("/state/needs", getStateNeeds)
+	r.HandleFunc("/audit", getAuditEvents)
 
 	http.Handle("/", r)
 
@@ -173,6 +175,11 @@ func getStateCloud(w http.ResponseWriter, r *http.Request) {
 func getStateNeeds(w http.ResponseWriter, r *http.Request) {
 	ApiLogger.Infof("Query to getStateNeeds")
 	returnJson(w, state_needs.GlobalAppsNeedState.Snapshot())
+}
+
+func getAuditEvents(w http.ResponseWriter, r *http.Request) {
+	ApiLogger.Infof("Query to getAuditEvents")
+	returnJson(w, audit.Audit.ListEvents(nil))
 }
 
 func doHandleCloudEvent() {
