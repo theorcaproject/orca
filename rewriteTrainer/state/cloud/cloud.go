@@ -266,7 +266,7 @@ func (a *AvailableInstances) Update(hostId base.HostId, resources base.InstanceR
 	availableInstancesMutex.Lock()
 	defer availableInstancesMutex.Unlock()
 	if (*a) == nil {
-		(*a) = make(map[base.HostId]InstanceResources)
+		(*a) = make(map[base.HostId]base.InstanceResources)
 	}
 	(*a)[hostId] = resources
 }
