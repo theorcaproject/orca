@@ -11,18 +11,17 @@ import (
 )
 
 const (
-	SSH_PEM_PATH = "/orca/config/orca_test_us.pem"
-	CONNECT_RETRY_AMOUNT = 15
+	CONNECT_RETRY_AMOUNT = 60
 	EXECUTE_RETRY_AMOUNT = 20
 )
 
 var Logger = log.LoggerWithField(log.AuditLogger, "Type", "ssh")
 
-func Connect(sshUser string, hostAndPort string) (*ssh.Client, string) {
+func Connect(sshUser string, hostAndPort string, sshKey string) (*ssh.Client, string) {
 	addr := sshUser + "@" + hostAndPort
 	var SSHLogger = log.LoggerWithField(log.LoggerWithField(log.AuditLogger, "Type", "ssh"), "target", addr)
 
-	pemBytes, err := ioutil.ReadFile(SSH_PEM_PATH)
+	pemBytes, err := ioutil.ReadFile(sshKey)
 	if err != nil {
 		SSHLogger.Errorf("PEM file read failed: %s", err)
 	}

@@ -1,8 +1,10 @@
 package audit
 
+import "time"
+
 type Event struct {
-	timestamp int64
-	params map[string]string
+	Timestamp int64
+	Details map[string]string
 }
 
 type AuditEngine struct {
@@ -14,14 +16,14 @@ func (p *AuditEngine) Init() {
 }
 
 func (p *AuditEngine) AddEvent(event map[string]string) {
-	var new_event = Event{}
-	new_event.timestamp = 1000
-	p.Events = append(p.Events, new_event)
+	p.Events = append(p.Events, Event{Timestamp:time.Now().Unix(), Details:event})
 }
+
 
 //TODO: Make this method immutable and apply the filter
 func (p *AuditEngine) ListEvents(filter map[string]string) []Event{
-	return p.Events
+	res := p.Events
+	return res
 }
 
 var Audit AuditEngine

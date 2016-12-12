@@ -193,13 +193,13 @@ func TestLAvailableInstances(t *testing.T) {
 		t.Error("should be empty")
 	}
 
-	instances.Update("host1", state_cloud.InstanceResources{
+	instances.Update("host1", base.InstanceResources{
 		TotalCpuResource: 10.0,
 		TotalMemoryResource: 20.0,
 		TotalNetworkResource: 30.0,
 	})
 
-	instances.Update("host2", state_cloud.InstanceResources{
+	instances.Update("host2", base.InstanceResources{
 		TotalCpuResource: 100.0,
 		TotalMemoryResource: 200.0,
 		TotalNetworkResource: 300.0,
@@ -224,7 +224,7 @@ func TestLAvailableInstances(t *testing.T) {
 		t.Error("wrong cpu resource")
 	}
 
-	instances.Update("host1", state_cloud.InstanceResources{
+	instances.Update("host1", base.InstanceResources{
 		TotalCpuResource: 15.0,
 		TotalMemoryResource: 25.0,
 		TotalNetworkResource: 35.0,
@@ -343,7 +343,7 @@ func TestUpdateHost(t *testing.T) {
 
 func Test_HostHasResourcesForApp(t *testing.T) {
 	available := state_cloud.AvailableInstances{}
-	available.Update("host1", state_cloud.InstanceResources{
+	available.Update("host1", base.InstanceResources{
 		TotalCpuResource: 100, TotalNetworkResource: 100, TotalMemoryResource: 100,
 		UsedCpuResource: 50, UsedMemoryResource: 50, UsedNetworkResource: 50,
 	})
@@ -363,11 +363,11 @@ func Test_HostHasResourcesForApp(t *testing.T) {
 
 func TestAvailableInstances_GlobalResourceConsumption(t *testing.T) {
 	available := state_cloud.AvailableInstances{}
-	available.Update("host1", state_cloud.InstanceResources{
+	available.Update("host1", base.InstanceResources{
 		TotalCpuResource: 100, TotalNetworkResource: 100, TotalMemoryResource: 100,
 		UsedCpuResource: 50, UsedMemoryResource: 50, UsedNetworkResource: 50,
 	})
-	available.Update("host12", state_cloud.InstanceResources{
+	available.Update("host12", base.InstanceResources{
 		TotalCpuResource: 100, TotalNetworkResource: 100, TotalMemoryResource: 100,
 		UsedCpuResource: 20, UsedMemoryResource: 30, UsedNetworkResource: 40,
 	})

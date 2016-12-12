@@ -74,8 +74,12 @@ func (c *Client) RunApp(appId base.AppId, appConf base.AppConfiguration, appsSta
 		return false
 	}
 
-	err := DockerCli().StartContainer(container.ID, &DockerClient.HostConfig{})
+	bindings := make(map[DockerClient.Port][]DockerClient.PortBinding)
+	for _, v := range appConf.PortMappings {
+		bindings[DockerClient.Port(v.ContainerPort)] = []DockerClient.PortBinding{DockerClient.PortBinding{HostPort: v.HostPort}}
+	}
 
+	err := DockerCli().StartContainer(container.ID, &DockerClient.HostConfig{PortBindings: bindings})
 	if err != nil {
 		DockerLogger.Warnf("Running docker app %s - %s:%d failed: %s", appId, appConf.Name, appConf.Version, err)
 		return false

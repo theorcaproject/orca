@@ -1,8 +1,7 @@
 {
   "Port": 5000,
   "Policies": {
-    "TrainerPolicies": {
-      "TRY_TO_REMOVE_HOSTS": true
-    }
-  }
+    "TRY_TO_REMOVE_HOSTS": false
+  },
+  "Ip": ""
 }

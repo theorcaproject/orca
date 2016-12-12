@@ -53,6 +53,8 @@ func (api Api) Init() {
 }
 
 func returnJson(w http.ResponseWriter, obj interface{}) {
+	fmt.Printf("%+v", obj)
+
 	j, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		ApiLogger.Errorf("Json serialization failed - %s", err)
@@ -116,6 +118,8 @@ func getStateConfigurationCloudProviders(w http.ResponseWriter, r *http.Request)
 		state_configuration.GlobalConfigurationState.CloudProvider.MinInstances = object.MinInstances
 		state_configuration.GlobalConfigurationState.CloudProvider.MaxInstances = object.MaxInstances
 		state_configuration.GlobalConfigurationState.CloudProvider.Type = object.Type
+		state_configuration.GlobalConfigurationState.CloudProvider.SSHKey = object.SSHKey
+		state_configuration.GlobalConfigurationState.CloudProvider.SSHUser = object.SSHUser
 
 		if (object.Type == "AWS") {
 			state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.AMI = object.AWSConfiguration.AMI
@@ -159,6 +163,8 @@ func getStateConfigurationApplications(w http.ResponseWriter, r *http.Request) {
 			DockerConfig: object.DockerConfig,
 			LoadBalancer: object.LoadBalancer,
 			Network: object.Network,
+			Needs: object.Needs,
+			PortMappings: object.PortMappings,
 		})
 
 		apiInstance.ConfigManager.Save()
@@ -179,6 +185,7 @@ func getStateNeeds(w http.ResponseWriter, r *http.Request) {
 
 func getAuditEvents(w http.ResponseWriter, r *http.Request) {
 	ApiLogger.Infof("Query to getAuditEvents")
+
 	returnJson(w, audit.Audit.ListEvents(nil))
 }
 

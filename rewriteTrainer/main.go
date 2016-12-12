@@ -63,6 +63,10 @@ func initConfig(baseConfiguration *config.JsonConfiguration, configurationRoot s
 	baseConfiguration.Load()
 	baseConfiguration.Check()
 	baseConfiguration.ApplyToState()
+
+	audit.Audit.AddEvent(map[string]string{
+		"message": "Configuration has been loaded from filesystem",
+	})
 }
 
 

@@ -13,10 +13,12 @@ var configurationStateMutex = &sync.Mutex{}
 
 
 type ConfigurationState struct {
+	ConfigurationRootPath string
+
 	Trainer base.TrainerConfigurationState
 	Apps AppsConfigurationState
 	Habitats HabitatsConfigurationState
-	CloudProvider ProviderConfigurationState
+	CloudProvider base.ProviderConfiguration
 }
 
 func (c *ConfigurationState) Init() {

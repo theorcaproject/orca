@@ -22,7 +22,7 @@ func applySampleConfig() {
 	conf.Trainer.Port = 5000
 
 
-	httpApp1 := config.AppJsonConfiguration{
+	httpApp1 := base.AppConfiguration{
 		Name: "httpApp_1",
 		Version: 1,
 		Type: base.APP_HTTP,
@@ -53,7 +53,7 @@ func applySampleConfig() {
 		},
 	}
 
-	httpApp1_v2 := config.AppJsonConfiguration{
+	httpApp1_v2 := base.AppConfiguration{
 		Name: "httpApp_1",
 		Version: 11,
 		Type: base.APP_HTTP,
@@ -84,7 +84,7 @@ func applySampleConfig() {
 		},
 	}
 
-	httpApp2 := config.AppJsonConfiguration{
+	httpApp2 := base.AppConfiguration{
 		Name: "httpApp_2",
 		Version: 2,
 		Type: base.APP_HTTP,
@@ -115,7 +115,7 @@ func applySampleConfig() {
 		},
 	}
 
-	workerApp1 := config.AppJsonConfiguration{
+	workerApp1 := base.AppConfiguration{
 		Name: "workerApp_1",
 		Version: 10,
 		Type: base.APP_WORKER,
@@ -146,7 +146,7 @@ func applySampleConfig() {
 		},
 	}
 
-	workerApp1_v2 := config.AppJsonConfiguration{
+	workerApp1_v2 := base.AppConfiguration{
 		Name: "workerApp_1",
 		Version: 11,
 		Type: base.APP_WORKER,
@@ -177,7 +177,7 @@ func applySampleConfig() {
 		},
 	}
 
-	workerApp2 := config.AppJsonConfiguration{
+	workerApp2 := base.AppConfiguration{
 		Name: "workerApp_2",
 		Version: 20,
 		Type: base.APP_WORKER,
@@ -208,7 +208,7 @@ func applySampleConfig() {
 		},
 	}
 
-	workerApp3 := config.AppJsonConfiguration{
+	workerApp3 := base.AppConfiguration{
 		Name: "workerApp_3",
 		Version: 30,
 		Type: base.APP_WORKER,
@@ -241,7 +241,7 @@ func applySampleConfig() {
 
 
 
-	conf.Apps = []config.AppJsonConfiguration{
+	conf.Apps = []base.AppConfiguration{
 		httpApp1, httpApp1_v2, httpApp2,
 		workerApp1, workerApp1_v2, workerApp2, workerApp3,
 	}

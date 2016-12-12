@@ -17,9 +17,6 @@ type AppsNeedState map[base.AppName]AppNeedVersion
 //TODO use WeeklyNeeds here
 type AppNeedVersion map[base.Version]needs.AppNeeds
 
-
-
-
 func (a AppsNeedState) GetAll(app base.AppName) (AppNeedVersion, error) {
 	needsStateMutex.Lock()
 	defer needsStateMutex.Unlock()

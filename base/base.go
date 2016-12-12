@@ -162,6 +162,11 @@ type HabitatConfiguration struct {
     InstallCommands []OsCommand
 }
 
+type PortMapping struct {
+    HostPort string
+    ContainerPort string
+}
+
 type AppConfiguration struct {
     Name                  AppName
     Type                  AppType
@@ -173,6 +178,7 @@ type AppConfiguration struct {
     LoadBalancer LoadBalancerName
     Network NetworkName
     Needs needs.AppNeeds
+    PortMappings []PortMapping
 }
 
 type ProviderType string
@@ -213,6 +219,8 @@ type AWSConfiguration struct {
 
 type ProviderConfiguration struct {
     Type ProviderType
+    SSHKey string
+    SSHUser string
     MinInstances InstanceCount
     MaxInstances InstanceCount
     AWSConfiguration AWSConfiguration
