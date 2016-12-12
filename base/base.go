@@ -105,17 +105,6 @@ type MetricsWrapper struct {
     AppMetrics AppMetricsJson
 }
 
-var Testing = false
-var TimeForTest time.Time
-
-func NowRFC3339Nano() time.Time {
-    if Testing {
-        fmt.Println(fmt.Sprintf("GET TEST TIME %s", TimeForTest))
-        return TimeForTest
-    }
-    return time.Now().UTC()
-}
-
 var metricsMutex = &sync.Mutex{}
 
 func (m *MetricsWrapper) Wipe() {
@@ -179,8 +168,8 @@ type AppConfiguration struct {
     MinDeploymentCount    DeploymentCount
     DockerConfig          DockerConfig
     RawConfig             RawConfig
-    LoadBalancer          LoadBalancerName
-    Network               NetworkName
+    LoadBalancer LoadBalancerName
+    Network NetworkName
 }
 
 type RawConfig struct {
