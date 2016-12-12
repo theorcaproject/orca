@@ -161,6 +161,7 @@ func getStateConfigurationApplications(w http.ResponseWriter, r *http.Request) {
 			DockerConfig: object.DockerConfig,
 			LoadBalancer: object.LoadBalancer,
 			Network: object.Network,
+			Needs: object.Needs,
 		})
 
 		apiInstance.ConfigManager.Save()
