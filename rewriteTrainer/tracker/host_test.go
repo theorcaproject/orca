@@ -30,9 +30,11 @@ func TestHostTracker_Get(t *testing.T) {
 
 
 func TestHostTracker_CheckCheckinTimeout(t *testing.T) {
+	cloud.Init()
 	ti := time.Now().Add(-time.Duration(time.Minute * 1))
 	state_cloud.GlobalCloudLayout.Init()
 	state_cloud.GlobalCloudLayout.Current.AddEmptyHost("host1")
+
 	GlobalHostTracker.Update("host1", ti)
 	cloud.Init()
 
@@ -52,7 +54,7 @@ func TestHostTracker_CheckCheckinTimeout(t *testing.T) {
 		t.Error(GlobalHostCrashHandler)
 	}
 
-	GlobalHostTracker.Update("host1", time.Now().Add(-time.Duration(time.Minute * 10)))
+	GlobalHostTracker.Update("host1", time.Now().Add(-time.Duration(time.Minute * 1000)))
 	GlobalHostTracker.CheckCheckinTimeout()
 
 	if GlobalHostCrashHandler["host1"].OldHostId != "host1" {

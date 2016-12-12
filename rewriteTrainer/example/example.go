@@ -13,17 +13,17 @@ func ExampleCloudState() {
 	state.Current.AddEmptyHost("host1")
 	state.Current.AddEmptyHost("host2")
 	state.Current.AddEmptyHost("host3")
-	state.Current.AddApp("host1", "app1", "0.1", 1)
-	state.Current.AddApp("host1", "app11", "0.1", 2)
-	state.Current.AddApp("host2", "app2", "0.2", 10)
+	state.Current.AddApp("host1", "app1", 1, 1)
+	state.Current.AddApp("host1", "app11", 1, 2)
+	state.Current.AddApp("host2", "app2", 2, 10)
 
 	state.Desired.AddEmptyHost("host1")
 	state.Desired.AddEmptyHost("host2")
 	state.Desired.AddEmptyHost("host3")
-	state.Desired.AddApp("host1", "app1", "0.1", 1)
-	state.Desired.AddApp("host1", "app11", "0.1", 2)
-	state.Desired.AddApp("host2", "app2", "0.2", 5)
-	state.Desired.AddApp("host3", "app2", "0.2", 5)
+	state.Desired.AddApp("host1", "app1", 1, 1)
+	state.Desired.AddApp("host1", "app11", 1, 2)
+	state.Desired.AddApp("host2", "app2", 2, 5)
+	state.Desired.AddApp("host3", "app2", 2, 5)
 }
 
 func ExampleJsonConfig() config.JsonConfiguration {
@@ -35,7 +35,7 @@ func ExampleJsonConfig() config.JsonConfiguration {
 	//conf.Habitats = []config.HabitatJsonConfiguration{
 	//	{
 	//		Name: "habitat1",
-	//		Version: "0.1",
+	//		Version: 1,
 	//		InstallCommands: []base.OsCommand{
 	//			{
 	//				Type: base.EXEC_COMMAND,
@@ -49,7 +49,7 @@ func ExampleJsonConfig() config.JsonConfiguration {
 	//	},
 	//	{
 	//		Name: "habitat2",
-	//		Version: "0.1",
+	//		Version: 1,
 	//		InstallCommands: []base.OsCommand{
 	//			{
 	//				Type: base.EXEC_COMMAND,
@@ -66,10 +66,10 @@ func ExampleJsonConfig() config.JsonConfiguration {
 	conf.Apps = []config.AppJsonConfiguration{
 		{
 			Name: "http1",
-			Version: "0.1",
+			Version: 1,
 			Type: base.APP_HTTP,
 			MinDeploymentCount: 2,
-			MaxDeploymentCount: 10,
+			//MaxDeploymentCount: 10,
 			//InstallCommands: []base.OsCommand{
 			//	{
 			//		Type: base.EXEC_COMMAND,
@@ -95,10 +95,10 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			},
 		},{
 			Name: "app1",
-			Version: "0.1",
+			Version: 1,
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
-			MaxDeploymentCount: 10,
+			//MaxDeploymentCount: 10,
 			//InstallCommands: []base.OsCommand{
 			//	{
 			//		Type: base.EXEC_COMMAND,
@@ -125,10 +125,10 @@ func ExampleJsonConfig() config.JsonConfiguration {
 		},
 		{
 			Name: "app11",
-			Version: "0.1",
+			Version: 1,
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
-			MaxDeploymentCount: 10,
+			//MaxDeploymentCount: 10,
 			//InstallCommands: []base.OsCommand{
 			//	{
 			//		Type: base.EXEC_COMMAND,
@@ -155,10 +155,10 @@ func ExampleJsonConfig() config.JsonConfiguration {
 		},
 		{
 			Name: "app2",
-			Version: "0.2",
+			Version: 2,
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
-			MaxDeploymentCount: 10,
+			//MaxDeploymentCount: 10,
 			//InstallCommands: []base.OsCommand{
 			//	{
 			//		Type: base.EXEC_COMMAND,

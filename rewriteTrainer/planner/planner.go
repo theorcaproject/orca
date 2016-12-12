@@ -139,7 +139,7 @@ func (p PlannerQueue) RemoveApp(appName base.AppName, version base.Version) {
 	for host, apps:= range p.Queue {
 		for appN, appObj := range apps {
 			if appN == appName && version == appObj.Version.Version {
-				QueueLogger.Infof("Removing '%s' - '%s' from Queue of host '%s'", appN, version, host)
+				QueueLogger.Infof("Removing %s:%d from Queue of host '%s'", appN, version, host)
 				delete(apps, appN)
 			}
 
@@ -357,7 +357,7 @@ func doPlanInternal() {
 		wg.Add(len(chunk))
 		for _, appName := range chunk {
 			appObj := apps[appName]
-			PlannerLogger.Infof("Assigning HttpApp '%s' - '%s'. Need to do this %d times", appObj.Name, appObj.Version, appObj.TargetDeploymentCount)
+			PlannerLogger.Infof("Assigning HttpApp %s:%d. Need to do this %d times", appObj.Name, appObj.Version, appObj.TargetDeploymentCount)
 			go func () {
 				defer wg.Done()
 				planHttp(appObj, findHttpHostWithResources, false)
@@ -369,7 +369,7 @@ func doPlanInternal() {
 
 	for _, appName := range workerOrder {
 		appObj := apps[appName]
-		PlannerLogger.Infof("Assigning WorkerApp '%s' - '%s'. Need to do this %d times", appObj.Name, appObj.Version, appObj.TargetDeploymentCount)
+		PlannerLogger.Infof("Assigning WorkerApp %s:%d. Need to do this %d times", appObj.Name, appObj.Version, appObj.TargetDeploymentCount)
 		planWorker(appObj, findHostWithResources, false)
 
 	}
@@ -423,7 +423,7 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 	for deployed <= appObj.TargetDeploymentCount {
 		hostId := hostFinderFunc(ns, appObj.Name, sortedHosts, goodHosts)
 		if hostId == "" {
-			PlannerLogger.Warnf("App '%s' - '%s' could not find suitable host", appObj.Name, appObj.Version)
+			PlannerLogger.Warnf("App %s:%d could not find suitable host", appObj.Name, appObj.Version)
 			success = false
 			break
 		}
@@ -439,7 +439,7 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 		}
 
 		if deployed == appObj.TargetDeploymentCount {
-			PlannerLogger.Infof("Assinged all deployments of App '%s' - '%s'", appObj.Name, appObj.Version)
+			PlannerLogger.Infof("Assinged all deployments of App %s:%d", appObj.Name, appObj.Version)
 			return success
 		}
 		if depl > appObj.TargetDeploymentCount - deployed {
@@ -449,7 +449,7 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 			if !ignoreFailures {
 				addFailedAssign(hostId, appObj.Name, appObj.Version, depl)
 			} else {
-				PlannerLogger.Warnf("Assign of App '%s' - '%s' failed again. Will not try again.", appObj.Name, appObj.Version)
+				PlannerLogger.Warnf("Assign of App %s:%d failed again. Will not try again.", appObj.Name, appObj.Version)
 			}
 			success = false
 		}
@@ -457,7 +457,7 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 	}
 
 	if deployed < appObj.TargetDeploymentCount {
-		PlannerLogger.Warnf("App '%s' - '%s' could not deploy MinDeploymentCount %d, only deployed %d", appObj.Name, appObj.Version, appObj.TargetDeploymentCount, deployed)
+		PlannerLogger.Warnf("App %s:%d could not deploy MinDeploymentCount %d, only deployed %d", appObj.Name, appObj.Version, appObj.TargetDeploymentCount, deployed)
 		addMissingAssign(appObj.Name, appObj.Version, appObj.Type, appObj.TargetDeploymentCount - deployed)
 		success = false
 	}
@@ -580,10 +580,10 @@ func addMissingAssign(name base.AppName, version base.Version, ty base.AppType, 
 }
 
 func assignAppToHost(hostId base.HostId, app base.AppConfiguration, count base.DeploymentCount) bool {
-	PlannerLogger.Infof("Assign '%s' - '%s' to host '%s' %d times", app.Name, app.Version, hostId, count)
+	PlannerLogger.Infof("Assign %s:%d to host '%s' %d times", app.Name, app.Version, hostId, count)
 	ns, err := state_needs.GlobalAppsNeedState.Get(app.Name, app.Version)
 	if err != nil {
-		PlannerLogger.Warnf("App '%s' - '%s' on host '%s': GlobalAppsNeedState.Get failed", app.Name, app.Version, hostId)
+		PlannerLogger.Warnf("App %s:%d on host '%s': GlobalAppsNeedState.Get failed", app.Name, app.Version, hostId)
 		addFailedAssign(hostId, app.Name, app.Version, count)
 		return false
 	}
@@ -593,13 +593,13 @@ func assignAppToHost(hostId base.HostId, app base.AppConfiguration, count base.D
 		NetworkNeeds: needs.NetworkNeeds(int(ns.NetworkNeeds) * int(count)),
 	}
 	if !state_cloud.GlobalAvailableInstances.HostHasResourcesForApp(hostId, ns) {
-		PlannerLogger.Warnf("App '%s' - '%s' on host '%s': Instance resources are insufficient, needed: %+v", app.Name, app.Version, hostId, ns)
+		PlannerLogger.Warnf("App %s:%d on host '%s': Instance resources are insufficient, needed: %+v", app.Name, app.Version, hostId, ns)
 		addFailedAssign(hostId, app.Name, app.Version, count)
 		return false
 	}
 	updateInstanceResources(hostId, deployedNeeds)
 	state_cloud.GlobalCloudLayout.Desired.AddApp(hostId, app.Name, app.Version, count)
-	PlannerLogger.Infof("Assign '%s' - '%s' to host '%s' %d times successful", app.Name, app.Version, hostId, count)
+	PlannerLogger.Infof("Assign %s:%d to host '%s' %d times successful", app.Name, app.Version, hostId, count)
 	return true
 }
 
@@ -647,13 +647,13 @@ func getGlobalMinNeeds() (needs.CpuNeeds, needs.MemoryNeeds, needs.NetworkNeeds)
 		version := appObj.LatestVersion()
 		appNeeds , err := state_needs.GlobalAppsNeedState.Get(appName, version)
 		if err != nil {
-			PlannerLogger.Warnf("Missing needs for app '%s' - '%s'", appName, version)
+			PlannerLogger.Warnf("Missing needs for app %s:%d", appName, version)
 			continue
 		}
 		cpu := int(appObj[version].TargetDeploymentCount) * int(appNeeds.CpuNeeds)
 		mem := int(appObj[version].TargetDeploymentCount) * int(appNeeds.MemoryNeeds)
 		net := int(appObj[version].TargetDeploymentCount) * int(appNeeds.NetworkNeeds)
-		PlannerLogger.Infof("AppMinNeeds for '%s' - '%s': Cpu=%d, Memory=%d, Network=%d", appName, version, cpu, mem, net)
+		PlannerLogger.Infof("AppMinNeeds for %s:%d: Cpu=%d, Memory=%d, Network=%d", appName, version, cpu, mem, net)
 		totalCpuNeeds += needs.CpuNeeds(cpu)
 		totalMemoryNeeds += needs.MemoryNeeds(mem)
 		totalNetworkNeeds += needs.NetworkNeeds(net)
@@ -672,13 +672,13 @@ func getGlobalCurrentNeeds() (needs.CpuNeeds, needs.MemoryNeeds, needs.NetworkNe
 		for appName, appObj := range hostObj.Apps {
 			appNeeds , err := state_needs.GlobalAppsNeedState.Get(appName, appObj.Version)
 			if err != nil {
-				PlannerLogger.Warnf("Missing needs for app '%s' - '%s'", appName, appNeeds)
+				PlannerLogger.Warnf("Missing needs for app %s:%d", appName, appNeeds)
 				continue
 			}
 			cpu := int(appObj.DeploymentCount) * int(appNeeds.CpuNeeds)
 			mem := int(appObj.DeploymentCount) * int(appNeeds.MemoryNeeds)
 			net := int(appObj.DeploymentCount) * int(appNeeds.NetworkNeeds)
-			PlannerLogger.Infof("AppNeeds on host '%s': App '%s' - '%s' deployed %d times: Cpu=%d, Memory=%d, Network=%d", hostId, appName, appObj.Version, appObj.DeploymentCount, cpu, mem, net)
+			PlannerLogger.Infof("AppNeeds on host '%s': App %s:%d deployed %d times: Cpu=%d, Memory=%d, Network=%d", hostId, appName, appObj.Version, appObj.DeploymentCount, cpu, mem, net)
 			totalCpuNeeds += needs.CpuNeeds(cpu)
 			totalMemoryNeeds += needs.MemoryNeeds(mem)
 			totalNetworkNeeds += needs.NetworkNeeds(net)

@@ -13,7 +13,10 @@ import (
 const (
 	SSH_PEM_PATH = "/orca/config/orca_test_us.pem"
 	CONNECT_RETRY_AMOUNT = 15
+	EXECUTE_RETRY_AMOUNT = 20
 )
+
+var Logger = log.LoggerWithField(log.AuditLogger, "Type", "ssh")
 
 func Connect(sshUser string, hostAndPort string) (*ssh.Client, string) {
 	addr := sshUser + "@" + hostAndPort
@@ -77,7 +80,7 @@ func accquireSession(connection *ssh.Client, SSHLogger *logrus.Entry, stdWriter 
 	return session
 }
 
-func ExecuteSshCommand(conn *ssh.Client, addr string, cmd string) bool {
+func doExecuteSshCommand(conn *ssh.Client, addr string, cmd string) bool{
 	var SSHLogger = log.LoggerWithField(log.LoggerWithField(log.AuditLogger, "Type", "ssh"), "target", addr)
 	SSHLogger.Info(fmt.Sprintf("Executing command: [%s]", cmd))
 	stdWriter := SSHLogger.Logger.Writer()
@@ -90,4 +93,20 @@ func ExecuteSshCommand(conn *ssh.Client, addr string, cmd string) bool {
 		return false
 	}
 	return true
+}
+
+func ExecuteSshCommand(conn *ssh.Client, addr string, cmd string) bool {
+	for i := 1; i <= EXECUTE_RETRY_AMOUNT; i++ {
+		if !doExecuteSshCommand(conn, addr, cmd) {
+			if i == EXECUTE_RETRY_AMOUNT {
+				Logger.Errorf("Command failed %d times. Aborting", i)
+				return false
+			}
+			time.Sleep(time.Duration(5 * time.Second))
+			continue
+		} else {
+			return true
+		}
+	}
+	return false
 }

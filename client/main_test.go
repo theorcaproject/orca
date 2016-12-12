@@ -15,12 +15,12 @@ import (
 func TestPrepareData(t *testing.T) {
 	state := types.AppsState{}
 	client.Configuration.HostId = "somehost"
-	state.Add("app1_1", base.AppInfo{Name: "app1", Version: "1.0", Status:base.STATUS_RUNNING, Id: "app1_1", Type: base.APP_HTTP})
+	state.Add("app1_1", base.AppInfo{Name: "app1", Version: 1, Status:base.STATUS_RUNNING, Id: "app1_1", Type: base.APP_HTTP})
 	metrics := base.AppMetrics{}
-	metrics.Add("app1", "1.0", "sometimestring", base.AppStats{CpuUsage: 100, MemoryUsage: 20, NetworkUsage: 10, ResponsePerformance: 3})
-	metrics.Add("app1", "1.0", "sometimestring2", base.AppStats{CpuUsage: 100, MemoryUsage: 20, NetworkUsage: 10, ResponsePerformance: 3})
+	metrics.Add("app1", 1, "sometimestring", base.AppStats{CpuUsage: 100, MemoryUsage: 20, NetworkUsage: 10, ResponsePerformance: 3})
+	metrics.Add("app1", 1, "sometimestring2", base.AppStats{CpuUsage: 100, MemoryUsage: 20, NetworkUsage: 10, ResponsePerformance: 3})
 	res := prepareData(state, metrics)
-	if res.HostInfo.HostId != "somehost" || len(res.Stats.AppMetrics["app1"]["1.0"]) != 2 {
+	if res.HostInfo.HostId != "somehost" || len(res.Stats.AppMetrics["app1"]["1"]) != 2 {
 		t.Error(res)
 	}
 }
@@ -49,13 +49,13 @@ func TestLoadConfiguration(t *testing.T) {
 func TestSaveLoadStateAndConfig(t *testing.T) {
 	state := types.AppsState{}
 	conf := types.AppsConfiguration{}
-	state.Add("app1_1", base.AppInfo{Type:base.APP_HTTP, Name:"app1", Version: "1.0", Id:"app1_1", Status:base.STATUS_RUNNING})
-	state.Add("app1_2", base.AppInfo{Type:base.APP_HTTP, Name:"app1", Version: "1.0", Id:"app1_2", Status:base.STATUS_DEAD})
-	state.Add("app2_1", base.AppInfo{Type:base.APP_HTTP, Name:"app2", Version: "2.0", Id:"app2_1", Status:base.STATUS_DEPLOYING})
+	state.Add("app1_1", base.AppInfo{Type:base.APP_HTTP, Name:"app1", Version: 1, Id:"app1_1", Status:base.STATUS_RUNNING})
+	state.Add("app1_2", base.AppInfo{Type:base.APP_HTTP, Name:"app1", Version: 1, Id:"app1_2", Status:base.STATUS_DEAD})
+	state.Add("app2_1", base.AppInfo{Type:base.APP_HTTP, Name:"app2", Version: 2, Id:"app2_1", Status:base.STATUS_DEPLOYING})
 
-	conf.Add("app1_1", base.AppConfiguration{Name:"app1", Type:base.APP_HTTP, Version: "1.0"})
-	conf.Add("app1_2", base.AppConfiguration{Name:"app1", Type:base.APP_HTTP, Version: "1.0"})
-	conf.Add("app2_1", base.AppConfiguration{Name:"app2", Type:base.APP_WORKER, Version: "2.0"})
+	conf.Add("app1_1", base.AppConfiguration{Name:"app1", Type:base.APP_HTTP, Version: 1})
+	conf.Add("app1_2", base.AppConfiguration{Name:"app1", Type:base.APP_HTTP, Version: 1})
+	conf.Add("app2_1", base.AppConfiguration{Name:"app2", Type:base.APP_WORKER, Version: 2})
 
 	saveStateAndConfig(state, conf)
 	client.AppsConfiguration = types.AppsConfiguration{}

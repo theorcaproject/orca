@@ -27,12 +27,12 @@ func TestInstallApp(t *testing.T) {
 	Configuration = types.Configuration{}
 	Init()
 
-	confFail := base.AppConfiguration{Name: "app_installfail", Version: "1.0_installfail"}
+	confFail := base.AppConfiguration{Name: "app_installfail", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0_installfail"}}
 	res := InstallApp(confFail)
 	if res {
 		t.Error(res)
 	}
-	confOk := base.AppConfiguration{Name: "ok", Version: "1.0"}
+	confOk := base.AppConfiguration{Name: "ok", Version: 1.0}
 	resOk := InstallApp(confOk)
 	if !resOk {
 		t.Error(resOk)
@@ -43,7 +43,7 @@ func TestRunApp(t *testing.T) {
 	Configuration = types.Configuration{}
 	Init()
 
-	confFail := base.AppConfiguration{Name: "app_runfail", Version: "1.0_runfail"}
+	confFail := base.AppConfiguration{Name: "app_runfail", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0_runfail"}}
 	res := RunApp(confFail)
 	if res {
 		t.Error(res)
@@ -57,7 +57,7 @@ func TestRunApp(t *testing.T) {
 		t.Error(AppsConfiguration)
 	}
 	AppsState = make(map[base.AppId]base.AppInfo)
-	confOk := base.AppConfiguration{Name: "ok", Version: "1.0"}
+	confOk := base.AppConfiguration{Name: "ok", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0"}}
 	resOk := RunApp(confOk)
 	if !resOk {
 		t.Error(resOk)
@@ -75,9 +75,9 @@ func TestRunApp(t *testing.T) {
 func TestStopAll(t *testing.T) {
 	Configuration = types.Configuration{}
 	Init()
-	confOk := base.AppConfiguration{Name: "app1", Version: "1.0"}
-	confOk2 := base.AppConfiguration{Name: "app1", Version: "1.0"}
-	conf3 := base.AppConfiguration{Name: "app2", Version: "1.0_stopfail"}
+	confOk := base.AppConfiguration{Name: "app1", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0"}}
+	confOk2 := base.AppConfiguration{Name: "app1", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0"}}
+	conf3 := base.AppConfiguration{Name: "app2", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0_stopfail"}}
 	if !RunApp(confOk) {
 		t.Error(AppsState)
 	}
@@ -110,7 +110,7 @@ func TestStopAll(t *testing.T) {
 func TestStopApp(t *testing.T) {
 	Configuration = types.Configuration{}
 	Init()
-	confOk := base.AppConfiguration{Name: "ok", Version: "1.0"}
+	confOk := base.AppConfiguration{Name: "ok", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0"}}
 	if !RunApp(confOk) {
 		t.Error(AppsState)
 	}
@@ -133,11 +133,11 @@ func TestScaleApp_up(t *testing.T) {
 	Configuration = types.Configuration{}
 	Init()
 
-	existsing := []base.AppInfo{{Name: "app1", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app1_1"}, {Name: "app1", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app1_2"}}
-	AppsState.Add("app1_1", base.AppInfo{Name: "app1", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app1_1"})
-	AppsState.Add("app1_2", base.AppInfo{Name: "app1", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app1_2"})
-	AppsState.Add("app2_1", base.AppInfo{Name: "app2", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app2_1"})
-	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app1", Version: "1.0"}}
+	existsing := []base.AppInfo{{Name: "app1", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app1_1"}, {Name: "app1", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app1_2"}}
+	AppsState.Add("app1_1", base.AppInfo{Name: "app1", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app1_1"})
+	AppsState.Add("app1_2", base.AppInfo{Name: "app1", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app1_2"})
+	AppsState.Add("app2_1", base.AppInfo{Name: "app2", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app2_1"})
+	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app1", Version: 1.0}}
 	if !scaleApp(existsing, config) {
 		t.Error(AppsState)
 	}
@@ -156,7 +156,7 @@ func TestScaleApp_up(t *testing.T) {
 		t.Error(AppsState)
 	}
 
-	if scaleApp(existsing, base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app2", Version: "1.0_runfail"}}) {
+	if scaleApp(existsing, base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app2", Version: 2, DockerConfig: base.DockerConfig{Tag: "1.1_runfail"}}}) {
 		t.Error(AppsState)
 	}
 }
@@ -165,14 +165,14 @@ func TestScaleApp_down(t *testing.T) {
 	Configuration = types.Configuration{}
 	Init()
 
-	existsing := []base.AppInfo{{Name: "app1", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app1_1"}, {Name: "app1", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app1_2"}}
-	AppsState.Add("app1_1", base.AppInfo{Name: "app1", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app1_1"})
-	AppsState.Add("app1_2", base.AppInfo{Name: "app1", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app1_2"})
-	AppsState.Add("app2_1", base.AppInfo{Name: "app2", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app2_1"})
-	AppsState.Add("app2_2", base.AppInfo{Name: "app2", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app2_2"})
-	AppsConfiguration.Add("app2_1", base.AppConfiguration{Name:"app2", Version:"1.0_stopfail"})
-	AppsConfiguration.Add("app2_2", base.AppConfiguration{Name:"app2", Version:"1.0_stopfail"})
-	config := base.PushConfiguration{DeploymentCount: 0, AppConfiguration: base.AppConfiguration{Name: "app1", Version: "1.0"}}
+	existsing := []base.AppInfo{{Name: "app1", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app1_1"}, {Name: "app1", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app1_2"}}
+	AppsState.Add("app1_1", base.AppInfo{Name: "app1", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app1_1"})
+	AppsState.Add("app1_2", base.AppInfo{Name: "app1", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app1_2"})
+	AppsState.Add("app2_1", base.AppInfo{Name: "app2", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app2_1"})
+	AppsState.Add("app2_2", base.AppInfo{Name: "app2", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app2_2"})
+	AppsConfiguration.Add("app2_1", base.AppConfiguration{Name:"app2", Version:1.0, DockerConfig: base.DockerConfig{Tag: "1.0_stopfail"}})
+	AppsConfiguration.Add("app2_2", base.AppConfiguration{Name:"app2", Version:1.0, DockerConfig: base.DockerConfig{Tag: "1.0_stopfail"}})
+	config := base.PushConfiguration{DeploymentCount: 0, AppConfiguration: base.AppConfiguration{Name: "app1", Version: 1.0}}
 	if !scaleApp(existsing, config) {
 		t.Error(AppsState)
 	}
@@ -181,8 +181,8 @@ func TestScaleApp_down(t *testing.T) {
 			t.Error(AppsState)
 		}
 	}
-	existsing2 := []base.AppInfo{{Name: "app2", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app2_1"}, {Name: "app2", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app2_2"}}
-	if scaleApp(existsing2, base.PushConfiguration{DeploymentCount: 1, AppConfiguration: base.AppConfiguration{Name: "app2", Version: "1.0_stopfail"}}) {
+	existsing2 := []base.AppInfo{{Name: "app2", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app2_1"}, {Name: "app2", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app2_2"}}
+	if scaleApp(existsing2, base.PushConfiguration{DeploymentCount: 1, AppConfiguration: base.AppConfiguration{Name: "app2", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0_stopfail"}}}) {
 		t.Error(AppsState)
 	}
 }
@@ -191,11 +191,11 @@ func TestUpdateApp(t *testing.T) {
 	Configuration = types.Configuration{}
 	Init()
 
-	existsing := []base.AppInfo{{Name: "app1", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app1_1"}, {Name: "app1", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app1_2"}}
-	AppsState.Add("app1_1", base.AppInfo{Name: "app1", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app1_1"})
-	AppsState.Add("app1_2", base.AppInfo{Name: "app1", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app1_2"})
-	AppsState.Add("app2_1", base.AppInfo{Name: "app2", Version: "1.0", Status: base.STATUS_RUNNING, Id: "app2_1"})
-	config := base.PushConfiguration{DeploymentCount: 3, AppConfiguration: base.AppConfiguration{Name: "app1", Version: "1.1"}}
+	existsing := []base.AppInfo{{Name: "app1", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app1_1"}, {Name: "app1", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app1_2"}}
+	AppsState.Add("app1_1", base.AppInfo{Name: "app1", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app1_1"})
+	AppsState.Add("app1_2", base.AppInfo{Name: "app1", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app1_2"})
+	AppsState.Add("app2_1", base.AppInfo{Name: "app2", Version: 1.0, Status: base.STATUS_RUNNING, Id: "app2_1"})
+	config := base.PushConfiguration{DeploymentCount: 3, AppConfiguration: base.AppConfiguration{Name: "app1", Version: 2, DockerConfig: base.DockerConfig{Tag: "1.1"}}}
 
 	if !updateApp(existsing, config) {
 		t.Error(AppsState)
@@ -215,16 +215,16 @@ func TestUpdateApp(t *testing.T) {
 func TestQueryApp(t *testing.T) {
 	Configuration = types.Configuration{}
 	Init()
-	AppsConfiguration.Add("app1_1", base.AppConfiguration{Name: "app1", Version: "1.0"})
-	AppsConfiguration.Add("app1_2", base.AppConfiguration{Name: "app1", Version: "1.0_queryfail"})
-	AppsState.Add("app1_1", base.AppInfo{Name: "app1", Version: "1.0", Status: base.STATUS_DEPLOYING, Id: "app1_1"})
+	AppsConfiguration.Add("app1_1", base.AppConfiguration{Name: "app1", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0"}})
+	AppsConfiguration.Add("app1_2", base.AppConfiguration{Name: "app1", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0_queryfail"}})
+	AppsState.Add("app1_1", base.AppInfo{Name: "app1", Version: 1.0, Status: base.STATUS_DEPLOYING, Id: "app1_1"})
 	if !QueryApp("app1_1") {
 		t.Error(AppsState)
 	}
 	if AppsState.Get("app1_1").Status != base.STATUS_RUNNING {
 		t.Error(AppsState)
 	}
-	AppsState.Add("app1_2", base.AppInfo{Name: "app1", Version: "1.0_queryfail", Status: base.STATUS_DEPLOYING, Id: "app1_2"})
+	AppsState.Add("app1_2", base.AppInfo{Name: "app1", Version: 1.0, Status: base.STATUS_DEPLOYING, Id: "app1_2"})
 	if QueryApp("app1_2") {
 		t.Error(AppsState)
 	}
@@ -242,7 +242,7 @@ func TestNewApp_Ok(t *testing.T) {
 	if len(AppsConfiguration) != 0 {
 		t.Error(AppsConfiguration)
 	}
-	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app1", Version: "1.0"}}
+	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app1", Version: 1.0}}
 
 	res := newApp(config)
 	if !res {
@@ -270,7 +270,7 @@ func TestNewApp_InstallFail(t *testing.T) {
 	if len(AppsConfiguration) != 0 {
 		t.Error(AppsConfiguration)
 	}
-	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app1", Version: "1.0_installfail"}}
+	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app1", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0_installfail"}}}
 
 	res := newApp(config)
 	if res {
@@ -293,7 +293,7 @@ func TestNewApp_RunFail(t *testing.T) {
 	if len(AppsConfiguration) != 0 {
 		t.Error(AppsConfiguration)
 	}
-	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app1", Version: "1.0_runfail"}}
+	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app1", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0_runfail"}}}
 
 	res := newApp(config)
 
@@ -322,19 +322,19 @@ func TestRollbackApp(t *testing.T) {
 	if len(AppsConfiguration) != 0 {
 		t.Error(AppsConfiguration)
 	}
-	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app1", Version: "2.0"}}
+	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app1", Version: 2.0, DockerConfig: base.DockerConfig{Tag: "2.0"}}}
 	installAndRun(config)
 
 	if len(AppsState) != 4 {
 		t.Error(AppsState)
 	}
 
-	rollbackApp(base.AppConfiguration{Name: "app1", Version: "1.0"}, 2)
+	rollbackApp(base.AppConfiguration{Name: "app1", Version: 1.0}, 2)
 	if len(AppsState) != 2 {
 		t.Error(AppsState)
 	}
 	for _, state := range AppsState {
-		if state.Version != "1.0" {
+		if state.Version != 1.0 {
 			t.Error(AppsState)
 		}
 	}
@@ -345,28 +345,28 @@ func prepareHandleTest(t *testing.T) {
 	Configuration = types.Configuration{}
 	Init()
 
-	AppsConfiguration.Add("app_1_1", base.AppConfiguration{Name: "app1", Version: "1.0"})
+	AppsConfiguration.Add("app_1_1", base.AppConfiguration{Name: "app1", Version: 1.0})
 
-	AppsConfiguration.Add("app_queryfail_1", base.AppConfiguration{Name: "app_queryfail", Version: "1.0"})
-	AppsConfiguration.Add("app_runfail_1", base.AppConfiguration{Name: "app_runfail", Version: "1.0"})
-	AppsConfiguration.Add("app_installfail_1", base.AppConfiguration{Name: "app_installfail", Version: "1.0"})
-	AppsConfiguration.Add("app_stopfail_1", base.AppConfiguration{Name: "app_stopfail", Version: "1.0"})
-	AppsConfiguration.Add("app_deletefail_1", base.AppConfiguration{Name: "app_deletefail", Version: "1.0"})
+	AppsConfiguration.Add("app_queryfail_1", base.AppConfiguration{Name: "app_queryfail", Version: 1.0})
+	AppsConfiguration.Add("app_runfail_1", base.AppConfiguration{Name: "app_runfail", Version: 1.0})
+	AppsConfiguration.Add("app_installfail_1", base.AppConfiguration{Name: "app_installfail", Version: 1.0})
+	AppsConfiguration.Add("app_stopfail_1", base.AppConfiguration{Name: "app_stopfail", Version: 1.0})
+	AppsConfiguration.Add("app_deletefail_1", base.AppConfiguration{Name: "app_deletefail", Version: 1.0})
 
-	AppsConfiguration.Add("app_2_1", base.AppConfiguration{Name: "app2", Version: "1.0"})
-	AppsConfiguration.Add("app_2_2", base.AppConfiguration{Name: "app2", Version: "1.0"})
+	AppsConfiguration.Add("app_2_1", base.AppConfiguration{Name: "app2", Version: 1.0})
+	AppsConfiguration.Add("app_2_2", base.AppConfiguration{Name: "app2", Version: 1.0})
 
 
-	AppsState.Add("app_1_1", base.AppInfo{Name:"app_1", Version:"1.0", Status:base.STATUS_RUNNING, Id: "app_1_1"})
+	AppsState.Add("app_1_1", base.AppInfo{Name:"app_1", Version:1.0, Status:base.STATUS_RUNNING, Id: "app_1_1"})
 
-	AppsState.Add("app_queryfail_1", base.AppInfo{Name:"app_queryfail", Version:"1.0", Status:base.STATUS_RUNNING, Id: "app_queryfail_1"})
-	AppsState.Add("app_runfail_1", base.AppInfo{Name:"app_runfail", Version:"1.0", Status:base.STATUS_RUNNING, Id: "app_runfail_1"})
-	AppsState.Add("app_installfail_1", base.AppInfo{Name:"app_installfail", Version:"1.0", Status:base.STATUS_RUNNING, Id: "app_installfail_1"})
-	AppsState.Add("app_stopfail_1", base.AppInfo{Name:"app_stopfail", Version:"1.0", Status:base.STATUS_RUNNING, Id: "app_stopfail_1"})
-	AppsState.Add("app_deletefail_1", base.AppInfo{Name:"app_deletefail", Version:"1.0", Status:base.STATUS_RUNNING, Id: "app_deletefail_1"})
+	AppsState.Add("app_queryfail_1", base.AppInfo{Name:"app_queryfail", Version:1.0, Status:base.STATUS_RUNNING, Id: "app_queryfail_1"})
+	AppsState.Add("app_runfail_1", base.AppInfo{Name:"app_runfail", Version:1.0, Status:base.STATUS_RUNNING, Id: "app_runfail_1"})
+	AppsState.Add("app_installfail_1", base.AppInfo{Name:"app_installfail", Version:1.0, Status:base.STATUS_RUNNING, Id: "app_installfail_1"})
+	AppsState.Add("app_stopfail_1", base.AppInfo{Name:"app_stopfail", Version:1.0, Status:base.STATUS_RUNNING, Id: "app_stopfail_1"})
+	AppsState.Add("app_deletefail_1", base.AppInfo{Name:"app_deletefail", Version:1.0, Status:base.STATUS_RUNNING, Id: "app_deletefail_1"})
 
-	AppsState.Add("app_2_1", base.AppInfo{Name:"app_2", Version:"1.0", Status:base.STATUS_RUNNING, Id: "app_2_1"})
-	AppsState.Add("app_2_2", base.AppInfo{Name:"app_2", Version:"1.0", Status:base.STATUS_RUNNING, Id: "app_2_2"})
+	AppsState.Add("app_2_1", base.AppInfo{Name:"app_2", Version:1.0, Status:base.STATUS_RUNNING, Id: "app_2_1"})
+	AppsState.Add("app_2_2", base.AppInfo{Name:"app_2", Version:1.0, Status:base.STATUS_RUNNING, Id: "app_2_2"})
 
 	if AppsState.Get("app_2_1").Status != base.STATUS_RUNNING {
 		t.Error(AppsState)
@@ -382,7 +382,7 @@ func prepareHandleTest(t *testing.T) {
 func TestHandle_updateApp_Ok(t *testing.T) {
         prepareHandleTest(t)
 
-	config := base.PushConfiguration{DeploymentCount: 2, AppConfiguration: base.AppConfiguration{Name: "app_1", Version: "2.0"}}
+	config := base.PushConfiguration{DeploymentCount: 2, AppConfiguration: base.AppConfiguration{Name: "app_1", Version: 2.0}}
 	Handle(config)
 
 	res := AppsState.GetAll("app_1")
@@ -397,7 +397,7 @@ func TestHandle_updateApp_Ok(t *testing.T) {
 func TestHandle_updateApp_QueryFail(t *testing.T) {
         prepareHandleTest(t)
 
-	config := base.PushConfiguration{DeploymentCount: 2, AppConfiguration: base.AppConfiguration{Name: "app_queryfail", Version: "2.0_queryfail"}}
+	config := base.PushConfiguration{DeploymentCount: 2, AppConfiguration: base.AppConfiguration{Name: "app_queryfail", Version: 2.0, DockerConfig: base.DockerConfig{Tag: "2.0_queryfail"}}}
 	Handle(config)
 
 	res := AppsState.GetAll("app_queryfail")
@@ -413,7 +413,7 @@ func TestHandle_updateApp_QueryFail(t *testing.T) {
 func TestHandle_updateApp_StopFail(t *testing.T) {
         prepareHandleTest(t)
 
-	config := base.PushConfiguration{DeploymentCount: 2, AppConfiguration: base.AppConfiguration{Name: "app_stopfail", Version: "2.0_stopfail"}}
+	config := base.PushConfiguration{DeploymentCount: 2, AppConfiguration: base.AppConfiguration{Name: "app_stopfail", Version: 2.0, DockerConfig: base.DockerConfig{Tag: "2.0_stopfail"}}}
 	Handle(config)
 
 	res := AppsState.GetAll("app_stopfail")
@@ -427,28 +427,28 @@ func TestHandle_updateApp_StopFail(t *testing.T) {
 
 func TestHandle_updateApp_InstallFail_Rollback(t *testing.T) {
         prepareHandleTest(t)
-	config := base.PushConfiguration{DeploymentCount: 3, AppConfiguration: base.AppConfiguration{Name: "app_installfail", Version: "2.0_installfail"}}
+	config := base.PushConfiguration{DeploymentCount: 3, AppConfiguration: base.AppConfiguration{Name: "app_installfail", Version: 2.0, DockerConfig: base.DockerConfig{Tag: "2.0_installfail"}}}
 	Handle(config)
 
 	res := AppsState.GetAll("app_installfail")
 	if len(res) != 3 {
 		t.Error(res)
 	}
-	if res[0].Status != base.STATUS_DEPLOYING || res[0].Version != "1.0" {
+	if res[0].Status != base.STATUS_DEPLOYING || res[0].Version != 1.0 {
 		t.Error(res)
 	}
 }
 
 func TestHandle_updateApp_RunFail_Rollback(t *testing.T) {
         prepareHandleTest(t)
-	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app_runfail", Version: "2.0_runfail"}}
+	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app_runfail", Version: 2.0, DockerConfig: base.DockerConfig{Tag: "2.0_runfail"}}}
 	Handle(config)
 
 	res := AppsState.GetAll("app_runfail")
 	if len(res) != 4 {
 		t.Error(res)
 	}
-	if res[0].Status != base.STATUS_DEPLOYING || res[0].Version != "1.0" {
+	if res[0].Status != base.STATUS_DEPLOYING || res[0].Version != 1.0 {
 		t.Error(res)
 	}
 }
@@ -457,7 +457,7 @@ func TestHandle_updateApp_RunFail_Rollback(t *testing.T) {
 func TestHandle_scaleUpDown(t *testing.T) {
 	prepareHandleTest(t)
 
-	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app_1", Version: "1.0"}}
+	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "app_1", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0"}}}
 	Handle(config)
 
 	res := AppsState.GetAll("app_1")
@@ -470,7 +470,7 @@ func TestHandle_scaleUpDown(t *testing.T) {
 		}
 	}
 
-	config1 := base.PushConfiguration{DeploymentCount: 1, AppConfiguration: base.AppConfiguration{Name: "app_1", Version: "1.0"}}
+	config1 := base.PushConfiguration{DeploymentCount: 1, AppConfiguration: base.AppConfiguration{Name: "app_1", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0"}}}
 	Handle(config1)
 
 	res1 := AppsState.GetAll("app_1")
@@ -492,7 +492,7 @@ func TestHandle_scaleUpDown(t *testing.T) {
 func TestHandle_NewApp(t *testing.T) {
 	prepareHandleTest(t)
 
-	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "newapp", Version: "1.0"}}
+	config := base.PushConfiguration{DeploymentCount: 4, AppConfiguration: base.AppConfiguration{Name: "newapp", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0"}}}
 	Handle(config)
 
 	res := AppsState.GetAll("newapp")
@@ -503,7 +503,7 @@ func TestHandle_NewApp(t *testing.T) {
 
 func TestPollAppsState(t *testing.T) {
 	prepareHandleTest(t)
-	AppsConfiguration.Add("app_queryfail_1", base.AppConfiguration{Name: "app_queryfail", Version: "1.0_queryfail"})
+	AppsConfiguration.Add("app_queryfail_1", base.AppConfiguration{Name: "app_queryfail", Version: 1.0, DockerConfig:base.DockerConfig{Tag:"1.0_queryfail"}})
 
 	for _, app := range AppsState.All() {
 		if app.Status != base.STATUS_RUNNING {
@@ -526,8 +526,8 @@ func TestAppMetrics(t *testing.T) {
 	Configuration = types.Configuration{}
 	Init()
 
-	AppsConfiguration.Add("app_1", base.AppConfiguration{Name: "app1", Version: "1.0"})
-	AppsConfiguration.Add("app_2", base.AppConfiguration{Name: "app1", Version: "1.0_metrics=10_20_30_2"})
+	AppsConfiguration.Add("app_1", base.AppConfiguration{Name: "app1", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0"}})
+	AppsConfiguration.Add("app_2", base.AppConfiguration{Name: "app1", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0_metrics=10_20_30_2"}})
 
 	if AppMetrics("app_1") {
 		t.Error()
@@ -545,10 +545,10 @@ func TestAppMetrics(t *testing.T) {
 func TestGenerateCombinedMetrics(t *testing.T) {
 	Configuration = types.Configuration{}
 	Init()
-	AppsConfiguration.Add("app_1_1", base.AppConfiguration{Name: "app1", Version: "1.0_metrics=10_20_30_2"})
-	AppsConfiguration.Add("app_1_2", base.AppConfiguration{Name: "app1", Version: "1.0_metrics=10_20_30_2"})
-	AppsState.Add("app_1_1", base.AppInfo{Name:"app1", Version:"1.0_metrics=10_20_30_2", Status:base.STATUS_RUNNING, Id: "app_1_1"})
-	AppsState.Add("app_1_2", base.AppInfo{Name:"app1", Version:"1.0_metrics=10_20_30_2", Status:base.STATUS_RUNNING, Id: "app_1_2"})
+	AppsConfiguration.Add("app_1_1", base.AppConfiguration{Name: "app1", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0_metrics=10_20_30_2"}})
+	AppsConfiguration.Add("app_1_2", base.AppConfiguration{Name: "app1", Version: 1.0, DockerConfig: base.DockerConfig{Tag: "1.0_metrics=10_20_30_2"}})
+	AppsState.Add("app_1_1", base.AppInfo{Name:"app1", Version:1.0, Status:base.STATUS_RUNNING, Id: "app_1_1"})
+	AppsState.Add("app_1_2", base.AppInfo{Name:"app1", Version:1.0, Status:base.STATUS_RUNNING, Id: "app_1_2"})
 
 	if !AppMetrics("app_1_1") {
 		t.Error()
@@ -559,13 +559,14 @@ func TestGenerateCombinedMetrics(t *testing.T) {
 	}
 	res := generateCombinedMetrics()
 
-	if len(res) != 1 || len(res["app1"]["1.0_metrics=10_20_30_2"]) != 2 {
+	if len(res) != 2 || len(res["app1"][1]) != 2 {
 		t.Error(res)
 	}
 
 	if len(AppsMetricsById) != 0 {
 		t.Error(AppsMetricsById)
 	}
+
 }
 
 

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"gatoor/orca/base"
 	"gatoor/orca/client/types"
+	"time"
 )
 
 func TestClient_InstallApp(t *testing.T) {
@@ -11,9 +12,10 @@ func TestClient_InstallApp(t *testing.T) {
 	cli.Init()
 	appConf := base.AppConfiguration{}
 	appConf.Name = "nginx"
-	appConf.Version = "latest"
+	appConf.Version = 1
 	appConf.DockerConfig.Reference = "docker.io"
 	appConf.DockerConfig.Repository = "nginx"
+	appConf.DockerConfig.Tag = "latest"
 	appsState := types.AppsState{}
 	//retry := types.RetryCounter{}
 	conf := types.Configuration{}
@@ -27,9 +29,10 @@ func TestClient_RunStopApp(t *testing.T) {
 
 	appConf := base.AppConfiguration{}
 	appConf.Name = "nginx"
-	appConf.Version = "latest"
+	appConf.Version = 1
 	appConf.DockerConfig.Reference = "docker.io"
 	appConf.DockerConfig.Repository = "nginx"
+	appConf.DockerConfig.Tag = "latest"
 	appsState := types.AppsState{}
 	conf := types.Configuration{}
 
@@ -56,9 +59,10 @@ func TestClient_QueryApp(t *testing.T) {
 
 	appConf := base.AppConfiguration{}
 	appConf.Name = "nginx"
-	appConf.Version = "latest"
+	appConf.Version = 1
 	appConf.DockerConfig.Reference = "docker.io"
 	appConf.DockerConfig.Repository = "nginx"
+	appConf.DockerConfig.Tag = "latest"
 	appsState := types.AppsState{}
 	conf := types.Configuration{}
 
@@ -86,9 +90,10 @@ func TestClient_AppMetrics(t *testing.T) {
 
 	appConf := base.AppConfiguration{}
 	appConf.Name = "nginx"
-	appConf.Version = "latest"
+	appConf.Version = 1
 	appConf.DockerConfig.Reference = "docker.io"
 	appConf.DockerConfig.Repository = "nginx"
+	appConf.DockerConfig.Tag = "latest"
 	appsState := types.AppsState{}
 	conf := types.Configuration{}
 	metrics := types.AppsMetricsById{}
@@ -99,6 +104,18 @@ func TestClient_AppMetrics(t *testing.T) {
 
 	if !cli.AppMetrics("superapp1", appConf, &appsState, &conf, &metrics) {
 		t.Error()
+	}
+	time.Sleep(50 * time.Millisecond)
+	if !cli.AppMetrics("superapp1", appConf, &appsState, &conf, &metrics) {
+		t.Error()
+	time.Sleep(50 * time.Millisecond)
+	}
+	if !cli.AppMetrics("superapp1", appConf, &appsState, &conf, &metrics) {
+		t.Error()
+	}
+
+	if len(metrics.All()) != 3 {
+		t.Error(metrics.All())
 	}
 
 	if !cli.StopApp("superapp1", appConf, &appsState, &conf) {
@@ -113,9 +130,10 @@ func TestClient_DeleteApp(t *testing.T) {
 
 	appConf := base.AppConfiguration{}
 	appConf.Name = "nginx"
-	appConf.Version = "latest"
+	appConf.Version = 1
 	appConf.DockerConfig.Reference = "docker.io"
 	appConf.DockerConfig.Repository = "nginx"
+	appConf.DockerConfig.Tag = "latest"
 	appsState := types.AppsState{}
 	conf := types.Configuration{}
 

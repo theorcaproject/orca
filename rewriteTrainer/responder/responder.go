@@ -98,10 +98,10 @@ func checkScaling(hostInfo base.HostInfo, queued map[base.AppName]planner.AppsUp
 		for appName, count := range appsCount {
 			if queued[appName].State != planner.STATE_QUEUED && queued[appName].State != planner.UpdateState("") {
 				if int(queued[appName].Version.DeploymentCount) != count {
-					ResponderLogger.Warnf("Scaling up of app %s:%s on host %s is not done. Should be %d but is %d", appName, queued[appName].Version.Version, hostInfo.HostId, queued[appName].Version.DeploymentCount, count)
+					ResponderLogger.Warnf("Scaling up of app %s:%d on host %s is not done. Should be %d but is %d", appName, queued[appName].Version.Version, hostInfo.HostId, queued[appName].Version.DeploymentCount, count)
 					return false
 				} else {
-					ResponderLogger.Infof("Scaling up of app %s:%s on host %s successful", appName, queued[appName].Version.Version, hostInfo.HostId)
+					ResponderLogger.Infof("Scaling up of app %s:%d on host %s successful", appName, queued[appName].Version.Version, hostInfo.HostId)
 				}
 			}
 		}
@@ -120,13 +120,14 @@ func handleEmptyHost(hostInfo base.HostInfo) {
 		}
 	}
 	if !isNew {
-		cloud.CurrentProvider.TerminateInstance(hostInfo.HostId)
+		ResponderLogger.Warnf("TODO empty host %s, add logic to kill host if not needed", hostInfo.HostId)
+		//cloud.CurrentProvider.TerminateInstance(hostInfo.HostId)
 	}
 }
 
 func simpleAppCheck(appObj base.AppInfo, hostId base.HostId) {
 	if appObj.Status != base.STATUS_RUNNING {
-		ResponderLogger.Warnf("App '%s' - '%s' on host '%s' is not running. Adding it to GlobalAppCrashes", appObj.Name, appObj.Version, hostId)
+		ResponderLogger.Warnf("App %s:%d on host '%s' is not running. Adding it to GlobalAppCrashes", appObj.Name, appObj.Version, hostId)
 		tracker.GlobalAppsStatusTracker.Update(hostId, appObj.Name, appObj.Version, tracker.APP_EVENT_CRASH)
 	} else {
 		tracker.GlobalAppsStatusTracker.Update(hostId, appObj.Name, appObj.Version, tracker.APP_EVENT_CHECKIN)
@@ -134,31 +135,31 @@ func simpleAppCheck(appObj base.AppInfo, hostId base.HostId) {
 }
 
 func checkAppUpdate(appObj base.AppInfo, hostId base.HostId, queuedState planner.AppsUpdateState) {
-	ResponderLogger.Infof("Check update of App '%s' - '%s' on host '%s'", appObj.Name, appObj.Version, hostId)
+	ResponderLogger.Infof("Check update of App %s:%d on host '%s'", appObj.Name, appObj.Version, hostId)
 	if queuedState.State != planner.STATE_APPLYING {
-		ResponderLogger.Errorf("Got illegal state %s for update of App '%s' - '%s' on host '%s'", queuedState.State, appObj.Name, appObj.Version, hostId)
+		ResponderLogger.Errorf("Got illegal state %s for update of App %s:%d on host '%s'", queuedState.State, appObj.Name, appObj.Version, hostId)
 		return
 	}
 	if appObj.Status == base.STATUS_RUNNING {
 		if appObj.Version == queuedState.Version.Version {
-			ResponderLogger.Infof("Update of App '%s' - '%s' on host '%s' successful", appObj.Name, appObj.Version, hostId)
+			ResponderLogger.Infof("Update of App %s:%d on host '%s' successful", appObj.Name, appObj.Version, hostId)
 			handleSuccessfulUpdate(hostId, appObj.Name, appObj.Version)
 		} else {
-			ResponderLogger.Warnf("Update of App '%s' - '%s' on host '%s' rolled back to version %s", appObj.Name, queuedState.Version.Version, hostId, appObj.Version)
+			ResponderLogger.Warnf("Update of App %s:%d on host '%s' rolled back to version %s", appObj.Name, queuedState.Version.Version, hostId, appObj.Version)
 			handleRollback(hostId, appObj.Name, queuedState.Version.Version)
 		}
 	}
 	if appObj.Status == base.STATUS_DEPLOYING {
 		if appObj.Version == queuedState.Version.Version {
-			ResponderLogger.Infof("Update of App '%s' - '%s' on host '%s' is still applying", appObj.Name, appObj.Version, hostId)
+			ResponderLogger.Infof("Update of App %s:%d on host '%s' is still applying", appObj.Name, appObj.Version, hostId)
 			return
 		} else {
-			ResponderLogger.Warnf("Update of App '%s' - '%s' on host '%s' rolling back to version %s", appObj.Name, queuedState.Version, hostId, appObj.Version)
+			ResponderLogger.Warnf("Update of App %s:%d on host '%s' rolling back to version %s", appObj.Name, queuedState.Version, hostId, appObj.Version)
 			handleRollback(hostId, appObj.Name, queuedState.Version.Version)
 		}
 	}
 	if appObj.Status == base.STATUS_DEAD {
-		ResponderLogger.Warnf("Update of App '%s' - '%s' on host '%s' was fatal for the app, the version that died on the host is %s", appObj.Name, queuedState.Version, hostId, appObj.Version)
+		ResponderLogger.Warnf("Update of App %s:%d on host '%s' was fatal for the app, the version that died on the host is %s", appObj.Name, queuedState.Version, hostId, appObj.Version)
 		handleFatalUpdate(hostId, appObj.Name, appObj.Version)
 	}
 }
@@ -182,5 +183,6 @@ func handleRollback(hostId base.HostId, appName base.AppName, failedVersion base
 
 func handleFatalUpdate(hostId base.HostId, appName base.AppName, version base.Version) {
 	tracker.GlobalAppsStatusTracker.Update(hostId, appName, version, tracker.APP_EVENT_CRASH)
+	planner.Queue.Remove(hostId, appName)
 }
 

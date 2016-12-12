@@ -278,18 +278,18 @@ func (a *AWSProvider) CheckInstance(hostId base.HostId) InstanceStatus {
 }
 
 func (a *AWSProvider) TerminateInstance(hostId base.HostId) bool {
-	//AWSLogger.Warnf("Trying to terminate instance %s", hostId)
-	//svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
-	//_, err := svc.TerminateInstances(&ec2.TerminateInstancesInput{
-	//	InstanceIds: aws.StringSlice([]string{string(hostId)}),
-	//})
-	//
-	//if err != nil {
-	//	AWSLogger.Errorf("Could not terminate instance %s: %s", hostId, err)
-	//	return false
-	//}
-	//AWSLogger.Infof("Terminated instance %s", hostId)
-	//a.SpawnLog.Remove(hostId)
+	AWSLogger.Warnf("Trying to terminate instance %s", hostId)
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(CurrentProviderConfig.AWSConfiguration.Region)}))
+	_, err := svc.TerminateInstances(&ec2.TerminateInstancesInput{
+		InstanceIds: aws.StringSlice([]string{string(hostId)}),
+	})
+
+	if err != nil {
+		AWSLogger.Errorf("Could not terminate instance %s: %s", hostId, err)
+		return false
+	}
+	AWSLogger.Infof("Terminated instance %s", hostId)
+	a.SpawnLog.Remove(hostId)
 	return true
 
 }

@@ -2,8 +2,6 @@ package example
 
 import (
 	"gatoor/orca/rewriteTrainer/config"
-	"gatoor/orca/base"
-	"gatoor/orca/rewriteTrainer/needs"
 )
 
 func AwsJsonConfig() config.JsonConfiguration {
@@ -28,57 +26,57 @@ func AwsJsonConfig() config.JsonConfiguration {
 	//	},
 	//}
 
-	conf.Apps = []config.AppJsonConfiguration{
-		{
-			Name: "nginx",
-			Version: "0.1",
-			Type: base.APP_HTTP,
-			MinDeploymentCount: 2,
-			MaxDeploymentCount: 10,
-			//InstallCommands: []base.OsCommand{
-			//	{base.EXEC_COMMAND, base.Command{"mkdir", "/orca/apps/nginx"},},
-			//	{base.FILE_COMMAND, base.Command{"/orca/apps/nginx/index.html", "HELLO ORCA!"},},
-			//	{base.EXEC_COMMAND, base.Command{"docker", "run --name orca-nginx -p 80:80 -v /orca/apps/nginx:/usr/share/nginx/html nginx"},},
-			//},
-			//QueryStateCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"wget", "http://localhost"},
-			//},
-			//RemoveCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"docker", "stop orca-nginx"},
-			//},
-			Needs: needs.AppNeeds{
-				MemoryNeeds: needs.MemoryNeeds(5),
-				CpuNeeds: needs.CpuNeeds(5),
-				NetworkNeeds: needs.NetworkNeeds(5),
-			},
-		},
-		{
-			Name: "nginxworker",
-			Version: "0.2",
-			Type: base.APP_WORKER,
-			MinDeploymentCount: 5,
-			MaxDeploymentCount: 10,
-			//InstallCommands: []base.OsCommand{
-			//	{base.EXEC_COMMAND, base.Command{"mkdir", "/orca/apps/nginxworker"},},
-			//	{base.FILE_COMMAND, base.Command{"/orca/apps/nginxworker/index.html", "HELLO ORCA as worker!"},},
-			//	{base.EXEC_COMMAND, base.Command{"docker", "run --name orca-nginxworker -v /orca/apps/nginxworker:/usr/share/nginx/html nginx"},},
-			//},
-			//QueryStateCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"wget", "http://localhost"},
-			//},
-			//RemoveCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"docker", "stop orca-nginxworker"},
-			//},
-			Needs: needs.AppNeeds{
-				MemoryNeeds: needs.MemoryNeeds(3),
-				CpuNeeds: needs.CpuNeeds(3),
-				NetworkNeeds: needs.NetworkNeeds(3),
-			},
-		},
-	}
+	//conf.Apps = []config.AppJsonConfiguration{
+	//	{
+	//		Name: "nginx",
+	//		Version: "0.1",
+	//		Type: base.APP_HTTP,
+	//		MinDeploymentCount: 2,
+	//		MaxDeploymentCount: 10,
+	//		//InstallCommands: []base.OsCommand{
+	//		//	{base.EXEC_COMMAND, base.Command{"mkdir", "/orca/apps/nginx"},},
+	//		//	{base.FILE_COMMAND, base.Command{"/orca/apps/nginx/index.html", "HELLO ORCA!"},},
+	//		//	{base.EXEC_COMMAND, base.Command{"docker", "run --name orca-nginx -p 80:80 -v /orca/apps/nginx:/usr/share/nginx/html nginx"},},
+	//		//},
+	//		//QueryStateCommand: base.OsCommand{
+	//		//	Type: base.EXEC_COMMAND,
+	//		//	Command: base.Command{"wget", "http://localhost"},
+	//		//},
+	//		//RemoveCommand: base.OsCommand{
+	//		//	Type: base.EXEC_COMMAND,
+	//		//	Command: base.Command{"docker", "stop orca-nginx"},
+	//		//},
+	//		Needs: needs.AppNeeds{
+	//			MemoryNeeds: needs.MemoryNeeds(5),
+	//			CpuNeeds: needs.CpuNeeds(5),
+	//			NetworkNeeds: needs.NetworkNeeds(5),
+	//		},
+	//	},
+	//	{
+	//		Name: "nginxworker",
+	//		Version: "0.2",
+	//		Type: base.APP_WORKER,
+	//		MinDeploymentCount: 5,
+	//		MaxDeploymentCount: 10,
+	//		//InstallCommands: []base.OsCommand{
+	//		//	{base.EXEC_COMMAND, base.Command{"mkdir", "/orca/apps/nginxworker"},},
+	//		//	{base.FILE_COMMAND, base.Command{"/orca/apps/nginxworker/index.html", "HELLO ORCA as worker!"},},
+	//		//	{base.EXEC_COMMAND, base.Command{"docker", "run --name orca-nginxworker -v /orca/apps/nginxworker:/usr/share/nginx/html nginx"},},
+	//		//},
+	//		//QueryStateCommand: base.OsCommand{
+	//		//	Type: base.EXEC_COMMAND,
+	//		//	Command: base.Command{"wget", "http://localhost"},
+	//		//},
+	//		//RemoveCommand: base.OsCommand{
+	//		//	Type: base.EXEC_COMMAND,
+	//		//	Command: base.Command{"docker", "stop orca-nginxworker"},
+	//		//},
+	//		Needs: needs.AppNeeds{
+	//			MemoryNeeds: needs.MemoryNeeds(3),
+	//			CpuNeeds: needs.CpuNeeds(3),
+	//			NetworkNeeds: needs.NetworkNeeds(3),
+	//		},
+	//	},
+	//}
 	return conf
 }

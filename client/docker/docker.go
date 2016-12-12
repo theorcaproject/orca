@@ -46,7 +46,7 @@ func (c *Client) Type() types.ClientType {
 }
 
 func (c *Client) InstallApp(appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
-	DockerLogger.Infof("Installing docker app %s:%s", appConf.Name, appConf.Version)
+	DockerLogger.Infof("Installing docker app %s:%d with tag %s from %s", appConf.Name, appConf.Version, appConf.DockerConfig.Tag, appConf.DockerConfig.Repository)
 	var buf bytes.Buffer
 	imageOpt := DockerClient.PullImageOptions{
 		Repository: appConf.DockerConfig.Repository,
@@ -55,81 +55,81 @@ func (c *Client) InstallApp(appConf base.AppConfiguration, appsState *types.Apps
 	}
 	err := DockerCli().PullImage(imageOpt, DockerClient.AuthConfiguration{})
 	if err != nil {
-		DockerLogger.Errorf("Install of app %s:%s failed: %s", appConf.Name, appConf.Version, err)
+		DockerLogger.Errorf("Install of app %s:%d failed: %s", appConf.Name, appConf.Version, err)
 		return false
 	}
-	DockerLogger.Errorf("Install of app %s:%s successful", appConf.Name, appConf.Version)
+	DockerLogger.Infof("Install of app %s:%d successful", appConf.Name, appConf.Version)
 	return true
 }
 
 
 func (c *Client) RunApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
-	DockerLogger.Infof("Running docker app %s - %s:%s", appId, appConf.Name, appConf.Version)
+	DockerLogger.Infof("Running docker app %s - %s:%d with tag %s", appId, appConf.Name, appConf.Version, appConf.DockerConfig.Tag)
 
-	config := DockerClient.Config{AttachStdout: true, AttachStdin: true, Image: fmt.Sprintf("%s:%s", appConf.Name, appConf.Version)}
+	config := DockerClient.Config{AttachStdout: true, AttachStdin: true, Image: fmt.Sprintf("%s:%s", appConf.Name, appConf.DockerConfig.Tag)}
 	opts := DockerClient.CreateContainerOptions{Name: string(appId), Config: &config}
 	container, containerErr := DockerCli().CreateContainer(opts)
 	if containerErr != nil {
-		DockerLogger.Errorf("Running docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version, containerErr)
+		DockerLogger.Errorf("Running docker app %s - %s:%d with tag %s container creation failed: %s", appId, appConf.Name, appConf.Version, appConf.DockerConfig.Tag, containerErr)
 		return false
 	}
 
 	err := DockerCli().StartContainer(container.ID, &DockerClient.HostConfig{})
 
 	if err != nil {
-		DockerLogger.Warnf("Running docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version, err)
+		DockerLogger.Warnf("Running docker app %s - %s:%d failed: %s", appId, appConf.Name, appConf.Version, err)
 		return false
 	}
-	DockerLogger.Infof("Running docker app %s - %s:%s successful", appId, appConf.Name, appConf.Version)
+	DockerLogger.Infof("Running docker app %s - %s:%d successful", appId, appConf.Name, appConf.Version)
 	return true
 }
 
 
-func (c *Client) QueryApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {      //TODO panic
-	DockerLogger.Infof("Query docker app %s - %s:%s", appId, appConf.Name, appConf.Version)
+func (c *Client) QueryApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
+	DockerLogger.Debugf("Query docker app %s - %s:%d", appId, appConf.Name, appConf.Version)
 	resp, err := DockerCli().InspectContainer(string(appId))
 	if err != nil {
-		DockerLogger.Infof("Query docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version, err)
+		DockerLogger.Debugf("Query docker app %s - %s:%d failed: %s", appId, appConf.Name, appConf.Version, err)
 		return false
 	}
-	DockerLogger.Infof("Query docker app %s - %s:%s successful %+v", appId, appConf.Name, appConf.Version, resp)
+	DockerLogger.Debugf("Query docker app %s - %s:%d successful %+v", appId, appConf.Name, appConf.Version, resp)
 	return resp.State.Running
 }
 
 func (c *Client) StopApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
-	DockerLogger.Infof("Stopping docker app %s - %s:%s", appId, appConf.Name, appConf.Version)
+	DockerLogger.Infof("Stopping docker app %s - %s:%d", appId, appConf.Name, appConf.Version)
 	err := DockerCli().StopContainer(fmt.Sprintf("%s", appId), 0)
 	fail := false
 	if err != nil {
-		DockerLogger.Infof("Stopping docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version, err)
+		DockerLogger.Infof("Stopping docker app %s - %s:%d failed: %s", appId, appConf.Name, appConf.Version, err)
 		fail = true
 	}
 	opts := DockerClient.RemoveContainerOptions{ID: string(appId)}
 	err = DockerCli().RemoveContainer(opts)
 	if err != nil {
-		DockerLogger.Infof("Stopping docker app %s - %s:%s failed: %s", appId, appConf.Name, appConf.Version, err)
+		DockerLogger.Infof("Stopping docker app %s - %s:%d failed: %s", appId, appConf.Name, appConf.Version, err)
 		fail = true
 	}
 	if fail {
 		return false
 	}
-	DockerLogger.Infof("Stopping docker app %s - %s:%s successful", appId, appConf.Name, appConf.Version)
+	DockerLogger.Infof("Stopping docker app %s - %s:%d successful", appId, appConf.Name, appConf.Version)
 	return true
 }
 
 func (c *Client) DeleteApp(appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
-	DockerLogger.Infof("Deleting docker app %s:%s", appConf.Name, appConf.Version)
-	err := DockerCli().RemoveImage(fmt.Sprintf("%s:%s", appConf.Name, appConf.Version))
+	DockerLogger.Infof("Deleting docker app %s:%d with tag %s", appConf.Name, appConf.Version, appConf.DockerConfig.Tag)
+	err := DockerCli().RemoveImage(fmt.Sprintf("%s:%s", appConf.Name, appConf.DockerConfig.Tag))
 	if err != nil {
-		DockerLogger.Infof("Deleting docker app %s:%s failed: %s", appConf.Name, appConf.Version, err)
+		DockerLogger.Infof("Deleting docker app %s:%d with tag %s failed: %s", appConf.Name, appConf.Version, appConf.DockerConfig.Tag, err)
 		return false
 	}
-	DockerLogger.Infof("Deleting docker app %s:%s successful", appConf.Name, appConf.Version)
+	DockerLogger.Infof("Deleting docker app %s:%d successful", appConf.Name, appConf.Version)
 	return true
 }
 
-func (c *Client) AppMetrics(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration, metrics *types.AppsMetricsById) bool {     //TODO this causes panics
-	DockerLogger.Infof("Getting AppMetrics for app %s %s:%s", appId, appConf.Name, appConf.Version)
+func (c *Client) AppMetrics(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration, metrics *types.AppsMetricsById) bool {
+	DockerLogger.Debugf("Getting AppMetrics for app %s %s:%d", appId, appConf.Name, appConf.Version)
 	errC := make(chan error, 1)
 	statsC := make(chan *DockerClient.Stats)
 	done := make(chan bool)
@@ -142,7 +142,6 @@ func (c *Client) AppMetrics(appId base.AppId, appConf base.AppConfiguration, app
 	count := 0
 	for {
 		count++
-		DockerLogger.Info("ITER")
 		stats, ok := <-statsC
 		if !ok || count > 2 {
 			close(done)
@@ -152,14 +151,15 @@ func (c *Client) AppMetrics(appId base.AppId, appConf base.AppConfiguration, app
 	}
 	err := <-errC
 	if err != nil && len(resultStats) != 2 {
-		DockerLogger.Infof("Getting AppMetrics for app %s %s:%s failed: %s. Only %d results", appId, appConf.Name, appConf.Version, err, len(resultStats))
+		DockerLogger.Infof("Getting AppMetrics for app %s %s:%d failed: %s. Only %d results", appId, appConf.Name, appConf.Version, err, len(resultStats))
 		return false
 	}
-	DockerLogger.Infof("%+v", resultStats)
 	appMet := parseDockerStats(resultStats[0], resultStats[1])
 	//TODO test performance of app and add this to appMet.ResponsePerformance
+	DockerLogger.Infof("PRE PARSE: %+v", resultStats[0])
+	DockerLogger.Infof("DOCKER METRICS: %+v", appMet)
 	metrics.Add(appId, time.Now().UTC().Format(time.RFC3339Nano), appMet)
-	DockerLogger.Infof("Getting AppMetrics for app %s %s:%s successful", appId, appConf.Name, appConf.Version)
+	DockerLogger.Debugf("Getting AppMetrics for app %s %s:%d successful", appId, appConf.Name, appConf.Version)
 	return true
 }
 

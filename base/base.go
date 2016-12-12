@@ -1,10 +1,15 @@
 package base
 
 import (
+    //linuxproc "github.com/c9s/goprocinfo/linux"
+)
+import (
     "time"
     "sync"
     "fmt"
-    "gatoor/orca/rewriteTrainer/needs"
+    "strconv"
+	"gatoor/orca/rewriteTrainer/needs"
+
 )
 
 const (
@@ -22,7 +27,7 @@ const (
 )
 
 type HostId string
-type Version float64
+type Version uint64
 type IpAddr string
 type HabitatName string
 type HabitatStatus string
@@ -95,10 +100,11 @@ type TrainerPushWrapper struct {
 }
 
 type AppMetrics map[AppName]map[Version]map[string]AppStats
+type AppMetricsJson map[AppName]map[string]map[string]AppStats
 
 type MetricsWrapper struct {
     HostMetrics map[string]HostStats
-    AppMetrics map[AppName]map[Version]map[string]AppStats
+    AppMetrics AppMetricsJson
 }
 
 var metricsMutex = &sync.Mutex{}
@@ -107,7 +113,7 @@ func (m *MetricsWrapper) Wipe() {
     metricsMutex.Lock()
     defer metricsMutex.Unlock()
     (*m).HostMetrics = make(map[string]HostStats)
-    (*m).AppMetrics = make(map[AppName]map[Version]map[string]AppStats)
+    (*m).AppMetrics = make(map[AppName]map[string]map[string]AppStats)
 }
 
 func (m MetricsWrapper) Get() MetricsWrapper{
@@ -126,13 +132,14 @@ func (m MetricsWrapper) AddHostMetrics(hostMetrics HostStats) {
 func (m MetricsWrapper) AddAppMetrics(appName AppName, version Version, appMetrics AppStats) {
     metricsMutex.Lock()
     defer metricsMutex.Unlock()
+    versionStr := strconv.Itoa(int(version))
     if _, exists := m.AppMetrics[appName]; !exists {
-        m.AppMetrics[appName] = make(map[Version]map[string]AppStats)
+        m.AppMetrics[appName] = make(map[string]map[string]AppStats)
     }
-    if _, exists := m.AppMetrics[appName][version]; !exists {
-        m.AppMetrics[appName][version] = make(map[string]AppStats)
+    if _, exists := m.AppMetrics[appName][versionStr]; !exists {
+        m.AppMetrics[appName][versionStr] = make(map[string]AppStats)
     }
-    m.AppMetrics[appName][version][time.Now().UTC().Format(time.RFC3339Nano)] = appMetrics
+    m.AppMetrics[appName][versionStr][time.Now().UTC().Format(time.RFC3339Nano)] = appMetrics
 }
 
 
@@ -262,6 +269,19 @@ func (a *AppMetrics) Clear() {
     (*a) = make(map[AppName]map[Version]map[string]AppStats)
 }
 
+
+func (m AppMetrics) ConvertJsonFriendly() AppMetricsJson {
+    appsMetricsMutex.Lock()
+    defer appsMetricsMutex.Unlock()
+    res := AppMetricsJson{}
+    for appName, obj := range m {
+        res[appName] = make(map[string]map[string]AppStats)
+        for appVersion, appMetrics := range obj {
+            res[appName][strconv.Itoa(int(appVersion))] = appMetrics
+        }
+    }
+    return res
+}
 
 
 const (

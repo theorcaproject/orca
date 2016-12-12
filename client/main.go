@@ -100,7 +100,9 @@ func CallTrainer() {
 	b := new(bytes.Buffer)
 	jsonErr := json.NewEncoder(b).Encode(wrapper)
 	if jsonErr != nil {
-		MainLogger.Errorf("Could not encode Metrics: %+v", jsonErr)
+		MainLogger.Errorf("Could not encode Metrics: %+v. Sending without metrics.", jsonErr)
+		wrapper.Stats = base.MetricsWrapper{}
+		json.NewEncoder(b).Encode(wrapper)
 	}
 	res, err := http.Post(client.Configuration.TrainerUrl, "application/json; charset=utf-8", b)
 	if err != nil {
@@ -119,13 +121,22 @@ func CallTrainer() {
 	MainLogger.Infof("State: %+v", state)
 }
 
+func getHostMetrics() map[string]base.HostStats {
+	return make(map[string]base.HostStats)
+}
+
 func prepareData(state types.AppsState, metrics base.AppMetrics) base.TrainerPushWrapper {
 	var apps []base.AppInfo
 	for _, app := range state {
 		apps = append(apps, app)
 	}
 	hostInfo := base.HostInfo{HostId: client.Configuration.HostId, Apps: apps}
-	return base.TrainerPushWrapper{hostInfo, base.MetricsWrapper{AppMetrics: metrics}}
+
+	jsonMetrics := base.MetricsWrapper{}
+	jsonMetrics.HostMetrics = getHostMetrics()
+	jsonMetrics.AppMetrics = metrics.ConvertJsonFriendly()
+
+	return base.TrainerPushWrapper{hostInfo, jsonMetrics}
 }
 
 func handleTrainerResponse(body []byte) {

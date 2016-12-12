@@ -24,10 +24,10 @@ func applySampleConfig() {
 
 	httpApp1 := config.AppJsonConfiguration{
 		Name: "httpApp_1",
-		Version: "http_1.0",
+		Version: 1,
 		Type: base.APP_HTTP,
 		MinDeploymentCount: 3,
-		MaxDeploymentCount: 10,
+		TargetDeploymentCount: 3,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -55,10 +55,10 @@ func applySampleConfig() {
 
 	httpApp1_v2 := config.AppJsonConfiguration{
 		Name: "httpApp_1",
-		Version: "http_1.1",
+		Version: 11,
 		Type: base.APP_HTTP,
 		MinDeploymentCount: 2,
-		MaxDeploymentCount: 10,
+		TargetDeploymentCount: 3,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -86,10 +86,10 @@ func applySampleConfig() {
 
 	httpApp2 := config.AppJsonConfiguration{
 		Name: "httpApp_2",
-		Version: "http_2.0",
+		Version: 2,
 		Type: base.APP_HTTP,
 		MinDeploymentCount: 4,
-		MaxDeploymentCount: 10,
+		TargetDeploymentCount: 4,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -117,10 +117,10 @@ func applySampleConfig() {
 
 	workerApp1 := config.AppJsonConfiguration{
 		Name: "workerApp_1",
-		Version: "worker_1.0",
+		Version: 10,
 		Type: base.APP_WORKER,
 		MinDeploymentCount: 1,
-		MaxDeploymentCount: 1,
+		TargetDeploymentCount: 1,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -148,10 +148,10 @@ func applySampleConfig() {
 
 	workerApp1_v2 := config.AppJsonConfiguration{
 		Name: "workerApp_1",
-		Version: "worker_1.1",
+		Version: 11,
 		Type: base.APP_WORKER,
 		MinDeploymentCount: 1,
-		MaxDeploymentCount: 1,
+		TargetDeploymentCount: 1,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -179,10 +179,10 @@ func applySampleConfig() {
 
 	workerApp2 := config.AppJsonConfiguration{
 		Name: "workerApp_2",
-		Version: "worker_2.0",
+		Version: 20,
 		Type: base.APP_WORKER,
 		MinDeploymentCount: 5,
-		MaxDeploymentCount: 10,
+		TargetDeploymentCount: 5,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -210,10 +210,10 @@ func applySampleConfig() {
 
 	workerApp3 := config.AppJsonConfiguration{
 		Name: "workerApp_3",
-		Version: "worker_3.0",
+		Version: 30,
 		Type: base.APP_WORKER,
 		MinDeploymentCount: 100,
-		MaxDeploymentCount: 200,
+		TargetDeploymentCount: 100,
 		//InstallCommands: []base.OsCommand{
 		//	{
 		//		Type: base.EXEC_COMMAND,
@@ -272,13 +272,13 @@ func TestApi_doHandlePush_NoChanges(t *testing.T) {
 	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
-		Version: "http_1.0",
+		Version: 1,
 		Status: base.STATUS_RUNNING,
 	}
 	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_2",
-		Version: "worker_2.0",
+		Version: 20,
 		Status: base.STATUS_RUNNING,
 	}
 
@@ -319,7 +319,7 @@ func TestApi_doHandlePush_NoChanges(t *testing.T) {
 		t.Error(track)
 	}
 
-	appTrack := tracker.GlobalAppsStatusTracker["httpApp_1"]["http_1.0"]
+	appTrack := tracker.GlobalAppsStatusTracker["httpApp_1"][1]
 	if appTrack.Rating != tracker.RATING_STABLE || appTrack.RunningCount != 2 || len(appTrack.CrashDetails) != 0{
 		t.Errorf("%+v", appTrack)
 	}
@@ -338,13 +338,13 @@ func TestApi_doHandlePush_AppShouldBeUpdated(t *testing.T) {
 	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
-		Version: "http_1.0",
+		Version: 1,
 		Status: base.STATUS_RUNNING,
 	}
 	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_1",
-		Version: "worker_1.0",
+		Version: 10,
 		Status: base.STATUS_RUNNING,
 	}
 
@@ -376,7 +376,7 @@ func TestApi_doHandlePush_AppShouldBeUpdated(t *testing.T) {
 	}
 
 	//set an update:
-	planner.Queue.Add("host1", "httpApp_1", state_cloud.AppsVersion{Version: "http_1.1", DeploymentCount: 1})
+	planner.Queue.Add("host1", "httpApp_1", state_cloud.AppsVersion{Version: 11, DeploymentCount: 1})
 	doHandlePush(info2, stats)
 
 	elem2, _ := state_cloud.GlobalCloudLayout.Current.GetHost("host1")
@@ -389,20 +389,20 @@ func TestApi_doHandlePush_AppShouldBeUpdated(t *testing.T) {
 		t.Error(track)
 	}
 
-	appTrack := tracker.GlobalAppsStatusTracker["httpApp_1"]["http_1.0"]
+	appTrack := tracker.GlobalAppsStatusTracker["httpApp_1"][1]
 	if appTrack.Rating != tracker.RATING_STABLE || appTrack.RunningCount != 2 || len(appTrack.CrashDetails) != 0{
 		t.Errorf("%+v", appTrack)
 	}
 	conf, _ := responder.GetConfigForHost("host1")
 
-	if conf.DeploymentCount != 1 || conf.AppConfiguration.Name != "httpApp_1" || conf.AppConfiguration.Type != base.APP_HTTP || conf.AppConfiguration.Version != "http_1.1" {
+	if conf.DeploymentCount != 1 || conf.AppConfiguration.Name != "httpApp_1" || conf.AppConfiguration.Type != base.APP_HTTP || conf.AppConfiguration.Version != 11 {
 		t.Error(conf)
 	}
 
 	//same with worker app
 
 	planner.Queue.RemoveHost("host1")
-	planner.Queue.Add("host1", "workerApp_1", state_cloud.AppsVersion{Version: "worker_1.1", DeploymentCount: 10})
+	planner.Queue.Add("host1", "workerApp_1", state_cloud.AppsVersion{Version: 11, DeploymentCount: 10})
 	doHandlePush(info2, stats)
 
 	elem3, _ := state_cloud.GlobalCloudLayout.Current.GetHost("host1")
@@ -415,13 +415,13 @@ func TestApi_doHandlePush_AppShouldBeUpdated(t *testing.T) {
 		t.Error(track1)
 	}
 
-	appTrack1 := tracker.GlobalAppsStatusTracker["httpApp_1"]["http_1.0"]
+	appTrack1 := tracker.GlobalAppsStatusTracker["httpApp_1"][1]
 	if appTrack1.Rating != tracker.RATING_STABLE || appTrack1.RunningCount != 3 || len(appTrack1.CrashDetails) != 0{
 		t.Errorf("%+v", appTrack1)
 	}
 	conf1, _ := responder.GetConfigForHost("host1")
 
-	if conf1.DeploymentCount != 10 || conf1.AppConfiguration.Name != "workerApp_1" || conf1.AppConfiguration.Type != base.APP_WORKER || conf1.AppConfiguration.Version != "worker_1.1" {
+	if conf1.DeploymentCount != 10 || conf1.AppConfiguration.Name != "workerApp_1" || conf1.AppConfiguration.Type != base.APP_WORKER || conf1.AppConfiguration.Version != 11 {
 		t.Error(conf)
 	}
 }
@@ -436,13 +436,13 @@ func TestApi_doHandlePush_AppStillUpdating(t *testing.T) {
 	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
-		Version: "http_1.1",
+		Version: 11,
 		Status: base.STATUS_DEPLOYING,
 	}
 	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_1",
-		Version: "worker_1.0",
+		Version: 10,
 		Status: base.STATUS_RUNNING,
 	}
 
@@ -456,8 +456,8 @@ func TestApi_doHandlePush_AppStillUpdating(t *testing.T) {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
 	}
 
-	planner.Queue.Add("host1", "httpApp_1", state_cloud.AppsVersion{"http_1.1", 1})
-	planner.Queue.Add("host2", "httpApp_1", state_cloud.AppsVersion{"http_1.1", 1})
+	planner.Queue.Add("host1", "httpApp_1", state_cloud.AppsVersion{11, 1})
+	planner.Queue.Add("host2", "httpApp_1", state_cloud.AppsVersion{11, 1})
 	planner.Queue.SetState("host1", "httpApp_1", planner.STATE_APPLYING)
 	s, _ := planner.Queue.GetState("host1", "httpApp_1")
 	if s != planner.STATE_APPLYING {
@@ -475,14 +475,14 @@ func TestApi_doHandlePush_AppStillUpdating(t *testing.T) {
 	}
 
 	//app is not rated yet:
-	tA := tracker.GlobalAppsStatusTracker["httpApp_1"]["http_1.1"]
+	tA := tracker.GlobalAppsStatusTracker["httpApp_1"][11]
 	if tA.RunningCount != 0 || tA.Rating != "" {
 		t.Error(tA)
 	}
 
 	layout := state_cloud.GlobalCloudLayout.Current.Layout["host1"].Apps
 	//current layout for host1 should show no httpApp_1, it is not running!
-	if layout["workerApp_1"].Version != "worker_1.0" || layout["httpApp_1"].Version != "" {
+	if layout["workerApp_1"].Version != 10 || layout["httpApp_1"].Version != 0 {
 		t.Error(layout)
 	}
 	//check that other queued updates still exist:
@@ -504,13 +504,13 @@ func TestApi_doHandlePush_AppUpdate(t *testing.T) {
 	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
-		Version: "http_1.1",
+		Version: 11,
 		Status: base.STATUS_RUNNING,
 	}
 	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_1",
-		Version: "worker_1.0",
+		Version: 10,
 		Status: base.STATUS_RUNNING,
 	}
 
@@ -524,8 +524,8 @@ func TestApi_doHandlePush_AppUpdate(t *testing.T) {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
 	}
 
-	planner.Queue.Add("host1", "httpApp_1", state_cloud.AppsVersion{"http_1.1", 1})
-	planner.Queue.Add("host2", "httpApp_1", state_cloud.AppsVersion{"http_1.1", 1})
+	planner.Queue.Add("host1", "httpApp_1", state_cloud.AppsVersion{11, 1})
+	planner.Queue.Add("host2", "httpApp_1", state_cloud.AppsVersion{11, 1})
 	planner.Queue.SetState("host1", "httpApp_1", planner.STATE_APPLYING)
 	s, _ := planner.Queue.GetState("host1", "httpApp_1")
 	if s != planner.STATE_APPLYING {
@@ -539,13 +539,13 @@ func TestApi_doHandlePush_AppUpdate(t *testing.T) {
 		t.Error(conf)
 	}
 
-	tA := tracker.GlobalAppsStatusTracker["httpApp_1"]["http_1.1"]
+	tA := tracker.GlobalAppsStatusTracker["httpApp_1"][11]
 	if tA.RunningCount != 1 || tA.Rating != tracker.RATING_STABLE {
 		t.Error(tA)
 	}
 
 	layout := state_cloud.GlobalCloudLayout.Current.Layout["host1"].Apps
-	if layout["workerApp_1"].Version != "worker_1.0" || layout["httpApp_1"].Version != "http_1.1" {
+	if layout["workerApp_1"].Version != 10 || layout["httpApp_1"].Version != 11 {
 		t.Error(layout)
 	}
 
@@ -569,13 +569,13 @@ func TestApi_doHandlePush_AppRollback(t *testing.T) {
 	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
-		Version: "http_1.0",
+		Version: 1,
 		Status: base.STATUS_RUNNING,
 	}
 	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_1",
-		Version: "worker_1.0",
+		Version: 10,
 		Status: base.STATUS_RUNNING,
 	}
 
@@ -589,8 +589,8 @@ func TestApi_doHandlePush_AppRollback(t *testing.T) {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
 	}
 
-	planner.Queue.Add("host1", "httpApp_1", state_cloud.AppsVersion{"http_1.1", 1})
-	planner.Queue.Add("host2", "httpApp_1", state_cloud.AppsVersion{"http_1.1", 1})
+	planner.Queue.Add("host1", "httpApp_1", state_cloud.AppsVersion{11, 1})
+	planner.Queue.Add("host2", "httpApp_1", state_cloud.AppsVersion{11, 1})
 	planner.Queue.SetState("host1", "httpApp_1", planner.STATE_APPLYING)
 	s, _ := planner.Queue.GetState("host1", "httpApp_1")
 	if s != planner.STATE_APPLYING {
@@ -605,13 +605,13 @@ func TestApi_doHandlePush_AppRollback(t *testing.T) {
 	}
 
 	//new app version never checked in, handle as crash:
-	tA := tracker.GlobalAppsStatusTracker["httpApp_1"]["http_1.1"]
+	tA := tracker.GlobalAppsStatusTracker["httpApp_1"][11]
 	if tA.RunningCount != 0 || tA.Rating != tracker.RATING_CRASHED {
 		t.Error(tA)
 	}
 
 	layout := state_cloud.GlobalCloudLayout.Current.Layout["host1"].Apps
-	if layout["workerApp_1"].Version != "worker_1.0" || layout["httpApp_1"].Version != "http_1.0" {
+	if layout["workerApp_1"].Version != 10 || layout["httpApp_1"].Version != 1 {
 		t.Error(layout)
 	}
 
@@ -631,13 +631,13 @@ func TestApi_doHandlePush_AppShouldBeRemovedFromHost(t *testing.T) {
 	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
-		Version: "http_1.1",
+		Version: 11,
 		Status: base.STATUS_RUNNING,
 	}
 	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_1",
-		Version: "worker_1.0",
+		Version: 10,
 		Status: base.STATUS_RUNNING,
 	}
 
@@ -651,8 +651,8 @@ func TestApi_doHandlePush_AppShouldBeRemovedFromHost(t *testing.T) {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
 	}
 
-	planner.Queue.Add("host1", "httpApp_1", state_cloud.AppsVersion{"http_1.1", 0})
-	planner.Queue.Add("host2", "httpApp_1", state_cloud.AppsVersion{"http_1.1", 1})
+	planner.Queue.Add("host1", "httpApp_1", state_cloud.AppsVersion{11, 0})
+	planner.Queue.Add("host2", "httpApp_1", state_cloud.AppsVersion{11, 1})
 	planner.Queue.SetState("host1", "httpApp_1", planner.STATE_APPLYING)
 	s, _ := planner.Queue.GetState("host1", "httpApp_1")
 	if s != planner.STATE_APPLYING {
@@ -670,13 +670,13 @@ func TestApi_doHandlePush_AppShouldBeRemovedFromHost(t *testing.T) {
 		t.Error(conf)
 	}
 
-	tA := tracker.GlobalAppsStatusTracker["httpApp_1"]["http_1.1"]
+	tA := tracker.GlobalAppsStatusTracker["httpApp_1"][11]
 	if tA.RunningCount != 1 || tA.Rating != tracker.RATING_STABLE {
 		t.Error(tA)
 	}
 
 	layout := state_cloud.GlobalCloudLayout.Current.Layout["host1"].Apps
-	if layout["workerApp_1"].Version != "worker_1.0" || layout["httpApp_1"].Version != "http_1.1" {
+	if layout["workerApp_1"].Version != 10 || layout["httpApp_1"].Version != 11 {
 		t.Error(layout)
 	}
 
@@ -694,13 +694,13 @@ func TestApi_doHandlePush_AppShouldBeScaled(t *testing.T) {
 	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
-		Version: "http_1.1",
+		Version: 11,
 		Status: base.STATUS_RUNNING,
 	}
 	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_1",
-		Version: "worker_1.0",
+		Version: 10,
 		Status: base.STATUS_RUNNING,
 	}
 
@@ -714,8 +714,8 @@ func TestApi_doHandlePush_AppShouldBeScaled(t *testing.T) {
 		t.Error(state_cloud.GlobalCloudLayout.Current)
 	}
 
-	planner.Queue.Add("host1", "httpApp_1", state_cloud.AppsVersion{"http_1.1", 5})
-	planner.Queue.Add("host2", "httpApp_1", state_cloud.AppsVersion{"http_1.1", 1})
+	planner.Queue.Add("host1", "httpApp_1", state_cloud.AppsVersion{11, 5})
+	planner.Queue.Add("host2", "httpApp_1", state_cloud.AppsVersion{11, 1})
 	planner.Queue.SetState("host1", "httpApp_1", planner.STATE_APPLYING)
 	s, _ := planner.Queue.GetState("host1", "httpApp_1")
 	if s != planner.STATE_APPLYING {
@@ -733,13 +733,13 @@ func TestApi_doHandlePush_AppShouldBeScaled(t *testing.T) {
 		t.Errorf("%+v", conf)
 	}
 
-	tA := tracker.GlobalAppsStatusTracker["httpApp_1"]["http_1.1"]
+	tA := tracker.GlobalAppsStatusTracker["httpApp_1"][11]
 	if tA.RunningCount != 1 || tA.Rating != tracker.RATING_STABLE {
 		t.Error(tA)
 	}
 
 	layout := state_cloud.GlobalCloudLayout.Current.Layout["host1"].Apps
-	if layout["workerApp_1"].Version != "worker_1.0" || layout["httpApp_1"].Version != "http_1.1" {
+	if layout["workerApp_1"].Version != 10 || layout["httpApp_1"].Version != 11 {
 		t.Error(layout)
 	}
 
@@ -797,13 +797,13 @@ func TestApi_doHandlePush_AppDied(t *testing.T) {
 	app1 := base.AppInfo{
 		Type: base.APP_HTTP,
 		Name: "httpApp_1",
-		Version: "http_1.0",
+		Version: 1,
 		Status: base.STATUS_RUNNING,
 	}
 	app2 := base.AppInfo{
 		Type: base.APP_WORKER,
 		Name: "workerApp_2",
-		Version: "worker_2.0",
+		Version: 20,
 		Status: base.STATUS_DEAD,
 	}
 
@@ -845,12 +845,12 @@ func TestApi_doHandlePush_AppDied(t *testing.T) {
 		t.Error(track)
 	}
 
-	appTrack := tracker.GlobalAppsStatusTracker["httpApp_1"]["http_1.0"]
+	appTrack := tracker.GlobalAppsStatusTracker["httpApp_1"][1]
 	if appTrack.Rating != tracker.RATING_STABLE || appTrack.RunningCount != 2 || len(appTrack.CrashDetails) != 0{
 		t.Errorf("%+v", appTrack)
 	}
 
-	appTrackWorker := tracker.GlobalAppsStatusTracker["workerApp_2"]["worker_2.0"]
+	appTrackWorker := tracker.GlobalAppsStatusTracker["workerApp_2"][20]
 	if appTrackWorker.Rating != tracker.RATING_CRASHED || appTrackWorker.CrashDetails[0].Cause != "APP_EVENT_CRASH" {
 		t.Errorf("%+v", appTrackWorker)
 	}

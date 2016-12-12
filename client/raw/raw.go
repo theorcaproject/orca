@@ -27,16 +27,16 @@ func (c *Client) InstallApp(appConf base.AppConfiguration, appsState *types.Apps
 }
 
 func (c *Client) RunApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
-	return strings.Contains(string(appConf.Name), "fail")
+	return strings.Contains(string(appConf.DockerConfig.Tag), "fail")
 }
 
 
 func (c *Client) QueryApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
-	return !strings.Contains(string(appConf.Version), "queryfail")
+	return !strings.Contains(string(appConf.DockerConfig.Tag), "queryfail")
 }
 
 func (c *Client) StopApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
-	return !strings.Contains(string(appConf.Version), "stopfail")
+	return !strings.Contains(string(appConf.DockerConfig.Tag), "stopfail")
 }
 
 func (c *Client) DeleteApp(appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
