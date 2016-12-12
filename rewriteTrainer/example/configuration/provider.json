@@ -5,8 +5,8 @@
   "SSHKey": "orcatest_michael",
   "SSHUser":"ubuntu",
   "AWSConfiguration": {
-    "Key": "AKIAJJP7H2YNHP537Z2A",
-    "Secret": "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",
+    "Key": "--",
+    "Secret": "--",
     "Region": "ap-northeast-2",
     "AMI": "ami-8fed39e1",
     "SecurityGroupId": "sg-18272b71",
