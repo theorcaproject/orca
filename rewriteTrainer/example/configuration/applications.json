@@ -1,64 +1,14 @@
 [
   {
-    "Name": "dudes",
-    "Type": "",
-    "Version": 1,
-    "TargetDeploymentCount": 0,
-    "MinDeploymentCount": 0,
-    "DockerConfig": {
-      "Tag": "",
-      "Repository": "",
-      "Reference": ""
-    },
-    "RawConfig": {
-      "InstallCommands": null,
-      "RunCommand": {
-        "Type": "",
-        "Command": {
-          "Path": "",
-          "Args": ""
-        }
-      },
-      "QueryStateCommand": {
-        "Type": "",
-        "Command": {
-          "Path": "",
-          "Args": ""
-        }
-      },
-      "RemoveCommand": {
-        "Type": "",
-        "Command": {
-          "Path": "",
-          "Args": ""
-        }
-      },
-      "StopCommand": {
-        "Type": "",
-        "Command": {
-          "Path": "",
-          "Args": ""
-        }
-      }
-    },
-    "LoadBalancer": "",
-    "Network": "",
-    "Needs": {
-      "MemoryNeeds": 0,
-      "CpuNeeds": 0,
-      "NetworkNeeds": 0
-    }
-  },
-  {
     "Name": "nginx",
     "Type": "http",
     "Version": 7,
     "TargetDeploymentCount": 1,
     "MinDeploymentCount": 2,
     "DockerConfig": {
-      "Tag": "latest_2",
-      "Repository": "nginx_2",
-      "Reference": "docker.io_2"
+      "Tag": "latest",
+      "Repository": "nginx",
+      "Reference": "docker.io"
     },
     "RawConfig": {
       "InstallCommands": null,
@@ -94,9 +44,9 @@
     "LoadBalancer": "elb1_2",
     "Network": "vpc-c123_2",
     "Needs": {
-      "MemoryNeeds": 0,
-      "CpuNeeds": 0,
-      "NetworkNeeds": 0
+      "MemoryNeeds": 1,
+      "CpuNeeds": 1,
+      "NetworkNeeds": 1
     }
   },
   {
@@ -144,9 +94,9 @@
     "LoadBalancer": "",
     "Network": "",
     "Needs": {
-      "MemoryNeeds": 0,
-      "CpuNeeds": 0,
-      "NetworkNeeds": 0
+      "MemoryNeeds": 1,
+      "CpuNeeds": 1,
+      "NetworkNeeds": 1
     }
   }
 ]

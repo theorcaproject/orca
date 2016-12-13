@@ -1,6 +1,9 @@
 package audit
 
-import "time"
+import (
+	"time"
+	"gatoor/orca/base/log"
+)
 
 type Event struct {
 	Timestamp int64
@@ -16,6 +19,7 @@ func (p *AuditEngine) Init() {
 }
 
 func (p *AuditEngine) AddEvent(event map[string]string) {
+	log.AuditLogger.Info(event["message"])
 	p.Events = append(p.Events, Event{Timestamp:time.Now().Unix(), Details:event})
 }
 

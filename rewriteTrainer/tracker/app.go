@@ -33,6 +33,8 @@ type AppTrack struct {
 
 type AppsStatusTracker map[base.AppName]map[base.Version]AppTrack
 
+
+
 var appsTrackerMutex = &sync.Mutex{}
 
 const (

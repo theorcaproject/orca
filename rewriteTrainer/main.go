@@ -13,12 +13,11 @@ import (
 	"gatoor/orca/rewriteTrainer/planner"
 	"time"
 	"flag"
-	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/audit"
 )
 
 
-const CHECKIN_WAIT_TIME = 5
+const CHECKIN_WAIT_TIME = 30
 
 func main() {
 	var configurationRoot = flag.String("configroot", "/orca/config/", "Configuration Root Directory")

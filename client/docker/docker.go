@@ -66,20 +66,24 @@ func (c *Client) InstallApp(appConf base.AppConfiguration, appsState *types.Apps
 func (c *Client) RunApp(appId base.AppId, appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
 	DockerLogger.Infof("Running docker app %s - %s:%d with tag %s", appId, appConf.Name, appConf.Version, appConf.DockerConfig.Tag)
 
-	config := DockerClient.Config{AttachStdout: true, AttachStdin: true, Image: fmt.Sprintf("%s:%s", appConf.Name, appConf.DockerConfig.Tag)}
-	opts := DockerClient.CreateContainerOptions{Name: string(appId), Config: &config}
+	bindings := make(map[DockerClient.Port][]DockerClient.PortBinding)
+	ports := make(map[DockerClient.Port]struct{})
+	for _, v := range appConf.PortMappings {
+		bindings[DockerClient.Port(v.ContainerPort)] = []DockerClient.PortBinding{DockerClient.PortBinding{HostPort: v.HostPort}}
+		ports[DockerClient.Port(v.ContainerPort)] = struct{}{}
+	}
+	DockerLogger.Warnf("Bindinds are %+v", bindings)
+
+	hostConfig := DockerClient.HostConfig{PortBindings: bindings, PublishAllPorts:true}
+	config := DockerClient.Config{AttachStdout: true, AttachStdin: true, Image: fmt.Sprintf("%s:%s", appConf.Name, appConf.DockerConfig.Tag), ExposedPorts:ports}
+	opts := DockerClient.CreateContainerOptions{Name: string(appId), Config: &config, HostConfig:&hostConfig}
 	container, containerErr := DockerCli().CreateContainer(opts)
 	if containerErr != nil {
 		DockerLogger.Errorf("Running docker app %s - %s:%d with tag %s container creation failed: %s", appId, appConf.Name, appConf.Version, appConf.DockerConfig.Tag, containerErr)
 		return false
 	}
 
-	bindings := make(map[DockerClient.Port][]DockerClient.PortBinding)
-	for _, v := range appConf.PortMappings {
-		bindings[DockerClient.Port(v.ContainerPort)] = []DockerClient.PortBinding{DockerClient.PortBinding{HostPort: v.HostPort}}
-	}
-
-	err := DockerCli().StartContainer(container.ID, &DockerClient.HostConfig{PortBindings: bindings})
+	err := DockerCli().StartContainer(container.ID, &hostConfig)
 	if err != nil {
 		DockerLogger.Warnf("Running docker app %s - %s:%d failed: %s", appId, appConf.Name, appConf.Version, err)
 		return false
@@ -154,7 +158,7 @@ func (c *Client) AppMetrics(appId base.AppId, appConf base.AppConfiguration, app
 		resultStats = append(resultStats, stats)
 	}
 	err := <-errC
-	if err != nil && len(resultStats) != 2 {
+	if err != nil || len(resultStats) != 2 {
 		DockerLogger.Infof("Getting AppMetrics for app %s %s:%d failed: %s. Only %d results", appId, appConf.Name, appConf.Version, err, len(resultStats))
 		return false
 	}
