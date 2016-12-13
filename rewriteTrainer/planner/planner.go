@@ -1,3 +1,21 @@
+/*
+Copyright Alex Mack
+This file is part of Orca.
+
+Orca is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orca is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orca.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package planner
 
 import (
@@ -490,7 +508,7 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 
 	if deployed < appObj.TargetDeploymentCount {
 		audit.Audit.AddEvent(map[string]string{
-			"message": fmt.Sprintf("App %s:%d could not deploy MinDeploymentCount %d, only deployed %d", appObj.Name, appObj.Version, appObj.TargetDeploymentCount, deployed),
+			"message": fmt.Sprintf("App %s:%d could not deploy TargetDeploymentCount %d, only deployed %d", appObj.Name, appObj.Version, appObj.TargetDeploymentCount, deployed),
 			"subsystem": "planner",
 			"application": string(appObj.Name),
 			"application.version": string(appObj.Version),

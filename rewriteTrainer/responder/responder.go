@@ -1,3 +1,21 @@
+/*
+Copyright Alex Mack
+This file is part of Orca.
+
+Orca is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orca is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orca.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package responder
 
 import (
@@ -16,7 +34,6 @@ import (
 
 var ResponderLogger = Logger.LoggerWithField(Logger.Logger, "module", "responder")
 
-
 func GetConfigForHost(hostId base.HostId) (base.PushConfiguration, error) {
 	ResponderLogger.Infof("Getting config for host %s", hostId)
 	appName, elem, err := getQueueElement(hostId)
@@ -33,8 +50,7 @@ func GetConfigForHost(hostId base.HostId) (base.PushConfiguration, error) {
 	return base.PushConfiguration{}, err
 }
 
-
-func getQueueElement(hostId base.HostId) (base.AppName, planner.AppsUpdateState, error)  {
+func getQueueElement(hostId base.HostId) (base.AppName, planner.AppsUpdateState, error) {
 	ResponderLogger.Infof("Getting queue element for host %s", hostId)
 	apps, err := planner.Queue.Get(hostId)
 	if err == nil {
@@ -64,7 +80,6 @@ func getQueueElement(hostId base.HostId) (base.AppName, planner.AppsUpdateState,
 	return "", planner.AppsUpdateState{}, errors.New("No element for host ")
 }
 
-
 func CheckAppState(hostInfo base.HostInfo) {
 	ResponderLogger.Infof("checking Apps state for host '%s'", hostInfo.HostId)
 	queued, _ := planner.Queue.Get(hostInfo.HostId)
@@ -85,19 +100,22 @@ func CheckAppState(hostInfo base.HostInfo) {
 	}
 
 	for _, appObj := range hostInfo.Apps {
-		if queuedState, exists := queued[appObj.Name]; exists { //the app is queued for an update
-			if queuedState.State == planner.STATE_QUEUED { //the update is waiting for other updates, perform simple check
+		if queuedState, exists := queued[appObj.Name]; exists {
+			//the app is queued for an update
+			if queuedState.State == planner.STATE_QUEUED {
+				//the update is waiting for other updates, perform simple check
 				simpleAppCheck(appObj, hostInfo.HostId)
 			} else {
 				checkAppUpdate(appObj, hostInfo.HostId, queuedState)
 			}
-		} else { //no updates, just check if its running
+		} else {
+			//no updates, just check if its running
 			simpleAppCheck(appObj, hostInfo.HostId)
 		}
 	}
 }
 
-func checkScaling(hostInfo base.HostInfo, queued map[base.AppName]planner.AppsUpdateState) bool{
+func checkScaling(hostInfo base.HostInfo, queued map[base.AppName]planner.AppsUpdateState) bool {
 	appsCount := make(map[base.AppName]int)
 	if len(queued) > 0 {
 		for _, app := range hostInfo.Apps {
@@ -117,7 +135,6 @@ func checkScaling(hostInfo base.HostInfo, queued map[base.AppName]planner.AppsUp
 	}
 	return true
 }
-
 
 func handleEmptyHost(hostInfo base.HostInfo) {
 	isNew := false
@@ -222,7 +239,7 @@ func checkAppUpdate(appObj base.AppInfo, hostId base.HostId, queuedState planner
 			"level": "error",
 		})
 
-		handleFatalUpdate(hostId, appObj.Name, appObj.Version)
+		handleFatalUpdate(hostId, appObj.Name, appObj.Version, queuedState.Version.DeploymentCount)
 		cloud.CurrentProvider.UpdateLoadBalancers(hostId, appObj.Name, appObj.Version, base.STATUS_DEAD)
 	}
 }
