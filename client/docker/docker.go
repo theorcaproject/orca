@@ -158,7 +158,7 @@ func (c *Client) AppMetrics(appId base.AppId, appConf base.AppConfiguration, app
 		resultStats = append(resultStats, stats)
 	}
 	err := <-errC
-	if err != nil && len(resultStats) != 2 {
+	if err != nil || len(resultStats) != 2 {
 		DockerLogger.Infof("Getting AppMetrics for app %s %s:%d failed: %s. Only %d results", appId, appConf.Name, appConf.Version, err, len(resultStats))
 		return false
 	}
