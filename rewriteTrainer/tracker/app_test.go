@@ -35,4 +35,13 @@ func TestAppsStatusTracker_Update(t *testing.T) {
 	if GlobalAppsStatusTracker["app2"][2].RunningCount != 2 {
 		t.Error(GlobalAppsStatusTracker["app2"][2])
 	}
+
+	if GlobalAppsStatusTracker.LastStable("app1") != 1 {
+		t.Error(GlobalAppsStatusTracker.LastStable("app1"))
+	}
+
+	if GlobalAppsStatusTracker.LastStable("app2") != 2 {
+		t.Error(GlobalAppsStatusTracker.LastStable("app2"))
+	}
 }
+

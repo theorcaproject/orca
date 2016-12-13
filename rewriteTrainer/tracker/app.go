@@ -5,6 +5,7 @@ import (
 	"gatoor/orca/base"
 	"sync"
 	"errors"
+	"sort"
 )
 
 var GlobalAppsStatusTracker AppsStatusTracker
@@ -110,8 +111,17 @@ func (a *AppsStatusTracker) UpdateAll(hostInfo base.HostInfo, time time.Time) {
 func (a *AppsStatusTracker) LastStable(app base.AppName) base.Version {
 	appsTrackerMutex.Lock()
 	defer appsTrackerMutex.Unlock()
-	//if elem, exists := (*a)[app]; exists {
-	//	var versions
-	//}
+	if _, exists := (*a)[app]; exists {
+		var versions base.Versions
+		for version := range (*a)[app] {
+			versions = append(versions, version)
+		}
+		sort.Sort(sort.Reverse(versions))
+		for _, ver := range versions {
+			if (*a)[app][ver].Rating == RATING_STABLE {
+				return ver
+			}
+		}
+	}
 	return 1
 }
