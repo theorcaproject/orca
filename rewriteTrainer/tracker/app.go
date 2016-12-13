@@ -33,6 +33,8 @@ type AppTrack struct {
 
 type AppsStatusTracker map[base.AppName]map[base.Version]AppTrack
 
+
+
 var appsTrackerMutex = &sync.Mutex{}
 
 const (
@@ -104,3 +106,4 @@ func (a *AppsStatusTracker) UpdateAll(hostInfo base.HostInfo, time time.Time) {
 		}
 	}
 }
+

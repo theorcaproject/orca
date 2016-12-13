@@ -13,6 +13,7 @@ import (
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/needs"
+	"gatoor/orca/rewriteTrainer/audit"
 )
 
 var PlannerLogger = Logger.LoggerWithField(Logger.Logger, "module", "planner")
@@ -422,7 +423,14 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 	for deployed <= appObj.TargetDeploymentCount {
 		hostId := hostFinderFunc(ns, appObj.Name, sortedHosts, goodHosts)
 		if hostId == "" {
-			PlannerLogger.Warnf("App %s:%d could not find suitable host", appObj.Name, appObj.Version)
+			audit.Audit.AddEvent(map[string]string{
+				"message": fmt.Sprintf("App %s:%d could not find suitable host", appObj.Name, appObj.Version),
+				"subsystem": "planner",
+				"application": string(appObj.Name),
+				"application.version": string(appObj.Version),
+				"level": "warning",
+			})
+
 			success = false
 			break
 		}
@@ -448,7 +456,13 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 			if !ignoreFailures {
 				addFailedAssign(hostId, appObj.Name, appObj.Version, depl)
 			} else {
-				PlannerLogger.Warnf("Assign of App %s:%d failed again. Will not try again.", appObj.Name, appObj.Version)
+				audit.Audit.AddEvent(map[string]string{
+					"message": fmt.Sprintf("Assign of App %s:%d failed again. Will not try again.", appObj.Name, appObj.Version),
+					"subsystem": "planner",
+					"application": string(appObj.Name),
+					"application.version": string(appObj.Version),
+					"level": "warning",
+				})
 			}
 			success = false
 		}
@@ -456,7 +470,14 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 	}
 
 	if deployed < appObj.TargetDeploymentCount {
-		PlannerLogger.Warnf("App %s:%d could not deploy MinDeploymentCount %d, only deployed %d", appObj.Name, appObj.Version, appObj.TargetDeploymentCount, deployed)
+		audit.Audit.AddEvent(map[string]string{
+			"message": fmt.Sprintf("App %s:%d could not deploy MinDeploymentCount %d, only deployed %d", appObj.Name, appObj.Version, appObj.TargetDeploymentCount, deployed),
+			"subsystem": "planner",
+			"application": string(appObj.Name),
+			"application.version": string(appObj.Version),
+			"level": "warning",
+		})
+
 		addMissingAssign(appObj.Name, appObj.Version, appObj.Type, appObj.TargetDeploymentCount - deployed)
 		success = false
 	}
@@ -592,13 +613,30 @@ func assignAppToHost(hostId base.HostId, app base.AppConfiguration, count base.D
 		NetworkNeeds: needs.NetworkNeeds(int(ns.NetworkNeeds) * int(count)),
 	}
 	if !state_cloud.GlobalAvailableInstances.HostHasResourcesForApp(hostId, ns) {
-		PlannerLogger.Warnf("App %s:%d on host '%s': Instance resources are insufficient, needed: %+v", app.Name, app.Version, hostId, ns)
+		audit.Audit.AddEvent(map[string]string{
+			"message": fmt.Sprintf("App %s:%d on host '%s': Instance resources are insufficient, needed: %+v", app.Name, app.Version, hostId, ns),
+			"subsystem": "planner",
+			"application": string(app.Name),
+			"application.version": string(app.Version),
+			"host": string(hostId),
+			"level": "warning",
+		})
+
 		addFailedAssign(hostId, app.Name, app.Version, count)
 		return false
 	}
 	updateInstanceResources(hostId, deployedNeeds)
 	state_cloud.GlobalCloudLayout.Desired.AddApp(hostId, app.Name, app.Version, count)
-	PlannerLogger.Infof("Assign %s:%d to host '%s' %d times successful", app.Name, app.Version, hostId, count)
+
+	audit.Audit.AddEvent(map[string]string{
+		"message": fmt.Sprintf("Assign %s:%d to host '%s' %d times successful", app.Name, app.Version, hostId, count),
+		"subsystem": "planner",
+		"application": string(app.Name),
+		"application.version": string(app.Version),
+		"host": string(hostId),
+		"level": "info",
+	})
+
 	return true
 }
 

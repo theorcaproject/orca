@@ -43,6 +43,8 @@ type Provider interface {
 	TerminateInstance(base.HostId) bool
 	GetSpawnLog() []base.HostId
 	RemoveFromSpawnLog(base.HostId)
+
+	UpdateLoadBalancers(hostId base.HostId, app base.AppName, version base.Version, event string)
 }
 
 var CurrentProvider Provider
@@ -90,6 +92,10 @@ var testInstanceResouces = map[base.InstanceType]base.InstanceResources{
 func (a *TestProvider) Init() {
 	a.Type = PROVIDER_TEST
 	a.InstanceTypes = []base.InstanceType{"test", "otherstuff"}
+}
+
+func (a *TestProvider) UpdateLoadBalancers(hostId base.HostId, app base.AppName, version base.Version, event string){
+
 }
 
 func (a *TestProvider) GetResources(ty base.InstanceType) base.InstanceResources {

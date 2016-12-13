@@ -137,6 +137,8 @@ func simpleAppCheck(appObj base.AppInfo, hostId base.HostId) {
 		})
 
 		tracker.GlobalAppsStatusTracker.Update(hostId, appObj.Name, appObj.Version, tracker.APP_EVENT_CRASH)
+		cloud.CurrentProvider.UpdateLoadBalancers(hostId, appObj.Name, appObj.Version, base.STATUS_DEAD)
+
 	} else {
 		tracker.GlobalAppsStatusTracker.Update(hostId, appObj.Name, appObj.Version, tracker.APP_EVENT_CHECKIN)
 	}
@@ -165,6 +167,8 @@ func checkAppUpdate(appObj base.AppInfo, hostId base.HostId, queuedState planner
 			})
 
 			handleSuccessfulUpdate(hostId, appObj.Name, appObj.Version)
+			cloud.CurrentProvider.UpdateLoadBalancers(hostId, appObj.Name, appObj.Version, base.STATUS_RUNNING)
+
 		} else {
 			audit.Audit.AddEvent(map[string]string{
 				"message": fmt.Sprintf("Update of App %s:%d on host '%s' rolled back to version %s", appObj.Name, queuedState.Version.Version, hostId, appObj.Version),
@@ -175,6 +179,7 @@ func checkAppUpdate(appObj base.AppInfo, hostId base.HostId, queuedState planner
 			})
 
 			handleRollback(hostId, appObj.Name, queuedState.Version.Version)
+			cloud.CurrentProvider.UpdateLoadBalancers(hostId, appObj.Name, appObj.Version, base.STATUS_RUNNING)
 		}
 	}
 	if appObj.Status == base.STATUS_DEPLOYING {
@@ -210,6 +215,7 @@ func checkAppUpdate(appObj base.AppInfo, hostId base.HostId, queuedState planner
 		})
 
 		handleFatalUpdate(hostId, appObj.Name, appObj.Version)
+		cloud.CurrentProvider.UpdateLoadBalancers(hostId, appObj.Name, appObj.Version, base.STATUS_DEAD)
 	}
 }
 
@@ -217,7 +223,6 @@ func handleSuccessfulUpdate(hostId base.HostId, appName base.AppName, version ba
 	tracker.GlobalAppsStatusTracker.Update("", appName, version, tracker.APP_EVENT_SUCCESSFUL_UPDATE)
 	planner.Queue.Remove(hostId, appName)
 }
-
 
 func handleRollback(hostId base.HostId, appName base.AppName, failedVersion base.Version) {
 	fmt.Println("ROLLBACK")

@@ -15,11 +15,13 @@ import (
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"os"
 	"gatoor/orca/rewriteTrainer/audit"
+	"github.com/aws/aws-sdk-go/service/elb"
 )
 
 var AWSLogger = Logger.LoggerWithField(Logger.Logger, "module", "aws")
 
 type SpawnLog []base.HostId
+
 var spawnLogMutex = &sync.Mutex{}
 
 func (s SpawnLog) Add(hostId base.HostId) {
@@ -38,15 +40,15 @@ func (s SpawnLog) Remove(hostId base.HostId) {
 		}
 	}
 	if i >= 0 {
-		s = append(s[:i], s[i+1:]...)
+		s = append(s[:i], s[i + 1:]...)
 	}
 }
 
 type AWSProvider struct {
 	ProviderConfiguration base.ProviderConfiguration
 
-	Type base.ProviderType
-	SpawnLog SpawnLog
+	Type                  base.ProviderType
+	SpawnLog              SpawnLog
 }
 
 func (a *AWSProvider) CheckCredentials() bool {
@@ -146,7 +148,6 @@ func (a *AWSProvider) waitOnInstanceReady(hostId base.HostId) bool {
 	return true
 }
 
-
 func installOrcaClient(hostId base.HostId, ip base.IpAddr, trainerIp base.IpAddr, sshKey string, sshUser string) {
 	clientConf := types.Configuration{
 		Type: types.DOCKER_CLIENT,
@@ -171,13 +172,71 @@ func (a AWSProvider) SpawnInstanceSync(ty base.InstanceType) base.HostId {
 	}
 
 	ipAddr := a.GetIp(id)
-	sshKeyPath := state_configuration.GlobalConfigurationState.ConfigurationRootPath + "/" +a.ProviderConfiguration.SSHKey + ".pem"
+	sshKeyPath := state_configuration.GlobalConfigurationState.ConfigurationRootPath + "/" + a.ProviderConfiguration.SSHKey + ".pem"
 	installOrcaClient(id, ipAddr, state_configuration.GlobalConfigurationState.Trainer.Ip, sshKeyPath, a.ProviderConfiguration.SSHUser)
 
 	return id
 }
 
-func (a *AWSProvider) SpawnInstanceLike(hostId base.HostId) base.HostId{
+func (a *AWSProvider) UpdateLoadBalancers(hostId base.HostId, app base.AppName, version base.Version, event string) {
+	var app_configuration, _ = state_configuration.GlobalConfigurationState.GetApp(app, version)
+	if app_configuration.Type == base.APP_HTTP {
+		if event == base.STATUS_DEAD {
+			svc := elb.New(session.New(&aws.Config{Region: aws.String(a.ProviderConfiguration.AWSConfiguration.Region)}))
+
+			params := &elb.DeregisterInstancesFromLoadBalancerInput{
+				Instances: []*elb.Instance{{InstanceId: aws.String(string(hostId))}},
+				LoadBalancerName: aws.String(string(app_configuration.LoadBalancer)),
+			}
+			_, err := svc.DeregisterInstancesFromLoadBalancer(params)
+			if err != nil {
+				audit.Audit.AddEvent(map[string]string{
+					"message": fmt.Sprintf("Could not deregister instance %s from elb %s. Reason was %s", hostId, app_configuration.LoadBalancer, err.Error()),
+					"subsystem": "cloud.aws",
+					"level": "error",
+				})
+
+				return
+			}
+
+			audit.Audit.AddEvent(map[string]string{
+				"message": fmt.Sprintf("Deregistered instance %s from elb %s", hostId, app_configuration.LoadBalancer),
+				"subsystem": "cloud.aws",
+				"level": "info",
+			})
+
+		} else if event == base.STATUS_RUNNING {
+			svc := elb.New(session.New(&aws.Config{Region: aws.String(a.ProviderConfiguration.AWSConfiguration.Region)}))
+
+			params := &elb.RegisterInstancesWithLoadBalancerInput{
+				Instances: []*elb.Instance{
+					{
+						InstanceId: aws.String(string(hostId)),
+					},
+				},
+				LoadBalancerName: aws.String(string(app_configuration.LoadBalancer)),
+			}
+			_, err := svc.RegisterInstancesWithLoadBalancer(params)
+			if err != nil {
+				audit.Audit.AddEvent(map[string]string{
+					"message": fmt.Sprintf("Error linking instance %s from elb %s. Reason was %s", hostId, app_configuration.LoadBalancer, err.Error()),
+					"subsystem": "cloud.aws",
+					"level": "error",
+				})
+
+				return
+			}
+
+			audit.Audit.AddEvent(map[string]string{
+				"message": fmt.Sprintf("Linked instance %s to elb %s", hostId, app_configuration.LoadBalancer),
+				"subsystem": "cloud.aws",
+				"level": "info",
+			})
+		}
+	}
+}
+
+func (a *AWSProvider) SpawnInstanceLike(hostId base.HostId) base.HostId {
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
@@ -241,14 +300,13 @@ func checkResources(available base.InstanceResources, needed base.InstanceResour
 	return true
 }
 
-
 func (a *AWSProvider) GetResources(ty base.InstanceType) base.InstanceResources {
 	return a.ProviderConfiguration.AWSConfiguration.InstanceResources[ty]
 }
 
 type CostSort struct {
 	InstanceType base.InstanceType
-	Cost base.Cost
+	Cost         base.Cost
 }
 
 type CostSorts []CostSort
