@@ -32,62 +32,13 @@ func ExampleJsonConfig() config.JsonConfiguration {
 	conf.Trainer.Port = 5000
 	conf.Trainer.Policies.TRY_TO_REMOVE_HOSTS = true
 
-	//conf.Habitats = []config.HabitatJsonConfiguration{
-	//	{
-	//		Name: "habitat1",
-	//		Version: 1,
-	//		InstallCommands: []base.OsCommand{
-	//			{
-	//				Type: base.EXEC_COMMAND,
-	//				Command: base.Command{"ls", "/home"},
-	//			},
-	//			{
-	//				Type: base.FILE_COMMAND,
-	//				Command: base.Command{"/etc/orca.conf", "somefilecontent as a string"},
-	//			},
-	//		},
-	//	},
-	//	{
-	//		Name: "habitat2",
-	//		Version: 1,
-	//		InstallCommands: []base.OsCommand{
-	//			{
-	//				Type: base.EXEC_COMMAND,
-	//				Command: base.Command{"ps", "aux"},
-	//			},
-	//			{
-	//				Type: base.FILE_COMMAND,
-	//				Command: base.Command{"/etc/orca.conf", "different config"},
-	//			},
-	//		},
-	//	},
-	//}
-
-	conf.Apps = []config.AppJsonConfiguration{
+	conf.Apps = []base.AppConfiguration{
 		{
 			Name: "http1",
 			Version: 1,
 			Type: base.APP_HTTP,
 			MinDeploymentCount: 2,
-			//MaxDeploymentCount: 10,
-			//InstallCommands: []base.OsCommand{
-			//	{
-			//		Type: base.EXEC_COMMAND,
-			//		Command: base.Command{"ls", "/home"},
-			//	},
-			//	{
-			//		Type: base.FILE_COMMAND,
-			//		Command: base.Command{"/server/http1/app1.conf", "somefilecontent as a string"},
-			//	},
-			//},
-			//QueryStateCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"wget", "http://localhost:1234/check"},
-			//},
-			//RemoveCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"rm", "-rf /server/http1"},
-			//},
+			TargetDeploymentCount: 2,
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
@@ -98,25 +49,7 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			Version: 1,
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
-			//MaxDeploymentCount: 10,
-			//InstallCommands: []base.OsCommand{
-			//	{
-			//		Type: base.EXEC_COMMAND,
-			//		Command: base.Command{"ls", "/home"},
-			//	},
-			//	{
-			//		Type: base.FILE_COMMAND,
-			//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-			//	},
-			//},
-			//QueryStateCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"wget", "http://localhost:1234/check"},
-			//},
-			//RemoveCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"rm", "-rf /server/app1"},
-			//},
+			TargetDeploymentCount: 2,
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
@@ -128,25 +61,7 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			Version: 1,
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
-			//MaxDeploymentCount: 10,
-			//InstallCommands: []base.OsCommand{
-			//	{
-			//		Type: base.EXEC_COMMAND,
-			//		Command: base.Command{"ls", "/home"},
-			//	},
-			//	{
-			//		Type: base.FILE_COMMAND,
-			//		Command: base.Command{"/server/app11/app11.conf", "somefilecontent as a string"},
-			//	},
-			//},
-			//QueryStateCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"wget", "http://localhost:1235/check"},
-			//},
-			//RemoveCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"rm", "-rf /server/app11"},
-			//},
+			TargetDeploymentCount: 2,
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
@@ -158,25 +73,7 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			Version: 2,
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
-			//MaxDeploymentCount: 10,
-			//InstallCommands: []base.OsCommand{
-			//	{
-			//		Type: base.EXEC_COMMAND,
-			//		Command: base.Command{"ls", "/home"},
-			//	},
-			//	{
-			//		Type: base.FILE_COMMAND,
-			//		Command: base.Command{"/server/app2/app2.conf", "somefilecontent as a string"},
-			//	},
-			//},
-			//QueryStateCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"wget", "http://localhost:1236/check"},
-			//},
-			//RemoveCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"rm", "-rf /server/app2"},
-			//},
+			TargetDeploymentCount: 2,
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),

@@ -8,8 +8,7 @@ import (
     "sync"
     "fmt"
     "strconv"
-	"gatoor/orca/rewriteTrainer/needs"
-
+    "gatoor/orca/rewriteTrainer/needs"
 )
 
 const (
@@ -35,6 +34,13 @@ type Status string
 type DeploymentCount int
 type LoadBalancerName string
 type NetworkName string
+
+
+type Versions []Version
+func (a Versions) Len() int { return len(a) }
+func (a Versions) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a Versions) Less(i, j int) bool { return a[i] < a[j] }
+
 
 type Command struct {
     Path string
@@ -149,11 +155,9 @@ type PushWrapper struct {
 }
 
 type PushConfiguration struct {
-    //TargetHostId HostId
     OrcaVersion string
     DeploymentCount DeploymentCount
     AppConfiguration AppConfiguration
-    //HabitatConfiguration HabitatConfiguration
 }
 
 type HabitatConfiguration struct {
@@ -223,6 +227,7 @@ type ProviderConfiguration struct {
     SSHUser string
     MinInstances InstanceCount
     MaxInstances InstanceCount
+    BaseInstanceType InstanceType
     AWSConfiguration AWSConfiguration
 }
 

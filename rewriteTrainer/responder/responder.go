@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/state/cloud"
+	"sort"
 )
 
 var ResponderLogger = Logger.LoggerWithField(Logger.Logger, "module", "responder")
@@ -36,18 +37,25 @@ func getQueueElement(hostId base.HostId) (base.AppName, planner.AppsUpdateState,
 	ResponderLogger.Infof("Getting queue element for host %s", hostId)
 	apps, err := planner.Queue.Get(hostId)
 	if err == nil {
-		for appName, appObj := range apps {
-			if appObj.State == planner.STATE_APPLYING {
+
+		var appNames []string
+		for appName := range apps {
+			appNames = append(appNames, string(appName))
+		}
+		sort.Strings(appNames)
+
+		for _, appName := range appNames {
+			if apps[base.AppName(appName)].State == planner.STATE_APPLYING {
 				ResponderLogger.Infof("Got STATE_APPLYING queue element for host '%s' app '%s'", hostId, appName)
-				return appName, appObj, nil
+				return base.AppName(appName), apps[base.AppName(appName)], nil
 			}
 		}
 
-		for appName, appObj := range apps {
-			if appObj.State == planner.STATE_QUEUED {
+		for _, appName := range appNames {
+			if apps[base.AppName(appName)].State == planner.STATE_QUEUED {
 				ResponderLogger.Infof("Got STATE_QUEUED queue element for host '%s' app '%s'", hostId, appName)
-				planner.Queue.SetState(hostId, appName, planner.STATE_APPLYING)
-				return appName, appObj, nil
+				planner.Queue.SetState(hostId, base.AppName(appName), planner.STATE_APPLYING)
+				return base.AppName(appName), apps[base.AppName(appName)], nil
 			}
 		}
 	}
@@ -154,13 +162,13 @@ func checkAppUpdate(appObj base.AppInfo, hostId base.HostId, queuedState planner
 			ResponderLogger.Infof("Update of App %s:%d on host '%s' is still applying", appObj.Name, appObj.Version, hostId)
 			return
 		} else {
-			ResponderLogger.Warnf("Update of App %s:%d on host '%s' rolling back to version %s", appObj.Name, queuedState.Version, hostId, appObj.Version)
+			ResponderLogger.Warnf("Update of App %s:%d on host '%s' rolling back to version %d", appObj.Name, queuedState.Version, hostId, appObj.Version)
 			handleRollback(hostId, appObj.Name, queuedState.Version.Version)
 		}
 	}
 	if appObj.Status == base.STATUS_DEAD {
-		ResponderLogger.Warnf("Update of App %s:%d on host '%s' was fatal for the app, the version that died on the host is %s", appObj.Name, queuedState.Version, hostId, appObj.Version)
-		handleFatalUpdate(hostId, appObj.Name, appObj.Version)
+		ResponderLogger.Warnf("Update of App %s:%d on host '%s' was fatal for the app, the version that died on the host is %d", appObj.Name, queuedState.Version, hostId, appObj.Version)
+		handleFatalUpdate(hostId, appObj.Name, appObj.Version, queuedState.Version.DeploymentCount)
 	}
 }
 
@@ -181,8 +189,9 @@ func handleRollback(hostId base.HostId, appName base.AppName, failedVersion base
 	planner.Queue.RemoveApp(appName, failedVersion)
 }
 
-func handleFatalUpdate(hostId base.HostId, appName base.AppName, version base.Version) {
+func handleFatalUpdate(hostId base.HostId, appName base.AppName, version base.Version, deploymentCount base.DeploymentCount) {
 	tracker.GlobalAppsStatusTracker.Update(hostId, appName, version, tracker.APP_EVENT_CRASH)
 	planner.Queue.Remove(hostId, appName)
+	planner.Queue.Add(hostId, appName, state_cloud.AppsVersion{DeploymentCount: deploymentCount, Version: tracker.GlobalAppsStatusTracker.LastStable(appName)})
 }
 

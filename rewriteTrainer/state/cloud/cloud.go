@@ -150,7 +150,7 @@ func (c *CloudLayout) RemoveHost(host base.HostId) {
 }
 
 func (c *CloudLayout) AddApp(host base.HostId, app base.AppName, version base.Version, count base.DeploymentCount) {
-	StateCloudLogger.WithField("type", c.Type).Infof("Adding App '%s' - '%s' to host '%s' %d times", app, version, host, count)
+	StateCloudLogger.WithField("type", c.Type).Infof("Adding App %s:%d to host '%s' %d times", app, version, host, count)
 	cloudLayoutMutex.Lock()
 	defer cloudLayoutMutex.Unlock()
 	if val, exists := (*c).Layout[host]; exists {

@@ -95,7 +95,11 @@ func run() {
 	//
 	////analyzer.DoStuff
 	//
-	planner.Plan()
+	if planner.Queue.AllEmpty() {
+		planner.Plan()
+		diff := planner.Diff(state_cloud.GlobalCloudLayout.Desired, state_cloud.GlobalCloudLayout.Current)
+		planner.Queue.Apply(diff)
+	}
 
 	fmt.Println("")
 	fmt.Println("")

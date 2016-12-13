@@ -104,3 +104,12 @@ func (a *AppsStatusTracker) UpdateAll(hostInfo base.HostInfo, time time.Time) {
 		}
 	}
 }
+
+func (a *AppsStatusTracker) LastStable(app base.AppName) base.Version {
+	appsTrackerMutex.Lock()
+	defer appsTrackerMutex.Unlock()
+	//if elem, exists := (*a)[app]; exists {
+	//	var versions
+	//}
+	return 1
+}

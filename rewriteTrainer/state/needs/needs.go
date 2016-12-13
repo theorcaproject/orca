@@ -6,6 +6,7 @@ import (
 	"errors"
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/rewriteTrainer/needs"
+	"sort"
 )
 
 var needsStateMutex = &sync.Mutex{}
@@ -42,9 +43,28 @@ func (a AppsNeedState) Get(app base.AppName, version base.Version) (needs.AppNee
 		return needs.AppNeeds{}, errors.New("No such Version")
 	}
 	res := a[app][version]
-	StateNeedsLogger.Debugf("Get for '%s' - '%s': %+v", app, version, res)
+	StateNeedsLogger.Debugf("Get for %s:%d: %+v", app, version, res)
 	return res, nil
 }
+
+func (a AppsNeedState) lastValidNeeds(app base.AppName) needs.AppNeeds {
+	if _, exists := a[app]; !exists {
+		return needs.AppNeeds{1, 1, 1}
+	}
+	var versions base.Versions
+	for version := range a[app] {
+		versions = append(versions, version)
+	}
+	sort.Sort(sort.Reverse(versions))
+
+	for _, version := range versions {
+		if a[app][version].CpuNeeds != 0 && a[app][version].MemoryNeeds != 0 && a[app][version].NetworkNeeds != 0 {
+			return a[app][version]
+		}
+	}
+	return needs.AppNeeds{1, 1, 1}
+}
+
 //TODO use WeeklyNeeds
 func (a AppsNeedState) UpdateNeeds(app base.AppName, version base.Version, ns needs.AppNeeds) {
 	needsStateMutex.Lock()
@@ -52,7 +72,11 @@ func (a AppsNeedState) UpdateNeeds(app base.AppName, version base.Version, ns ne
 	if _, exists := a[app]; !exists {
 		a[app] = make(map[base.Version]needs.AppNeeds)
 	}
-	StateNeedsLogger.Debugf("UpdateNeeds for '%s' - '%s': %+v", app, version, ns)
+	if ns.CpuNeeds == 0 || ns.MemoryNeeds == 0 || ns.NetworkNeeds == 0 {
+		ns = a.lastValidNeeds(app)
+		StateNeedsLogger.Warnf("UpdateNeeds for %s:%d: Needs are 0, using last available needs %+v", app, version, ns)
+	}
+	StateNeedsLogger.Debugf("UpdateNeeds for %s:%d: %+v", app, version, ns)
 	a[app][version] = ns
 }
 

@@ -5,8 +5,11 @@ import (
 	"gatoor/orca/base"
 	"errors"
 	"sort"
+	Logger "gatoor/orca/rewriteTrainer/log"
+	"gatoor/orca/rewriteTrainer/state/needs"
 )
 
+var ConfigLogger = Logger.LoggerWithField(Logger.Logger, "module", "configuration")
 var GlobalConfigurationState ConfigurationState
 
 var configurationStateMutex = &sync.Mutex{}
@@ -52,6 +55,7 @@ func (c * ConfigurationState) AllAppsLatest() map[base.AppName]base.AppConfigura
 			apps[appName] = elem
 		}
 	}
+	ConfigLogger.Infof("AllAppsLatest: %+v", apps)
 	return apps
 }
 
@@ -82,12 +86,14 @@ func (c *ConfigurationState) GetHabitat (name base.HabitatName, version base.Ver
 }
 
 func (c *ConfigurationState) ConfigureApp (conf base.AppConfiguration) {
+	ConfigLogger.Infof("ConfigureApp %s:%d", conf.Name, conf.Version)
 	configurationStateMutex.Lock()
 	defer configurationStateMutex.Unlock()
 	if _, exists := c.Apps[conf.Name]; !exists {
 		c.Apps[conf.Name] = AppConfigurationVersions{}
 	}
 	c.Apps[conf.Name][conf.Version] = conf
+	state_needs.GlobalAppsNeedState.UpdateNeeds(conf.Name, conf.Version, conf.Needs)
 }
 
 func (c *ConfigurationState) ConfigureHabitat (conf base.HabitatConfiguration) {

@@ -36,10 +36,16 @@ func TestAppsNeedState_GetNeeds(t *testing.T) {
 	if val.MemoryNeeds != 10 {
 		t.Error("got wrong needs value")
 	}
+
+	ns.UpdateNeeds("app1", 2, needs.AppNeeds{})
+	val2, _ := ns.Get("app1", 2)
+	if val2.CpuNeeds != 3 {
+		t.Error(val2)
+	}
 }
 
 
-func TestAppsNeedState_GetAall(t *testing.T) {
+func TestAppsNeedState_GetAll(t *testing.T) {
 	ns := prepareNeedsState()
 
 	ns.UpdateNeeds("app1", 1, needs.AppNeeds{

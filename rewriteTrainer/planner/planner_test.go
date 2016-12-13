@@ -650,24 +650,6 @@ func TestPlanner_getGlobalMinNeeds(t *testing.T) {
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
 			TargetDeploymentCount: 2,
-		//	InstallCommands: []base.OsCommand{
-		//	{
-		//		Type: base.EXEC_COMMAND,
-		//		Command: base.Command{"ls", "/home"},
-		//	},
-		//	{
-		//		Type: base.FILE_COMMAND,
-		//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-		//	},
-		//},
-		//	QueryStateCommand: base.OsCommand{
-		//	Type: base.EXEC_COMMAND,
-		//	Command: base.Command{"wget", "http://localhost:1234/check"},
-		//},
-		//	RemoveCommand: base.OsCommand{
-		//	Type: base.EXEC_COMMAND,
-		//	Command: base.Command{"rm", "-rf /server/app1"},
-		//},
 			Needs: needs.AppNeeds{
 			CpuNeeds: needs.CpuNeeds(11),
 			MemoryNeeds: needs.MemoryNeeds(22),
@@ -1738,7 +1720,7 @@ func TestPlanner_MultiplePlanningSteps_hostKilledByEventAndNewHostSpawned(t *tes
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 2 {
 		t.Error(state_cloud.GlobalCloudLayout.Current.Layout)
 	}
-	if len(state_cloud.GlobalAvailableInstances) != 2 || state_cloud.GlobalAvailableInstances["newReplacementHost"].TotalCpuResource != 10 {
+	if len(state_cloud.GlobalAvailableInstances) != 2 || state_cloud.GlobalAvailableInstances["newReplacementHost"].TotalCpuResource != 1000 {
 		t.Error(state_cloud.GlobalAvailableInstances)
 	}
 

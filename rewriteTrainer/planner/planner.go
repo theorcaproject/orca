@@ -13,6 +13,7 @@ import (
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/needs"
+	"sort"
 )
 
 var PlannerLogger = Logger.LoggerWithField(Logger.Logger, "module", "planner")
@@ -58,14 +59,32 @@ func NewPlannerQueue() *PlannerQueue{
 func (p PlannerQueue) AllEmpty() bool {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	return len(p.Queue) == 0
+	for _, host := range p.Queue {
+		if len(host) != 0 {
+			return false
+		}
+	}
+	return true
 }
 
+//sorting is done in here to make it testable
 func (p PlannerQueue) Apply(diff LayoutDiff) {
 	QueueLogger.Info("Applying LayoutDiff")
-	for hostId, app := range diff {
-		for appName, appObj := range app {
-			p.Add(hostId, appName, appObj)
+
+	var hosts []string
+	for k := range diff {
+		hosts = append(hosts, string(k))
+	}
+	sort.Strings(hosts)
+
+	for _, host := range hosts {
+		var apps []string
+		for a := range diff[base.HostId(host)] {
+			apps = append(apps, string(a))
+		}
+		sort.Strings(apps)
+		for _, app := range apps {
+			p.Add(base.HostId(host), base.AppName(app), diff[base.HostId(host)][base.AppName(app)])
 		}
 	}
 }
@@ -439,7 +458,7 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 		}
 
 		if deployed == appObj.TargetDeploymentCount {
-			PlannerLogger.Infof("Assinged all deployments of App %s:%d", appObj.Name, appObj.Version)
+			PlannerLogger.Infof("Assigned all deployments of App %s:%d (%d)", appObj.Name, appObj.Version, appObj.TargetDeploymentCount)
 			return success
 		}
 		if depl > appObj.TargetDeploymentCount - deployed {
@@ -457,7 +476,7 @@ func planApp(appObj base.AppConfiguration, hostFinderFunc HostFinderFunc, deploy
 	}
 
 	if deployed < appObj.TargetDeploymentCount {
-		PlannerLogger.Warnf("App %s:%d could not deploy MinDeploymentCount %d, only deployed %d", appObj.Name, appObj.Version, appObj.TargetDeploymentCount, deployed)
+		PlannerLogger.Warnf("App %s:%d could not deploy TargetDeploymentCount %d, only deployed %d", appObj.Name, appObj.Version, appObj.TargetDeploymentCount, deployed)
 		addMissingAssign(appObj.Name, appObj.Version, appObj.Type, appObj.TargetDeploymentCount - deployed)
 		success = false
 	}
@@ -479,6 +498,9 @@ func maxDeploymentOnHost(resources base.InstanceResources, ns needs.AppNeeds) ba
 	availCpu := int(resources.TotalCpuResource - resources.UsedCpuResource)
 	availMem := int(resources.TotalMemoryResource - resources.UsedMemoryResource)
 	availNet := int(resources.TotalNetworkResource - resources.UsedNetworkResource)
+	if int(ns.CpuNeeds) == 0 || int(ns.MemoryNeeds) == 0 || int(ns.NetworkNeeds) == 0 {
+		return 0
+	}
 	maxCpu := int(availCpu / int(ns.CpuNeeds))
 	maxMem := int(availMem / int(ns.MemoryNeeds))
 	maxNet := int(availNet / int(ns.NetworkNeeds))
