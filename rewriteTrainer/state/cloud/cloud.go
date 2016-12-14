@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"sort"
 	"gatoor/orca/rewriteTrainer/cloud"
+	"gatoor/orca/rewriteTrainer/state/configuration"
 )
 
 var StateCloudLogger = Logger.LoggerWithField(Logger.Logger, "module", "state_cloud")
@@ -38,19 +39,18 @@ var GlobalCloudLayout CloudLayoutAll
 var GlobalAvailableInstances AvailableInstances
 var cloudLayoutMutex = &sync.Mutex{}
 var availableInstancesMutex = &sync.Mutex{}
+
 type CloudLayout struct {
-	Type string
+	Type   string
 	Layout map[base.HostId]CloudLayoutElement
 }
-
 
 type ResourceObjList []ResourceObj
 
 type ResourceObj struct {
-	HostId base.HostId
+	HostId                     base.HostId
 	CombinedAvailableResources int
 }
-
 
 type AvailableInstances map[base.HostId]base.InstanceResources
 
@@ -60,16 +60,16 @@ type CloudLayoutAll struct {
 }
 
 type CloudLayoutElement struct {
-	HostId base.HostId
-	IpAddress base.IpAddr
-	InstanceType base.InstanceType
-	SafeInstance base.SafeInstance
+	HostId         base.HostId
+	IpAddress      base.IpAddr
+	InstanceType   base.InstanceType
+	SafeInstance   base.SafeInstance
 	HabitatVersion base.Version
-	Apps map[base.AppName]AppsVersion
+	Apps           map[base.AppName]AppsVersion
 }
 
 type AppsVersion struct {
-	Version base.Version
+	Version         base.Version
 	DeploymentCount base.DeploymentCount
 }
 
@@ -83,6 +83,12 @@ func (c *CloudLayoutAll) Init() {
 		Layout: make(map[base.HostId]CloudLayoutElement),
 	}
 	GlobalAvailableInstances = AvailableInstances{}
+
+	if len(GlobalAvailableInstances) < int(state_configuration.GlobalConfigurationState.CloudProvider.MinInstances) {
+		for i := len(GlobalAvailableInstances); i < int(state_configuration.GlobalConfigurationState.CloudProvider.MinInstances); i++ {
+			cloud.CurrentProvider.SpawnInstanceSync(state_configuration.GlobalConfigurationState.CloudProvider.BaseInstanceType)
+		}
+	}
 }
 
 func (c *CloudLayoutAll) Snapshot() CloudLayoutAll {
@@ -95,7 +101,7 @@ func (c *CloudLayoutAll) Snapshot() CloudLayoutAll {
 func (c *CloudLayout) GetHost(host base.HostId) (CloudLayoutElement, error) {
 	cloudLayoutMutex.Lock()
 	defer cloudLayoutMutex.Unlock()
-	if _, exists :=(*c).Layout[host]; !exists {
+	if _, exists := (*c).Layout[host]; !exists {
 		return CloudLayoutElement{}, errors.New("No such host")
 	}
 	return (*c).Layout[host], nil
@@ -131,7 +137,6 @@ func (c *CloudLayout) FindHostsWithApp(appName base.AppName) map[base.HostId]boo
 	return hosts
 }
 
-
 func (c *CloudLayout) AddHost(host base.HostId, elem CloudLayoutElement) {
 	StateCloudLogger.WithField("type", c.Type).Infof("Adding host '%s': '%+v'", host, elem)
 	cloudLayoutMutex.Lock()
@@ -145,11 +150,11 @@ func (c *CloudLayout) AddHost(host base.HostId, elem CloudLayoutElement) {
 		})
 	}
 
-	if(elem.InstanceType == ""){
+	if (elem.InstanceType == "") {
 		elem.InstanceType = cloud.CurrentProvider.GetInstanceType(host)
 	}
 
-	if(elem.IpAddress == ""){
+	if (elem.IpAddress == "") {
 		elem.IpAddress = cloud.CurrentProvider.GetIp(host)
 	}
 
@@ -182,7 +187,7 @@ func (c *CloudLayout) AddEmptyHost(host base.HostId) {
 	c.AddHost(host, entity)
 }
 
-func (c * CloudLayout) Wipe() {
+func (c *CloudLayout) Wipe() {
 	StateCloudLogger.WithField("type", c.Type).Infof("Wipe")
 	cloudLayoutMutex.Lock()
 	defer cloudLayoutMutex.Unlock()
@@ -291,7 +296,7 @@ func (c *CloudLayout) UpdateHost(hostInfo base.HostInfo) {
 
 var AvailableInstancesLogger = StateCloudLogger.WithField("type", "AvailableInstances")
 
-func (a *AvailableInstances) HostHasResourcesForApp (hostId base.HostId, ns needs.AppNeeds) bool{
+func (a *AvailableInstances) HostHasResourcesForApp(hostId base.HostId, ns needs.AppNeeds) bool {
 	availableInstancesMutex.Lock()
 	res := (*a)[hostId]
 	if int(res.TotalCpuResource - res.UsedCpuResource) >= int(ns.CpuNeeds) &&
@@ -304,9 +309,15 @@ func (a *AvailableInstances) HostHasResourcesForApp (hostId base.HostId, ns need
 	return false
 }
 
-func (p ResourceObjList) Len() int { return len(p) }
-func (p ResourceObjList) Less(i, j int) bool { return p[i].CombinedAvailableResources < p[j].CombinedAvailableResources}
-func (p ResourceObjList) Swap(i, j int){ p[i], p[j] = p[j], p[i] }
+func (p ResourceObjList) Len() int {
+	return len(p)
+}
+func (p ResourceObjList) Less(i, j int) bool {
+	return p[i].CombinedAvailableResources < p[j].CombinedAvailableResources
+}
+func (p ResourceObjList) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
 
 func (a *AvailableInstances) Update(hostId base.HostId, resources base.InstanceResources) {
 	AvailableInstancesLogger.Infof("Updating host '%s': '%+v'", hostId, resources)
@@ -318,7 +329,7 @@ func (a *AvailableInstances) Update(hostId base.HostId, resources base.InstanceR
 	(*a)[hostId] = resources
 }
 
-func (a *AvailableInstances) GetResources(hostId base.HostId) (base.InstanceResources, error){
+func (a *AvailableInstances) GetResources(hostId base.HostId) (base.InstanceResources, error) {
 	availableInstancesMutex.Lock()
 	if _, exists := (*a)[hostId]; !exists {
 		AvailableInstancesLogger.Warnf("Instance '%s' does not exist", hostId)
@@ -346,7 +357,7 @@ func (a *AvailableInstances) Remove(hostId base.HostId) {
 func (a *AvailableInstances) GlobalResourceConsumption() base.InstanceResources {
 	availableInstancesMutex.Lock()
 	defer availableInstancesMutex.Unlock()
-	var availableCpu, availableMemory , availableNetwork, usedCpu, usedMemory, usedNetwork int
+	var availableCpu, availableMemory, availableNetwork, usedCpu, usedMemory, usedNetwork int
 	for _, elem := range (*a) {
 		availableCpu += int(elem.TotalCpuResource)
 		availableMemory += int(elem.TotalMemoryResource)
