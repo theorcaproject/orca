@@ -1,3 +1,21 @@
+/*
+Copyright Alex Mack
+This file is part of Orca.
+
+Orca is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orca is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orca.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package planner
 
 
@@ -650,24 +668,6 @@ func TestPlanner_getGlobalMinNeeds(t *testing.T) {
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
 			TargetDeploymentCount: 2,
-		//	InstallCommands: []base.OsCommand{
-		//	{
-		//		Type: base.EXEC_COMMAND,
-		//		Command: base.Command{"ls", "/home"},
-		//	},
-		//	{
-		//		Type: base.FILE_COMMAND,
-		//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-		//	},
-		//},
-		//	QueryStateCommand: base.OsCommand{
-		//	Type: base.EXEC_COMMAND,
-		//	Command: base.Command{"wget", "http://localhost:1234/check"},
-		//},
-		//	RemoveCommand: base.OsCommand{
-		//	Type: base.EXEC_COMMAND,
-		//	Command: base.Command{"rm", "-rf /server/app1"},
-		//},
 			Needs: needs.AppNeeds{
 			CpuNeeds: needs.CpuNeeds(11),
 			MemoryNeeds: needs.MemoryNeeds(22),
@@ -1738,7 +1738,7 @@ func TestPlanner_MultiplePlanningSteps_hostKilledByEventAndNewHostSpawned(t *tes
 	if len(state_cloud.GlobalCloudLayout.Current.Layout) != 2 {
 		t.Error(state_cloud.GlobalCloudLayout.Current.Layout)
 	}
-	if len(state_cloud.GlobalAvailableInstances) != 2 || state_cloud.GlobalAvailableInstances["newReplacementHost"].TotalCpuResource != 10 {
+	if len(state_cloud.GlobalAvailableInstances) != 2 || state_cloud.GlobalAvailableInstances["newReplacementHost"].TotalCpuResource != 1000 {
 		t.Error(state_cloud.GlobalAvailableInstances)
 	}
 

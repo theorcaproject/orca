@@ -1,3 +1,21 @@
+/*
+Copyright Alex Mack
+This file is part of Orca.
+
+Orca is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orca is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orca.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package responder
 
 import (
@@ -11,10 +29,10 @@ import (
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	"gatoor/orca/rewriteTrainer/audit"
+	"sort"
 )
 
 var ResponderLogger = Logger.LoggerWithField(Logger.Logger, "module", "responder")
-
 
 func GetConfigForHost(hostId base.HostId) (base.PushConfiguration, error) {
 	ResponderLogger.Infof("Getting config for host %s", hostId)
@@ -32,30 +50,35 @@ func GetConfigForHost(hostId base.HostId) (base.PushConfiguration, error) {
 	return base.PushConfiguration{}, err
 }
 
-
-func getQueueElement(hostId base.HostId) (base.AppName, planner.AppsUpdateState, error)  {
+func getQueueElement(hostId base.HostId) (base.AppName, planner.AppsUpdateState, error) {
 	ResponderLogger.Infof("Getting queue element for host %s", hostId)
 	apps, err := planner.Queue.Get(hostId)
 	if err == nil {
-		for appName, appObj := range apps {
-			if appObj.State == planner.STATE_APPLYING {
+
+		var appNames []string
+		for appName := range apps {
+			appNames = append(appNames, string(appName))
+		}
+		sort.Strings(appNames)
+
+		for _, appName := range appNames {
+			if apps[base.AppName(appName)].State == planner.STATE_APPLYING {
 				ResponderLogger.Infof("Got STATE_APPLYING queue element for host '%s' app '%s'", hostId, appName)
-				return appName, appObj, nil
+				return base.AppName(appName), apps[base.AppName(appName)], nil
 			}
 		}
 
-		for appName, appObj := range apps {
-			if appObj.State == planner.STATE_QUEUED {
+		for _, appName := range appNames {
+			if apps[base.AppName(appName)].State == planner.STATE_QUEUED {
 				ResponderLogger.Infof("Got STATE_QUEUED queue element for host '%s' app '%s'", hostId, appName)
-				planner.Queue.SetState(hostId, appName, planner.STATE_APPLYING)
-				return appName, appObj, nil
+				planner.Queue.SetState(hostId, base.AppName(appName), planner.STATE_APPLYING)
+				return base.AppName(appName), apps[base.AppName(appName)], nil
 			}
 		}
 	}
 	ResponderLogger.Infof("Get queue element for host '%s' failed: %s", hostId, err)
 	return "", planner.AppsUpdateState{}, errors.New("No element for host ")
 }
-
 
 func CheckAppState(hostInfo base.HostInfo) {
 	ResponderLogger.Infof("checking Apps state for host '%s'", hostInfo.HostId)
@@ -77,19 +100,22 @@ func CheckAppState(hostInfo base.HostInfo) {
 	}
 
 	for _, appObj := range hostInfo.Apps {
-		if queuedState, exists := queued[appObj.Name]; exists { //the app is queued for an update
-			if queuedState.State == planner.STATE_QUEUED { //the update is waiting for other updates, perform simple check
+		if queuedState, exists := queued[appObj.Name]; exists {
+			//the app is queued for an update
+			if queuedState.State == planner.STATE_QUEUED {
+				//the update is waiting for other updates, perform simple check
 				simpleAppCheck(appObj, hostInfo.HostId)
 			} else {
 				checkAppUpdate(appObj, hostInfo.HostId, queuedState)
 			}
-		} else { //no updates, just check if its running
+		} else {
+			//no updates, just check if its running
 			simpleAppCheck(appObj, hostInfo.HostId)
 		}
 	}
 }
 
-func checkScaling(hostInfo base.HostInfo, queued map[base.AppName]planner.AppsUpdateState) bool{
+func checkScaling(hostInfo base.HostInfo, queued map[base.AppName]planner.AppsUpdateState) bool {
 	appsCount := make(map[base.AppName]int)
 	if len(queued) > 0 {
 		for _, app := range hostInfo.Apps {
@@ -109,7 +135,6 @@ func checkScaling(hostInfo base.HostInfo, queued map[base.AppName]planner.AppsUp
 	}
 	return true
 }
-
 
 func handleEmptyHost(hostInfo base.HostInfo) {
 	isNew := false
@@ -195,7 +220,7 @@ func checkAppUpdate(appObj base.AppInfo, hostId base.HostId, queuedState planner
 			return
 		} else {
 			audit.Audit.AddEvent(map[string]string{
-				"message": fmt.Sprintf("Update of App %s:%d on host '%s' rolling back to version %s", appObj.Name, queuedState.Version, hostId, appObj.Version),
+				"message": fmt.Sprintf("Update of App %s:%d on host '%s' rolling back to version %d", appObj.Name, queuedState.Version, hostId, appObj.Version),
 				"subsystem": "responder",
 				"application": string(appObj.Name),
 				"host": string(hostId),
@@ -207,14 +232,14 @@ func checkAppUpdate(appObj base.AppInfo, hostId base.HostId, queuedState planner
 	}
 	if appObj.Status == base.STATUS_DEAD {
 		audit.Audit.AddEvent(map[string]string{
-			"message": fmt.Sprintf("Update of App %s:%d on host '%s' was fatal for the app, the version that died on the host is %s", appObj.Name, queuedState.Version, hostId, appObj.Version),
+			"message": fmt.Sprintf("Update of App %s:%d on host '%s' was fatal for the app, the version that died on the host is %d", appObj.Name, queuedState.Version, hostId, appObj.Version),
 			"subsystem": "responder",
 			"application": string(appObj.Name),
 			"host": string(hostId),
 			"level": "error",
 		})
 
-		handleFatalUpdate(hostId, appObj.Name, appObj.Version)
+		handleFatalUpdate(hostId, appObj.Name, appObj.Version, queuedState.Version.DeploymentCount)
 		cloud.CurrentProvider.UpdateLoadBalancers(hostId, appObj.Name, appObj.Version, base.STATUS_DEAD)
 	}
 }
@@ -235,8 +260,9 @@ func handleRollback(hostId base.HostId, appName base.AppName, failedVersion base
 	planner.Queue.RemoveApp(appName, failedVersion)
 }
 
-func handleFatalUpdate(hostId base.HostId, appName base.AppName, version base.Version) {
+func handleFatalUpdate(hostId base.HostId, appName base.AppName, version base.Version, deploymentCount base.DeploymentCount) {
 	tracker.GlobalAppsStatusTracker.Update(hostId, appName, version, tracker.APP_EVENT_CRASH)
 	planner.Queue.Remove(hostId, appName)
+	planner.Queue.Add(hostId, appName, state_cloud.AppsVersion{DeploymentCount: deploymentCount, Version: tracker.GlobalAppsStatusTracker.LastStable(appName)})
 }
 

@@ -1,3 +1,21 @@
+/*
+Copyright Alex Mack
+This file is part of Orca.
+
+Orca is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orca is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orca.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package state_needs_test
 
 import (
@@ -36,10 +54,16 @@ func TestAppsNeedState_GetNeeds(t *testing.T) {
 	if val.MemoryNeeds != 10 {
 		t.Error("got wrong needs value")
 	}
+
+	ns.UpdateNeeds("app1", 2, needs.AppNeeds{})
+	val2, _ := ns.Get("app1", 2)
+	if val2.CpuNeeds != 3 {
+		t.Error(val2)
+	}
 }
 
 
-func TestAppsNeedState_GetAall(t *testing.T) {
+func TestAppsNeedState_GetAll(t *testing.T) {
 	ns := prepareNeedsState()
 
 	ns.UpdateNeeds("app1", 1, needs.AppNeeds{

@@ -1,3 +1,21 @@
+/*
+Copyright Alex Mack
+This file is part of Orca.
+
+Orca is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orca is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orca.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package cloud
 
 import (
@@ -66,7 +84,7 @@ func spawnToMinInstances() {
 	if len(state_cloud.GlobalAvailableInstances) < int(state_configuration.GlobalConfigurationState.CloudProvider.MinInstances) {
 		AWSLogger.Infof("Not enough instances available. Spawning more, available:%d min:%d", len(state_cloud.GlobalAvailableInstances), state_configuration.GlobalConfigurationState.CloudProvider.MinInstances)
 		for i := len(state_cloud.GlobalAvailableInstances); i < int(state_configuration.GlobalConfigurationState.CloudProvider.MinInstances); i++ {
-			CurrentProvider.SpawnInstanceSync("t2.micro")
+			CurrentProvider.SpawnInstanceSync(state_configuration.GlobalConfigurationState.CloudProvider.BaseInstanceType)
 		}
 	} else {
 		AWSLogger.Infof("Enough instances available, going on")
@@ -83,12 +101,6 @@ type TestProvider struct {
 	KillList []base.HostId
 }
 
-var testInstanceResouces = map[base.InstanceType]base.InstanceResources{
-	"test": {TotalCpuResource: 10, TotalMemoryResource: 10, TotalNetworkResource: 10},
-}
-
-
-
 func (a *TestProvider) Init() {
 	a.Type = PROVIDER_TEST
 	a.InstanceTypes = []base.InstanceType{"test", "otherstuff"}
@@ -99,9 +111,11 @@ func (a *TestProvider) UpdateLoadBalancers(hostId base.HostId, app base.AppName,
 }
 
 func (a *TestProvider) GetResources(ty base.InstanceType) base.InstanceResources {
-
+	if strings.Contains(string(ty), "host2") {
+		return base.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: 2000, TotalNetworkResource:2000, TotalCpuResource:2000}
+	}
 	if !strings.Contains(string(ty), "metrics=") {
-		return base.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: 10, TotalNetworkResource:10, TotalCpuResource:10}
+		return base.InstanceResources{UsedMemoryResource:0, UsedCpuResource:0, UsedNetworkResource:0, TotalMemoryResource: 1000, TotalNetworkResource:1000, TotalCpuResource:1000}
 	}
 	arr := strings.Split(strings.Split(string(ty), "metrics=")[1], "_")
 	cpu, _ := strconv.Atoi(arr[0])

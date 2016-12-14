@@ -1,3 +1,21 @@
+/*
+Copyright Alex Mack
+This file is part of Orca.
+
+Orca is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orca is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orca.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package base
 
 import (
@@ -8,8 +26,7 @@ import (
     "sync"
     "fmt"
     "strconv"
-	"gatoor/orca/rewriteTrainer/needs"
-
+    "gatoor/orca/rewriteTrainer/needs"
 )
 
 const (
@@ -35,6 +52,13 @@ type Status string
 type DeploymentCount int
 type LoadBalancerName string
 type NetworkName string
+
+
+type Versions []Version
+func (a Versions) Len() int { return len(a) }
+func (a Versions) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a Versions) Less(i, j int) bool { return a[i] < a[j] }
+
 
 type Command struct {
     Path string
@@ -149,11 +173,9 @@ type PushWrapper struct {
 }
 
 type PushConfiguration struct {
-    //TargetHostId HostId
     OrcaVersion string
     DeploymentCount DeploymentCount
     AppConfiguration AppConfiguration
-    //HabitatConfiguration HabitatConfiguration
 }
 
 type HabitatConfiguration struct {
@@ -242,6 +264,7 @@ type ProviderConfiguration struct {
     SSHUser string
     MinInstances InstanceCount
     MaxInstances InstanceCount
+    BaseInstanceType InstanceType
     AWSConfiguration AWSConfiguration
 }
 

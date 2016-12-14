@@ -1,3 +1,21 @@
+/*
+Copyright Alex Mack
+This file is part of Orca.
+
+Orca is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orca is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orca.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package example
 
 import (
@@ -32,62 +50,13 @@ func ExampleJsonConfig() config.JsonConfiguration {
 	conf.Trainer.Port = 5000
 	conf.Trainer.Policies.TRY_TO_REMOVE_HOSTS = true
 
-	//conf.Habitats = []config.HabitatJsonConfiguration{
-	//	{
-	//		Name: "habitat1",
-	//		Version: 1,
-	//		InstallCommands: []base.OsCommand{
-	//			{
-	//				Type: base.EXEC_COMMAND,
-	//				Command: base.Command{"ls", "/home"},
-	//			},
-	//			{
-	//				Type: base.FILE_COMMAND,
-	//				Command: base.Command{"/etc/orca.conf", "somefilecontent as a string"},
-	//			},
-	//		},
-	//	},
-	//	{
-	//		Name: "habitat2",
-	//		Version: 1,
-	//		InstallCommands: []base.OsCommand{
-	//			{
-	//				Type: base.EXEC_COMMAND,
-	//				Command: base.Command{"ps", "aux"},
-	//			},
-	//			{
-	//				Type: base.FILE_COMMAND,
-	//				Command: base.Command{"/etc/orca.conf", "different config"},
-	//			},
-	//		},
-	//	},
-	//}
-
-	conf.Apps = []config.AppJsonConfiguration{
+	conf.Apps = []base.AppConfiguration{
 		{
 			Name: "http1",
 			Version: 1,
 			Type: base.APP_HTTP,
 			MinDeploymentCount: 2,
-			//MaxDeploymentCount: 10,
-			//InstallCommands: []base.OsCommand{
-			//	{
-			//		Type: base.EXEC_COMMAND,
-			//		Command: base.Command{"ls", "/home"},
-			//	},
-			//	{
-			//		Type: base.FILE_COMMAND,
-			//		Command: base.Command{"/server/http1/app1.conf", "somefilecontent as a string"},
-			//	},
-			//},
-			//QueryStateCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"wget", "http://localhost:1234/check"},
-			//},
-			//RemoveCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"rm", "-rf /server/http1"},
-			//},
+			TargetDeploymentCount: 2,
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
@@ -98,25 +67,7 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			Version: 1,
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
-			//MaxDeploymentCount: 10,
-			//InstallCommands: []base.OsCommand{
-			//	{
-			//		Type: base.EXEC_COMMAND,
-			//		Command: base.Command{"ls", "/home"},
-			//	},
-			//	{
-			//		Type: base.FILE_COMMAND,
-			//		Command: base.Command{"/server/app1/app1.conf", "somefilecontent as a string"},
-			//	},
-			//},
-			//QueryStateCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"wget", "http://localhost:1234/check"},
-			//},
-			//RemoveCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"rm", "-rf /server/app1"},
-			//},
+			TargetDeploymentCount: 2,
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
@@ -128,25 +79,7 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			Version: 1,
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
-			//MaxDeploymentCount: 10,
-			//InstallCommands: []base.OsCommand{
-			//	{
-			//		Type: base.EXEC_COMMAND,
-			//		Command: base.Command{"ls", "/home"},
-			//	},
-			//	{
-			//		Type: base.FILE_COMMAND,
-			//		Command: base.Command{"/server/app11/app11.conf", "somefilecontent as a string"},
-			//	},
-			//},
-			//QueryStateCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"wget", "http://localhost:1235/check"},
-			//},
-			//RemoveCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"rm", "-rf /server/app11"},
-			//},
+			TargetDeploymentCount: 2,
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),
@@ -158,25 +91,7 @@ func ExampleJsonConfig() config.JsonConfiguration {
 			Version: 2,
 			Type: base.APP_WORKER,
 			MinDeploymentCount: 2,
-			//MaxDeploymentCount: 10,
-			//InstallCommands: []base.OsCommand{
-			//	{
-			//		Type: base.EXEC_COMMAND,
-			//		Command: base.Command{"ls", "/home"},
-			//	},
-			//	{
-			//		Type: base.FILE_COMMAND,
-			//		Command: base.Command{"/server/app2/app2.conf", "somefilecontent as a string"},
-			//	},
-			//},
-			//QueryStateCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"wget", "http://localhost:1236/check"},
-			//},
-			//RemoveCommand: base.OsCommand{
-			//	Type: base.EXEC_COMMAND,
-			//	Command: base.Command{"rm", "-rf /server/app2"},
-			//},
+			TargetDeploymentCount: 2,
 			Needs: needs.AppNeeds{
 				MemoryNeeds: needs.MemoryNeeds(5),
 				CpuNeeds: needs.CpuNeeds(5),

@@ -1,3 +1,21 @@
+/*
+Copyright Alex Mack
+This file is part of Orca.
+
+Orca is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orca is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orca.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package state_cloud
 
 import (
@@ -10,6 +28,7 @@ import (
 	"gatoor/orca/rewriteTrainer/needs"
 	"gatoor/orca/rewriteTrainer/audit"
 	"fmt"
+	"sort"
 )
 
 var StateCloudLogger = Logger.LoggerWithField(Logger.Logger, "module", "state_cloud")
@@ -90,13 +109,21 @@ func (c *CloudLayout) FindHostsWithApp(appName base.AppName) map[base.HostId]boo
 	cloudLayoutMutex.Lock()
 	defer cloudLayoutMutex.Unlock()
 	hosts := make(map[base.HostId]bool)
-	for hostId, elem := range (*c).Layout {
-		for app := range elem.Apps {
+	//sorting to make it testable
+	var hostsSort []string
+	for k := range (*c).Layout {
+		hostsSort = append(hostsSort, string(k))
+	}
+	sort.Strings(hostsSort)
+
+	for _, hostId := range hostsSort {
+		for app := range (*c).Layout[base.HostId(hostId)].Apps {
 			if app == appName {
-				hosts[hostId] = true
+				hosts[base.HostId(hostId)] = true
 			}
 		}
 	}
+
 	StateCloudLogger.WithField("type", c.Type).Debugf("Found Hosts %+v with App '%s'", hosts, appName)
 	return hosts
 }
@@ -161,7 +188,7 @@ func (c *CloudLayout) RemoveHost(host base.HostId) {
 }
 
 func (c *CloudLayout) AddApp(host base.HostId, app base.AppName, version base.Version, count base.DeploymentCount) {
-	StateCloudLogger.WithField("type", c.Type).Infof("Adding App '%s' - '%s' to host '%s' %d times", app, version, host, count)
+	StateCloudLogger.WithField("type", c.Type).Infof("Adding App %s:%d to host '%s' %d times", app, version, host, count)
 	cloudLayoutMutex.Lock()
 	defer cloudLayoutMutex.Unlock()
 	if val, exists := (*c).Layout[host]; exists {

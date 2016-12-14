@@ -1,3 +1,21 @@
+/*
+Copyright Alex Mack
+This file is part of Orca.
+
+Orca is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orca is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orca.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package state_configuration
 
 import (
@@ -5,8 +23,11 @@ import (
 	"gatoor/orca/base"
 	"errors"
 	"sort"
+	Logger "gatoor/orca/rewriteTrainer/log"
+	"gatoor/orca/rewriteTrainer/state/needs"
 )
 
+var ConfigLogger = Logger.LoggerWithField(Logger.Logger, "module", "configuration")
 var GlobalConfigurationState ConfigurationState
 
 var configurationStateMutex = &sync.Mutex{}
@@ -52,6 +73,7 @@ func (c * ConfigurationState) AllAppsLatest() map[base.AppName]base.AppConfigura
 			apps[appName] = elem
 		}
 	}
+	ConfigLogger.Infof("AllAppsLatest: %+v", apps)
 	return apps
 }
 
@@ -82,12 +104,14 @@ func (c *ConfigurationState) GetHabitat (name base.HabitatName, version base.Ver
 }
 
 func (c *ConfigurationState) ConfigureApp (conf base.AppConfiguration) {
+	ConfigLogger.Infof("ConfigureApp %s:%d", conf.Name, conf.Version)
 	configurationStateMutex.Lock()
 	defer configurationStateMutex.Unlock()
 	if _, exists := c.Apps[conf.Name]; !exists {
 		c.Apps[conf.Name] = AppConfigurationVersions{}
 	}
 	c.Apps[conf.Name][conf.Version] = conf
+	state_needs.GlobalAppsNeedState.UpdateNeeds(conf.Name, conf.Version, conf.Needs)
 }
 
 func (c *ConfigurationState) ConfigureHabitat (conf base.HabitatConfiguration) {
