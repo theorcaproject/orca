@@ -165,6 +165,10 @@ func getStateConfigurationApplications(w http.ResponseWriter, r *http.Request) {
 			Network: object.Network,
 			Needs: object.Needs,
 			PortMappings: object.PortMappings,
+
+			VolumeMappings: object.VolumeMappings,
+			EnvironmentVariables: object.EnvironmentVariables,
+			Files: object.Files,
 		})
 
 		apiInstance.ConfigManager.Save()

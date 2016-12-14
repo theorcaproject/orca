@@ -167,6 +167,21 @@ type PortMapping struct {
     ContainerPort string
 }
 
+type VolumeMapping struct {
+    HostPath string
+    ContainerPath string
+}
+
+type File struct {
+    HostPath string
+    Base64FileContents string
+}
+
+type EnvironmentVariable struct {
+    Key string
+    Value string
+}
+
 type AppConfiguration struct {
     Name                  AppName
     Type                  AppType
@@ -178,7 +193,11 @@ type AppConfiguration struct {
     LoadBalancer LoadBalancerName
     Network NetworkName
     Needs needs.AppNeeds
+
     PortMappings []PortMapping
+    VolumeMappings []VolumeMapping
+    EnvironmentVariables []EnvironmentVariable
+    Files []File
 }
 
 type ProviderType string

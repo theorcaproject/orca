@@ -137,6 +137,10 @@ func applyAppsConfig(appsConfs []base.AppConfiguration) {
 			PortMappings: aConf.PortMappings,
 			Needs: aConf.Needs,
 
+			VolumeMappings: aConf.VolumeMappings,
+			EnvironmentVariables: aConf.EnvironmentVariables,
+			Files: aConf.Files,
+
 			//InstallCommands: aConf.InstallCommands,
 			//QueryStateCommand: aConf.QueryStateCommand,
 			//RunCommand: aConf.RunCommand,
