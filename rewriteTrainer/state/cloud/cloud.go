@@ -29,6 +29,7 @@ import (
 	"gatoor/orca/rewriteTrainer/audit"
 	"fmt"
 	"sort"
+	"gatoor/orca/rewriteTrainer/cloud"
 )
 
 var StateCloudLogger = Logger.LoggerWithField(Logger.Logger, "module", "state_cloud")
@@ -61,6 +62,8 @@ type CloudLayoutAll struct {
 type CloudLayoutElement struct {
 	HostId base.HostId
 	IpAddress base.IpAddr
+	InstanceType base.InstanceType
+	SafeInstance base.SafeInstance
 	HabitatVersion base.Version
 	Apps map[base.AppName]AppsVersion
 }
@@ -142,7 +145,15 @@ func (c *CloudLayout) AddHost(host base.HostId, elem CloudLayoutElement) {
 		})
 	}
 
- 	(*c).Layout[host] = elem
+	if(elem.InstanceType == ""){
+		elem.InstanceType = cloud.CurrentProvider.GetInstanceType(host)
+	}
+
+	if(elem.IpAddress == ""){
+		elem.IpAddress = cloud.CurrentProvider.GetIp(host)
+	}
+
+	(*c).Layout[host] = elem
 }
 
 func (c *CloudLayout) DeploymentCount(app base.AppName, version base.Version) (base.DeploymentCount, base.DeploymentCount) {
@@ -163,14 +174,12 @@ func (c *CloudLayout) DeploymentCount(app base.AppName, version base.Version) (b
 
 func (c *CloudLayout) AddEmptyHost(host base.HostId) {
 	StateCloudLogger.WithField("type", c.Type).Infof("Adding empty host '%s'", host)
-	cloudLayoutMutex.Lock()
-	defer cloudLayoutMutex.Unlock()
-	(*c).Layout[host] = CloudLayoutElement{
+	entity := CloudLayoutElement{
 		HostId: host,
-		IpAddress: "",
 		HabitatVersion: 0,
 		Apps: make(map[base.AppName]AppsVersion),
 	}
+	c.AddHost(host, entity)
 }
 
 func (c * CloudLayout) Wipe() {
