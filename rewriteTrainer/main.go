@@ -48,8 +48,8 @@ func main() {
 	var baseConfiguration config.JsonConfiguration
 
 	Logger.InitLogger.Info("Starting trainer...")
-	initConfig(&baseConfiguration, *configurationRoot)
 	initState()
+	initConfig(&baseConfiguration, *configurationRoot)
 	cloud.Init()
 	db.Init("")
 	initApi(&baseConfiguration)
