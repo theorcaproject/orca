@@ -84,6 +84,9 @@ func (c *CloudLayoutAll) Init() {
 	}
 	GlobalAvailableInstances = AvailableInstances{}
 
+}
+
+func (c *CloudLayoutAll) InitBaseInstances(){
 	if len(GlobalAvailableInstances) < int(state_configuration.GlobalConfigurationState.CloudProvider.MinInstances) {
 		for i := len(GlobalAvailableInstances); i < int(state_configuration.GlobalConfigurationState.CloudProvider.MinInstances); i++ {
 			cloud.CurrentProvider.SpawnInstanceSync(state_configuration.GlobalConfigurationState.CloudProvider.BaseInstanceType)

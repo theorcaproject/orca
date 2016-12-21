@@ -48,11 +48,14 @@ func main() {
 	var baseConfiguration config.JsonConfiguration
 
 	Logger.InitLogger.Info("Starting trainer...")
-	initState()
 	initConfig(&baseConfiguration, *configurationRoot)
+	initState()
 	cloud.Init()
 	db.Init("")
 	initApi(&baseConfiguration)
+
+	state_cloud.GlobalCloudLayout.InitBaseInstances()
+
 	waitForCheckin()
 	scheduler.Start()
 	planner.InitialPlan()
