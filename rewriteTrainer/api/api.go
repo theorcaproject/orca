@@ -211,7 +211,7 @@ func getAuditEvents(w http.ResponseWriter, r *http.Request) {
 func getAppPerformance(w http.ResponseWriter, r *http.Request) {
 	ApiLogger.Infof("Query to getAppPerformance")
 	application := r.URL.Query().Get("application")
-	returnJson(w, metrics.QueryStats__ApplicationPerformance__ByMinute(application))
+	returnJson(w, metrics.QueryStats__ApplicationPerformance__ByMinute(base.AppName(application)))
 }
 
 func doHandleCloudEvent() {
