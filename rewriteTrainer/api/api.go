@@ -57,6 +57,7 @@ func (api Api) Init() {
 	r.HandleFunc("/state/config/applications", getStateConfigurationApplications)
 	r.HandleFunc("/state/config/cloud", getStateConfigurationCloudProviders)
 	r.HandleFunc("/state/cloud", getStateCloud)
+	r.HandleFunc("/state/cloud/application", getAppPerformance)
 	r.HandleFunc("/state/needs", getStateNeeds)
 	r.HandleFunc("/audit", getAuditEvents)
 
@@ -173,11 +174,7 @@ func getStateConfigurationApplications(w http.ResponseWriter, r *http.Request) {
 			Version: new_version,
 			TargetDeploymentCount: object.TargetDeploymentCount,
 			MinDeploymentCount: object.MinDeploymentCount,
-			//InstallCommands []base.OsCommand
-			//QueryStateCommand base.OsCommand
-			//RemoveCommand base.OsCommand
-			//RunCommand base.OsCommand
-			//StopCommand base.OsCommand
+
 			DockerConfig: object.DockerConfig,
 			LoadBalancer: object.LoadBalancer,
 			Network: object.Network,
@@ -209,6 +206,12 @@ func getAuditEvents(w http.ResponseWriter, r *http.Request) {
 	ApiLogger.Infof("Query to getAuditEvents")
 
 	returnJson(w, audit.Audit.ListEvents(nil))
+}
+
+func getAppPerformance(w http.ResponseWriter, r *http.Request) {
+	ApiLogger.Infof("Query to getAppPerformance")
+	application := r.URL.Query().Get("application")
+	returnJson(w, metrics.QueryStats__ApplicationPerformance__ByMinute(application))
 }
 
 func doHandleCloudEvent() {

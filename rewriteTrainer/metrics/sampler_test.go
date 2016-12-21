@@ -22,7 +22,6 @@ import (
 	"testing"
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/base"
-	"time"
 )
 
 
@@ -32,15 +31,19 @@ func TestSampler_RecordStats(t *testing.T) {
 	stats :=  base.MetricsWrapper{}
 	stats.HostMetrics = make(map[string]base.HostStats)
 	stats.AppMetrics = make(map[base.AppName]map[base.Version]map[string]base.AppStats)
-	stats.HostMetrics[time.Unix(0,0).Format(time.RFC3339Nano)] = base.HostStats{3, 2, 1}
+
+	stats.AppMetrics["testApp"] = make(map[base.Version]map[string]base.AppStats)
+	stats.AppMetrics["testApp"][1.0] = make(map[string]base.AppStats)
+	stats.AppMetrics["testApp"][1.0]["-"] = base.AppStats{
+		ResponsePerformance:0,
+		NetworkUsage:10,
+		MemoryUsage:12,
+		CpuUsage:150,
+	}
 	RecordStats("host1", stats, tim)
 
-	res := db.Audit.Get(db.BUCKET_AUDIT_RECEIVED_STATS, "host1_sometimestamp")
-
-	if res != "{\"HostMetrics\":{\"1970-01-01T12:00:00+12:00\":{\"MemoryUsage\":3,\"CpuUsage\":2,\"NetworkUsage\":1}},\"AppMetrics\":{}}" {
-		t.Error(res)
-	}
-	db.Close()
+	//QueryStats__ApplicationPerformance("testApp")
+	QueryStats__ApplicationPerformance__ByMinute("testApp")
 }
 
 

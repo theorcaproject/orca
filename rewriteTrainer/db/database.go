@@ -48,28 +48,28 @@ const (
 var Audit OrcaDb
 
 func Init(postfix string) {
-	audit, err := bolt.Open(DB_PATH + postfix, 0600, nil)
-
-	if err != nil {
-		DbLogger.Panicf("Cannot open database %s", DB_PATH)
-	}
-	Audit = OrcaDb{
-		"audit.db" + postfix, audit,
-	}
-
-	buckets := []string{BUCKET_AUDIT_RECEIVED_STATS, BUCKET_AUDIT_RECEIVED_HOST_INFO, BUCKET_AUDIT_SENT, BUCKET_AUDIT_DESIRED_LAYOUT, BUCKET_AUDIT_CURRENT_LAYOUT}
-
-	for _, bucketName := range buckets {
-		Audit.Db.Update(func(tx *bolt.Tx) error {
-			_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
-			if err != nil {
-				DbLogger.Errorf("Bucket %s could not be created in audit.db", bucketName)
-				return nil
-			}
-			DbLogger.Infof("Created DB Bucket %s", bucketName)
-			return nil
-		})
-	}
+	//audit, err := bolt.Open(DB_PATH + postfix, 0600, nil)
+	//
+	//if err != nil {
+	//	DbLogger.Panicf("Cannot open database %s", DB_PATH)
+	//}
+	//Audit = OrcaDb{
+	//	"audit.db" + postfix, audit,
+	//}
+	//
+	//buckets := []string{BUCKET_AUDIT_RECEIVED_STATS, BUCKET_AUDIT_RECEIVED_HOST_INFO, BUCKET_AUDIT_SENT, BUCKET_AUDIT_DESIRED_LAYOUT, BUCKET_AUDIT_CURRENT_LAYOUT}
+	//
+	//for _, bucketName := range buckets {
+	//	Audit.Db.Update(func(tx *bolt.Tx) error {
+	//		_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
+	//		if err != nil {
+	//			DbLogger.Errorf("Bucket %s could not be created in audit.db", bucketName)
+	//			return nil
+	//		}
+	//		DbLogger.Infof("Created DB Bucket %s", bucketName)
+	//		return nil
+	//	})
+	//}
 }
 
 func Close() {
