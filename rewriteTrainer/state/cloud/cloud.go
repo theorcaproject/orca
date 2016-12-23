@@ -26,11 +26,11 @@ import (
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"sync"
 	"gatoor/orca/rewriteTrainer/needs"
-	"gatoor/orca/rewriteTrainer/audit"
 	"fmt"
 	"sort"
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/state/configuration"
+	"time"
 )
 
 var StateCloudLogger = Logger.LoggerWithField(Logger.Logger, "module", "state_cloud")
@@ -71,6 +71,9 @@ type CloudLayoutElement struct {
 type AppsVersion struct {
 	Version         base.Version
 	DeploymentCount base.DeploymentCount
+
+	StatisticPoint  base.AppStats
+	StatisticPointTimestamp time.Time
 }
 
 func (c *CloudLayoutAll) Init() {
@@ -146,11 +149,11 @@ func (c *CloudLayout) AddHost(host base.HostId, elem CloudLayoutElement) {
 	defer cloudLayoutMutex.Unlock()
 
 	if _, ok := (*c).Layout[host]; !ok {
-		audit.Audit.AddEvent(map[string]string{
+		db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
 			"message": fmt.Sprintf("New host discovered, '%s': '%+v'", host, elem),
 			"subsystem": "cloud",
 			"level": "info",
-		})
+		}})
 	}
 
 	if (elem.InstanceType == "") {
@@ -210,7 +213,12 @@ func (c *CloudLayout) AddApp(host base.HostId, app base.AppName, version base.Ve
 	defer cloudLayoutMutex.Unlock()
 	if val, exists := (*c).Layout[host]; exists {
 		if _, ex := val.Apps[app]; !ex {
-			val.Apps[app] = AppsVersion{version, count}
+			val.Apps[app] = AppsVersion{
+				version,
+				count,
+				base.AppStats{},
+				time.Time{},
+			}
 		}
 	}
 }
@@ -263,13 +271,14 @@ func handleHostWithoutApps(hostIndo base.HostInfo) {
 	// else: the host was cleaned of apps to shut it down. Do this
 }
 
-func (c *CloudLayout) UpdateHost(hostInfo base.HostInfo) {
+func (c *CloudLayout) UpdateHost(hostInfo base.HostInfo, stats base.MetricsWrapper) {
 	if len(hostInfo.Apps) == 0 {
 		handleHostWithoutApps(hostInfo)
 	}
 	apps := make(map[base.AppName]AppsVersion)
 	appCounter := make(map[base.AppName]base.DeploymentCount)
 	runningVersions := make(map[base.AppName]base.Version)
+
 	for _, val := range hostInfo.Apps {
 		if val.Status != base.STATUS_RUNNING {
 			continue
@@ -282,10 +291,19 @@ func (c *CloudLayout) UpdateHost(hostInfo base.HostInfo) {
 	}
 
 	for appName, count := range appCounter {
-		apps[appName] = AppsVersion{
+		appsVersionObject := AppsVersion{
 			Version: runningVersions[appName],
 			DeploymentCount: count,
 		}
+
+		version := runningVersions[appName]
+		for _, stat := range stats.AppMetrics[appName][version]{
+			appsVersionObject.StatisticPoint = stat
+			appsVersionObject.StatisticPointTimestamp = time.Now()
+			break
+		}
+
+		apps[appName] = appsVersionObject
 	}
 
 	elem := CloudLayoutElement{
@@ -390,10 +408,3 @@ func (a *AvailableInstances) WipeUsage() {
 		(*a)[key] = elem
 	}
 }
-
-func UpdateCurrent(hostInfo base.HostInfo, time string) {
-	StateCloudLogger.Infof("Updating current layout for host '%s': '%+v'", hostInfo.HostId, hostInfo)
-	GlobalCloudLayout.Current.UpdateHost(hostInfo)
-	db.Audit.Add(db.BUCKET_AUDIT_CURRENT_LAYOUT, time, GlobalCloudLayout.Snapshot().Current)
-}
-
