@@ -93,7 +93,7 @@ func (c *Client) RunApp(appId base.AppId, appConf base.AppConfiguration, appsSta
 	DockerLogger.Warnf("Bindinds are %+v", bindings)
 
 	hostConfig := DockerClient.HostConfig{PortBindings: bindings, PublishAllPorts:true}
-	config := DockerClient.Config{AttachStdout: true, AttachStdin: true, Image: fmt.Sprintf("%s:%s", appConf.Name, appConf.DockerConfig.Tag), ExposedPorts:ports}
+	config := DockerClient.Config{AttachStdout: true, AttachStdin: true, Image: fmt.Sprintf("%s:%s", appConf.DockerConfig.Reference, appConf.DockerConfig.Tag), ExposedPorts:ports}
 	opts := DockerClient.CreateContainerOptions{Name: string(appId), Config: &config, HostConfig:&hostConfig}
 	container, containerErr := DockerCli().CreateContainer(opts)
 	if containerErr != nil {
