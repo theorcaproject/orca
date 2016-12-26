@@ -296,17 +296,24 @@ func (c *CloudLayout) RemoveHost(host base.HostId) {
 	delete((*c).Layout, host)
 }
 
-func (c *PlannedCloudLayout) AddApp(host base.HostId, app base.AppName, version base.Version, count base.DeploymentCount) {
+func (c *CloudLayout) AddApp(host base.HostId, app base.AppName, version base.Version, count base.DeploymentCount) {
 	StateCloudLogger.Infof("Adding App %s:%d to host '%s' %d times", app, version, host, count)
 	cloudLayoutMutex.Lock()
 	defer cloudLayoutMutex.Unlock()
 	if val, exists := (*c).Layout[host]; exists {
+		if val.Apps == nil {
+			fmt.Println("dudes")
+			val.Apps = make(map[base.AppName]AppsVersion)
+		}
+
 		if _, ex := val.Apps[app]; !ex {
-			val.Apps[app] = PlannedAppsVersion{
-				version,
-				count,
+			val.Apps[app] = AppsVersion{
+				Version:version,
+				DeploymentCount:count,
 			}
 		}
+
+		(*c).Layout[host] = val
 	}
 }
 

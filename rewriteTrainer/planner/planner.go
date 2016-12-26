@@ -22,7 +22,6 @@ import (
 	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	Logger "gatoor/orca/rewriteTrainer/log"
-	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/needs"
@@ -30,12 +29,13 @@ import (
 
 var PlannerLogger = Logger.LoggerWithField(Logger.Logger, "module", "planner")
 
-func init() {
-	PlannerLogger.Info("Initialized Planner")
-}
-
 func Plan() {
 	PlannerLogger.Info("Stating Plan()")
+
+	//TODO: A single stuck change can block the system. To protect against this we need to search for changes that
+	//have been in the system for more than X minutes and remove them.
+	//TOD: When a host vanishes for what ever reason, if there were changes for that host nuke them.
+
 	/* We do not run several scheduling cycles at once */
 	if len(state_cloud.GlobalCloudLayout.Changes) > 0 {
 		return
@@ -46,48 +46,8 @@ func Plan() {
 	PlannerLogger.Info("Finished Plan()")
 }
 
-func getGlobalMissingResources() base.InstanceResources {
-	neededCpu, neededMem, neededNet := getGlobalMinNeeds()
-	availableCpu, availableMem, availableNet := getGlobalResources()
-
-	res := base.InstanceResources{
-		TotalCpuResource: base.CpuResource(int(neededCpu) - int(availableCpu)),
-		TotalMemoryResource: base.MemoryResource(int(neededMem) - int(availableMem)),
-		TotalNetworkResource: base.NetworkResource(int(neededNet) - int(availableNet)),
-	}
-	return res
-}
-
-func InitialPlan() {
-	PlannerLogger.Info("Stating initialPlan()")
-	neededCpu, neededMem, neededNet := getGlobalMinNeeds()
-	availableCpu, availableMem, availableNet := getGlobalResources()
-
-	if int(neededCpu) > int(availableCpu) {
-		PlannerLogger.Warnf("Not enough Cpu resources available (needed=%d - available=%d) - spawning new instance TODO", neededCpu, availableCpu)
-		cloud.CurrentProvider.SpawnInstances(cloud.CurrentProvider.SuitableInstanceTypes(getGlobalMissingResources()))
-		Plan()
-		return
-	}
-	if int(neededMem) > int(availableMem) {
-		PlannerLogger.Warnf("Not enough Memory resources available (needed=%d - available=%d) - spawning new instance TODO", neededMem, availableMem)
-		cloud.CurrentProvider.SpawnInstances(cloud.CurrentProvider.SuitableInstanceTypes(getGlobalMissingResources()))
-		Plan()
-		return
-	}
-	if int(neededNet) > int(availableNet) {
-		PlannerLogger.Warnf("Not enough Network resources available (needed=%d - available=%d) - spawning new instance TODO", neededNet, availableNet)
-		cloud.CurrentProvider.SpawnInstances(cloud.CurrentProvider.SuitableInstanceTypes(getGlobalMissingResources()))
-		Plan()
-		return
-	}
-
-	Plan()
-	PlannerLogger.Info("Finished initialPlan()")
-}
-
 func doPlanInternal() {
-	/* Spot instances:
+	/* TODO: Spot instances:
 		1. Always try to launch a spot instance unless the node is marked as critical.
 		2. If the spot instance launch fails, then pick a more expensive instance to try and launch.
 		3. If a running node drops of due to a spot instance culling, then immediately launch a more expensive instance, then perform planning.
@@ -242,43 +202,4 @@ func doPromisedWork(){
 			state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
 		}
 	}
-}
-
-func getGlobalResources() (base.CpuResource, base.MemoryResource, base.NetworkResource) {
-	var totalCpuResources base.CpuResource
-	var totalMemoryResources base.MemoryResource
-	var totalNetworkResources base.NetworkResource
-
-	for _, host := range state_cloud.GlobalCloudLayout.Current.Layout {
-		totalCpuResources += host.AvailableResources.TotalCpuResource
-		totalMemoryResources += host.AvailableResources.TotalMemoryResource
-		totalNetworkResources+= host.AvailableResources.TotalNetworkResource
-	}
-	PlannerLogger.Infof("Total available resources: Cpu: %d, Memory: %d, Network: %d", totalCpuResources, totalMemoryResources, totalNetworkResources)
-	return totalCpuResources, totalMemoryResources, totalNetworkResources
-}
-
-
-func getGlobalMinNeeds() (needs.CpuNeeds, needs.MemoryNeeds, needs.NetworkNeeds){
-	var totalCpuNeeds needs.CpuNeeds
-	var totalMemoryNeeds needs.MemoryNeeds
-	var totalNetworkNeeds needs.NetworkNeeds
-
-	for appName, appObj := range state_configuration.GlobalConfigurationState.Apps {
-		version := appObj.LatestVersion()
-		appNeeds , err := state_needs.GlobalAppsNeedState.Get(appName, version)
-		if err != nil {
-			PlannerLogger.Warnf("Missing needs for app %s:%d", appName, version)
-			continue
-		}
-		cpu := int(appObj[version].TargetDeploymentCount) * int(appNeeds.CpuNeeds)
-		mem := int(appObj[version].TargetDeploymentCount) * int(appNeeds.MemoryNeeds)
-		net := int(appObj[version].TargetDeploymentCount) * int(appNeeds.NetworkNeeds)
-		PlannerLogger.Infof("AppMinNeeds for %s:%d: Cpu=%d, Memory=%d, Network=%d", appName, version, cpu, mem, net)
-		totalCpuNeeds += needs.CpuNeeds(cpu)
-		totalMemoryNeeds += needs.MemoryNeeds(mem)
-		totalNetworkNeeds += needs.NetworkNeeds(net)
-	}
-	PlannerLogger.Infof("GlobalAppMinNeeds: Cpu=%d, Memory=%d, Network=%d", totalCpuNeeds, totalMemoryNeeds, totalNetworkNeeds)
-	return totalCpuNeeds, totalMemoryNeeds, totalNetworkNeeds
 }

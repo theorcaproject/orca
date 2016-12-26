@@ -33,7 +33,6 @@ var ClientLogger = Logger.LoggerWithField(Logger.Logger, "module", "client")
 var AppsState types.AppsState
 var AppsConfiguration types.AppsConfiguration
 var AppsMetricsById types.AppsMetricsById
-//var RetryCounter *types.RetryCounter
 var Configuration types.Configuration
 var cli Client
 
@@ -100,45 +99,6 @@ func installAndRun(config base.AppConfiguration) bool {
 	}
 	return RunApp(config)
 }
-
-//func scaleApp(existingApps []base.AppInfo, config base.AppConfiguration) bool {
-//	 if len(existingApps) > int(config.DeploymentCount) {
-//		 return scaleDown(existingApps, config)
-//	 } else {
-//		 return scaleUp(existingApps, config)
-//	 }
-//}
-//
-//func scaleDown(existingApps []base.AppInfo, config base.AppConfiguration) bool {
-//	ClientLogger.Infof("Starting scale down of app %s:%d", config.AppConfiguration.Name, config.AppConfiguration.Version)
-//	stopped := 0
-//	res := true
-//	for _, app := range existingApps {
-//		if stopped < (len(existingApps) - int(config.DeploymentCount)) {
-//			if !StopApp(app.Id) {
-//				res = false
-//			}
-//			stopped++
-//		}
-//	}
-//	if config.DeploymentCount == 0 {
-//		DeleteApp(config)
-//	}
-//	ClientLogger.Infof("Finished scale down of app %s:%d. Success=%t", config.AppConfiguration.Name, config.AppConfiguration.Version, res)
-//	return res
-//}
-
-//func scaleUp(existingApps []base.AppInfo, config base.AppConfiguration) bool {
-//	ClientLogger.Infof("Starting scale up of app %s:%d", config.AppConfiguration.Name, config.AppConfiguration.Version)
-//	res := true
-//	for i := 0; i < int(config.DeploymentCount) - len(existingApps); i++ {
-//		if !RunApp(config.AppConfiguration) {
-//			res = false
-//		}
-//	}
-//	ClientLogger.Infof("Finished scale up of app %s:%d. Success=%t", config.AppConfiguration.Name, config.AppConfiguration.Version, res)
-//	return res
-//}
 
 func InstallApp(conf base.AppConfiguration) bool {
 	ClientLogger.Infof("Starting Install of app %s:%d", conf.Name, conf.Version)

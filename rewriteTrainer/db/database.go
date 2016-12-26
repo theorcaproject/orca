@@ -72,6 +72,10 @@ func (a *OrcaDb) Insert__AppMetrics(host base.HostId, stats base.MetricsWrapper,
 }
 
 func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
+	if db.session == nil {
+		return
+	}
+
 	event.Timestamp = time.Now()
 	c := db.db.C("audit")
 	err := c.Insert(&event)
@@ -80,6 +84,10 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 	}
 }
 func (db *OrcaDb) Insert__ApplicationUtilisationStatistic(event ApplicationUtilisationStatistic) {
+	if db.session == nil {
+		return
+	}
+
 	event.Timestamp = time.Now()
 	c := db.db.C("app_utilisation")
 	err := c.Insert(&event)
@@ -89,6 +97,10 @@ func (db *OrcaDb) Insert__ApplicationUtilisationStatistic(event ApplicationUtili
 }
 
 func (db *OrcaDb) Insert__ApplicationCountStatistic(count ApplicationCountStatistic) {
+	if db.session == nil {
+		return
+	}
+
 	c := db.db.C("app_count")
 	err := c.Insert(&count)
 	if err != nil {

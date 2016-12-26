@@ -51,7 +51,7 @@ func (api Api) Init() {
 	r.HandleFunc("/client/changes", getChanges) //This route pushes state and already pulls back []ChangeRequests
 	r.HandleFunc("/client/push/events", pushHandler) //TODO: This route is to push errors/failures
 	r.HandleFunc("/client/push/logs", pushHandler) //TODO: This route is to push logs from stdout/stderr
-	r.HandleFunc("/client/push/state", pushHandler) //TODO: This route is to push logs from stdout/stderr
+	r.HandleFunc("/client/push/state", pushHandler)
 
 	r.HandleFunc("/state/config", getStateConfiguration)
 	r.HandleFunc("/state/config/applications", getStateConfigurationApplications)
