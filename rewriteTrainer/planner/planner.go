@@ -229,13 +229,17 @@ func doPromisedWork(){
 	//TODO: Each spawn should be executed in a separate thread and sync to that thread. This way success
 	//and failures can be dealt with correctly while not blocking future ops. We need to try hard to find a
 	//suitable host, and deal with errors that could pop up
-	for _, change := range state_cloud.GlobalCloudLayout.Changes {
-		if change.ChangeType == base.CHANGE_REQUEST__SPAWN_SERVER {
+	changes := state_cloud.GlobalCloudLayout.Changes
 
+	for _, change := range changes {
+		if change.ChangeType == base.CHANGE_REQUEST__SPAWN_SERVER {
 			//TODO: Work out which instance type we should be using here
 			cloud.CurrentProvider.SpawnInstanceSync(base.InstanceType("t2.micro"))
+			state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
+
 		}else if change.ChangeType == base.CHANGE_REQUEST__TERMINATE_SERVER {
 			cloud.CurrentProvider.TerminateInstance(change.Host)
+			state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
 		}
 	}
 }

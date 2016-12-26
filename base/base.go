@@ -299,6 +299,7 @@ const (
 )
 
 type ChangeRequest struct {
+    Id string
     Cost needs.AppNeeds
     ChangeType string
 

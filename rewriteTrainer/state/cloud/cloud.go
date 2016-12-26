@@ -19,6 +19,7 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package state_cloud
 
 import (
+	"github.com/satori/go.uuid"
 	"errors"
 	"gatoor/orca/base"
 	Logger "gatoor/orca/rewriteTrainer/log"
@@ -108,6 +109,7 @@ func (c *CloudLayoutAll) Init() {
 }
 
 func (object *CloudLayoutAll) AddChange(change base.ChangeRequest){
+	change.Id = uuid.NewV4().String()
 	object.Changes = append(object.Changes, change)
 }
 
@@ -120,6 +122,17 @@ func (object *CloudLayoutAll) GetChanges(host base.HostId) []base.ChangeRequest{
 	}
 
 	return changes
+}
+
+func (object *CloudLayoutAll) DeleteChange(id string){
+	changesMinusHost := make([]base.ChangeRequest, 0)
+	for _, change := range object.Changes {
+		if change.Id != id {
+			changesMinusHost= append(changesMinusHost, change)
+		}
+	}
+
+	object.Changes = changesMinusHost
 }
 
 func (object *CloudLayoutAll) PopChanges(host base.HostId) []base.ChangeRequest{
