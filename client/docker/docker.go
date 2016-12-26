@@ -93,7 +93,7 @@ func (c *Client) RunApp(appId base.AppId, appConf base.AppConfiguration, appsSta
 	DockerLogger.Warnf("Bindinds are %+v", bindings)
 
 	hostConfig := DockerClient.HostConfig{PortBindings: bindings, PublishAllPorts:true}
-	config := DockerClient.Config{AttachStdout: true, AttachStdin: true, Image: fmt.Sprintf("%s:%s", appConf.DockerConfig.Reference, appConf.DockerConfig.Tag), ExposedPorts:ports}
+	config := DockerClient.Config{AttachStdout: true, AttachStdin: true, Image: fmt.Sprintf("%s:%s", appConf.DockerConfig.Repository, appConf.DockerConfig.Tag), ExposedPorts:ports}
 	opts := DockerClient.CreateContainerOptions{Name: string(appId), Config: &config, HostConfig:&hostConfig}
 	container, containerErr := DockerCli().CreateContainer(opts)
 	if containerErr != nil {
@@ -145,7 +145,7 @@ func (c *Client) StopApp(appId base.AppId, appConf base.AppConfiguration, appsSt
 
 func (c *Client) DeleteApp(appConf base.AppConfiguration, appsState *types.AppsState, conf *types.Configuration) bool {
 	DockerLogger.Infof("Deleting docker app %s:%d with tag %s", appConf.Name, appConf.Version, appConf.DockerConfig.Tag)
-	err := DockerCli().RemoveImage(fmt.Sprintf("%s:%s", appConf.Name, appConf.DockerConfig.Tag))
+	err := DockerCli().RemoveImage(fmt.Sprintf("%s:%s", appConf.DockerConfig.Repository, appConf.DockerConfig.Tag))
 	if err != nil {
 		DockerLogger.Infof("Deleting docker app %s:%d with tag %s failed: %s", appConf.Name, appConf.Version, appConf.DockerConfig.Tag, err)
 		return false
