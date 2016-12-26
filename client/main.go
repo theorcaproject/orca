@@ -100,13 +100,30 @@ func startScheduledTasks() {
 	go func () {
 		for {
 			<- trainerTicker.C
-			CallTrainer()
+			CallTrainer__GetConfigChanges()
+			CallTrainer__PushState()
 		}
 	}()
 }
 
-func CallTrainer() {
-	MainLogger.Infof("Calling Trainer...")
+func CallTrainer__GetConfigChanges() {
+	MainLogger.Infof("Calling trainer for configuration changes...")
+	res, err := http.Get(client.Configuration.TrainerUrl + "/client/changes?host=" + string(client.Configuration.HostId))
+	if err != nil {
+		MainLogger.Errorf("Could not send data to trainer: %+v", err)
+	} else {
+		defer res.Body.Close()
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			MainLogger.Errorf("Could not read reponse from trainer: %+v", err)
+		} else {
+			handleTrainerResponse(body)
+		}
+	}
+}
+
+func CallTrainer__PushState() {
+	MainLogger.Infof("Calling Trainer and pushing current state...")
 	metrics := client.GetAppMetrics()
 	state := client.AppsState
 	config := client.AppsConfiguration
@@ -122,21 +139,10 @@ func CallTrainer() {
 		wrapper.Stats = base.MetricsWrapper{}
 		json.NewEncoder(b).Encode(wrapper)
 	}
-	res, err := http.Post(client.Configuration.TrainerUrl, "application/json; charset=utf-8", b)
+	_, err := http.Post(client.Configuration.TrainerUrl + "/client/push/state", "application/json; charset=utf-8", b)
 	if err != nil {
 		MainLogger.Errorf("Could not send data to trainer: %+v", err)
-	} else {
-		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			MainLogger.Errorf("Could not read reponse from trainer: %+v", err)
-		} else {
-			handleTrainerResponse(body)
-		}
 	}
-
-	MainLogger.Infof("Metrics: %+v", metrics)
-	MainLogger.Infof("State: %+v", state)
 }
 
 func getHostMetrics() map[string]base.HostStats {

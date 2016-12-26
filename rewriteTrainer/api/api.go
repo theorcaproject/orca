@@ -48,9 +48,10 @@ func (api Api) Init() {
 	r := mux.NewRouter()
 
 	/* Routes for the client */
-	r.HandleFunc("/push", pushHandler) //This route pushes state and already pulls back []ChangeRequests
-	r.HandleFunc("/push/events", pushHandler) //TODO: This route is to push errors/failures
-	r.HandleFunc("/push/logs", pushHandler) //TODO: This route is to push logs from stdout/stderr
+	r.HandleFunc("/client/changes", getChanges) //This route pushes state and already pulls back []ChangeRequests
+	r.HandleFunc("/client/push/events", pushHandler) //TODO: This route is to push errors/failures
+	r.HandleFunc("/client/push/logs", pushHandler) //TODO: This route is to push logs from stdout/stderr
+	r.HandleFunc("/client/push/state", pushHandler) //TODO: This route is to push logs from stdout/stderr
 
 	r.HandleFunc("/state/config", getStateConfiguration)
 	r.HandleFunc("/state/config/applications", getStateConfigurationApplications)
@@ -84,6 +85,12 @@ func returnJson(w http.ResponseWriter, obj interface{}) {
 	w.Write(j)
 }
 
+func getChanges(w http.ResponseWriter, r *http.Request) {
+	host := r.URL.Query().Get("host")
+	changes := state_cloud.GlobalCloudLayout.PopChanges(base.HostId(host))
+	returnJson(w, changes)
+}
+
 func pushHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
@@ -96,10 +103,8 @@ func pushHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/* Update the state and host tracker */
 	state_cloud.GlobalCloudLayout.Current.UpdateHost(wrapper.HostInfo,wrapper.Stats)
-	changes := state_cloud.GlobalCloudLayout.PopChanges(wrapper.HostInfo.HostId)
-	returnJson(w, changes)
+	returnJson(w, nil)
 }
 
 func getStateConfiguration(w http.ResponseWriter, r *http.Request) {
