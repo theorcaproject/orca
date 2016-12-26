@@ -290,6 +290,26 @@ type TrainerConfigurationState struct {
     Ip IpAddr
 }
 
+const (
+    UPDATE_TYPE__ADD = "UPDATE_TYPE__ADD"
+    UPDATE_TYPE__REMOVE = "UPDATE_TYPE__REMOVE"
+
+    CHANGE_REQUEST__SPAWN_SERVER= "CHANGE_REQUEST__SPAWN_SERVER"
+    CHANGE_REQUEST__TERMINATE_SERVER= "CHANGE_REQUEST__TERMINATE_SERVER"
+)
+
+type ChangeRequest struct {
+    Cost needs.AppNeeds
+    ChangeType string
+
+    Application AppName
+    AppVersion Version
+    Host HostId
+
+    /* Optional fields, only required when type is UPDATE_TYPE__ADD */
+    AppConfig AppConfiguration
+}
+
 var appsMetricsMutex = &sync.Mutex{}
 
 func (a *AppMetrics) Add(name AppName, version Version, time string, stats AppStats) {

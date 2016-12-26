@@ -20,27 +20,12 @@ package installer
 
 import (
 	orcaSSh "gatoor/orca/util"
-	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/base"
 	"gatoor/orca/client/types"
 	"strconv"
 	"fmt"
 	"gatoor/orca/rewriteTrainer/db"
 )
-
-var InstallerLogger = Logger.LoggerWithField(Logger.Logger, "module", "installer")
-
-func TestClientConfig(id base.HostId) types.Configuration {
-	return types.Configuration{
-		HostId: id,
-		Type: "test",
-		AppStatusPollInterval: 1,
-		MetricsPollInterval: 1,
-		TrainerPollInterval: 5,
-		TrainerUrl: "http://172.16.147.1:5000/push",
-		Port: 5001,
-	}
-}
 
 func ubuntu1604(clientConfig types.Configuration) []string {
 	const (
@@ -63,7 +48,7 @@ func ubuntu1604(clientConfig types.Configuration) []string {
 		"echo orca | sudo -S mkdir -p /orca/client/config",
 		"echo orca | sudo -S chmod -R 777 /orca",
 		//"echo orca | sudo -S sh -c \"echo '" + string(trainerIp) + " orcatrainer' >> /etc/hosts\"",
-		"rm -rf /orca/src/gatoor && mkdir -p /orca/src/gatoor && cd /orca/src/gatoor && git clone -b awstest https://github.com/gatoor/orca.git",
+		"rm -rf /orca/src/gatoor && mkdir -p /orca/src/gatoor && cd /orca/src/gatoor && git clone -b reaction https://github.com/gatoor/orca.git",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/fsouza/go-dockerclient && go get github.com/gorilla/mux'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/base && go build'",
 		"GOPATH=/orca bash -c 'cd /orca/src/gatoor/orca/base/log && go build'",

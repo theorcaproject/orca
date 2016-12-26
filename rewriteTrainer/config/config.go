@@ -27,7 +27,6 @@ import (
 	"gatoor/orca/util"
 	"fmt"
 	"gatoor/orca/rewriteTrainer/state/configuration"
-	"gatoor/orca/rewriteTrainer/state/cloud"
 	"io/ioutil"
 )
 
@@ -119,16 +118,8 @@ func (j *JsonConfiguration)  ApplyToState() {
 	applyTrainerConfig(j.Trainer)
 	applyAppsConfig(j.Apps)
 	applyNeeds(j.Apps)
-	applyAvailableInstances(j.AvailableInstances)
 	applyCloudProviderConfiguration(j.CloudProvider)
 	Logger.InitLogger.Infof("Config was applied to State")
-}
-
-func applyAvailableInstances(instances []base.HostId) {
-	Logger.InitLogger.Infof("Applying AvailableInstances config: %+v", instances)
-	for _, hostId := range instances {
-		state_cloud.GlobalAvailableInstances.Update(hostId, base.InstanceResources{UsedCpuResource:0, UsedMemoryResource:0, UsedNetworkResource:0, TotalCpuResource: 20, TotalMemoryResource: 20, TotalNetworkResource: 20})
-	}
 }
 
 func applyCloudProviderConfiguration(conf base.ProviderConfiguration) {

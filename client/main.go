@@ -158,13 +158,12 @@ func prepareData(state types.AppsState, metrics base.AppMetrics) base.TrainerPus
 }
 
 func handleTrainerResponse(body []byte) {
-	var config base.PushConfiguration
-	if err := json.Unmarshal(body, &config); err != nil {
+	var changes []base.ChangeRequest
+	if err := json.Unmarshal(body, &changes); err != nil {
 		MainLogger.Errorf("Failed to parse response - %s HTTP_BODY: %s", err, string(body))
 	} else {
-		MainLogger.Infof("Got Config with OrcaVersion %s: %+v", config.OrcaVersion, config)
-		client.Handle(config)
-
+		MainLogger.Infof("Got Changes with OrcaVersion %+v", changes)
+		client.Handle(changes)
 	}
 }
 

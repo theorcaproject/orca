@@ -66,114 +66,79 @@ func Init() {
 	ClientLogger.Infof("Initialized Client of Type %s", cli.Type())
 }
 
-func Handle(config base.PushConfiguration) {
-	ClientLogger.Infof("Received Configuration from trainer: %+v", config)
-	if config.AppConfiguration.Name == base.AppName("") {
-		ClientLogger.Infof("Configuration is empty. Skipping")
-		return
-	}
-	existingAppsVersion := AppsState.GetAllWithVersion(config.AppConfiguration.Name, config.AppConfiguration.Version)
-	if len(existingAppsVersion) > 0 {
-		if len(existingAppsVersion) != int(config.DeploymentCount) {
-			ClientLogger.Infof("Configuration for existing app version %s:%d DeploymentCount new %d; old %s", config.AppConfiguration.Name, config.AppConfiguration.Version, config.DeploymentCount, len(existingAppsVersion))
-			scaleApp(existingAppsVersion, config)
+func Handle(changes []base.ChangeRequest) {
+	for _, change := range changes {
+		if change.ChangeType == base.UPDATE_TYPE__ADD {
+			newApp(change.AppConfig)
 		}
-		ClientLogger.Infof("Configuration for existing app version %s:%d DeploymentCount %d matches, skipping", config.AppConfiguration.Name, config.AppConfiguration.Version, config.DeploymentCount)
-	} else {
-		existingApps := AppsState.GetAll(config.AppConfiguration.Name)
-		if len(existingApps) > 0 {
-			ClientLogger.Infof("Configuration for different version of app %s. From %d to %d", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version)
-			if !updateApp(existingApps, config) {
-				 ClientLogger.Warnf("Update of app %s from %d to %d failed.", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version)
-				 if !rollbackApp(AppsConfiguration.Get(existingApps[0].Id), config.DeploymentCount) {
-				 	 ClientLogger.Warnf("Rollback of app %s from %d to %d failed. Doing nothing", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version)
-					 return
-				 }
-			}
-		} else {
-			newApp(config)
+
+		if change.ChangeType == base.UPDATE_TYPE__REMOVE {
+			//TODO
 		}
 	}
-	ClientLogger.Infof("Applied Configuration from trainer")
 }
 
-func newApp(config base.PushConfiguration) bool {
+func newApp(config base.AppConfiguration) bool {
 	return installAndRun(config)
 }
 
-func rollbackApp(config base.AppConfiguration, count base.DeploymentCount) bool {
-	ClientLogger.Infof("Starting rollback of app %s to %d", config.Name, config.Version)
-	pushConf := base.PushConfiguration{DeploymentCount: count, AppConfiguration: config}
-	StopAll(config.Name)
-	DeleteApp(pushConf)
-	res := installAndRun(pushConf)
-	ClientLogger.Infof("Finished rollback of app %s to %d. Success=%t", config.Name, config.Version, res)
-	return res
-}
-
-func updateApp(existingApps []base.AppInfo, config base.PushConfiguration) bool {
-	ClientLogger.Infof("Starting update app %s:%d to %d", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version)
+func updateApp(existingApps []base.AppInfo, config base.AppConfiguration) bool {
+	ClientLogger.Infof("Starting update app %s:%d to %d", config.Name, existingApps[0].Version, config.Version)
 	for _, app := range existingApps {
 		StopApp(app.Id)
 	}
 	DeleteApp(config)
 	res := installAndRun(config)
-	ClientLogger.Infof("Finished update app %s:%d to %d. Success=%t", config.AppConfiguration.Name, existingApps[0].Version, config.AppConfiguration.Version, res)
+	ClientLogger.Infof("Finished update app %s:%d to %d. Success=%t", config.Name, existingApps[0].Version, config.Version, res)
 	return res
 }
 
-func installAndRun(config base.PushConfiguration) bool {
-	if !InstallApp(config.AppConfiguration) {
-		ClientLogger.Infof("Install of app %s:%d failed, skipping run", config.AppConfiguration.Name, config.AppConfiguration.Version)
+func installAndRun(config base.AppConfiguration) bool {
+	if !InstallApp(config) {
+		ClientLogger.Infof("Install of app %s:%d failed, skipping run", config.Name, config.Version)
 		return false
 	}
-	res := true
-	for i := 0; i < int(config.DeploymentCount); i++ {
-		if !RunApp(config.AppConfiguration) {
-			res = false
-		}
-	}
-	return res
+	return RunApp(config)
 }
 
-func scaleApp(existingApps []base.AppInfo, config base.PushConfiguration) bool {
-	 if len(existingApps) > int(config.DeploymentCount) {
-		 return scaleDown(existingApps, config)
-	 } else {
-		 return scaleUp(existingApps, config)
-	 }
-}
+//func scaleApp(existingApps []base.AppInfo, config base.AppConfiguration) bool {
+//	 if len(existingApps) > int(config.DeploymentCount) {
+//		 return scaleDown(existingApps, config)
+//	 } else {
+//		 return scaleUp(existingApps, config)
+//	 }
+//}
+//
+//func scaleDown(existingApps []base.AppInfo, config base.AppConfiguration) bool {
+//	ClientLogger.Infof("Starting scale down of app %s:%d", config.AppConfiguration.Name, config.AppConfiguration.Version)
+//	stopped := 0
+//	res := true
+//	for _, app := range existingApps {
+//		if stopped < (len(existingApps) - int(config.DeploymentCount)) {
+//			if !StopApp(app.Id) {
+//				res = false
+//			}
+//			stopped++
+//		}
+//	}
+//	if config.DeploymentCount == 0 {
+//		DeleteApp(config)
+//	}
+//	ClientLogger.Infof("Finished scale down of app %s:%d. Success=%t", config.AppConfiguration.Name, config.AppConfiguration.Version, res)
+//	return res
+//}
 
-func scaleDown(existingApps []base.AppInfo, config base.PushConfiguration) bool {
-	ClientLogger.Infof("Starting scale down of app %s:%d", config.AppConfiguration.Name, config.AppConfiguration.Version)
-	stopped := 0
-	res := true
-	for _, app := range existingApps {
-		if stopped < (len(existingApps) - int(config.DeploymentCount)) {
-			if !StopApp(app.Id) {
-				res = false
-			}
-			stopped++
-		}
-	}
-	if config.DeploymentCount == 0 {
-		DeleteApp(config)
-	}
-	ClientLogger.Infof("Finished scale down of app %s:%d. Success=%t", config.AppConfiguration.Name, config.AppConfiguration.Version, res)
-	return res
-}
-
-func scaleUp(existingApps []base.AppInfo, config base.PushConfiguration) bool {
-	ClientLogger.Infof("Starting scale up of app %s:%d", config.AppConfiguration.Name, config.AppConfiguration.Version)
-	res := true
-	for i := 0; i < int(config.DeploymentCount) - len(existingApps); i++ {
-		if !RunApp(config.AppConfiguration) {
-			res = false
-		}
-	}
-	ClientLogger.Infof("Finished scale up of app %s:%d. Success=%t", config.AppConfiguration.Name, config.AppConfiguration.Version, res)
-	return res
-}
+//func scaleUp(existingApps []base.AppInfo, config base.AppConfiguration) bool {
+//	ClientLogger.Infof("Starting scale up of app %s:%d", config.AppConfiguration.Name, config.AppConfiguration.Version)
+//	res := true
+//	for i := 0; i < int(config.DeploymentCount) - len(existingApps); i++ {
+//		if !RunApp(config.AppConfiguration) {
+//			res = false
+//		}
+//	}
+//	ClientLogger.Infof("Finished scale up of app %s:%d. Success=%t", config.AppConfiguration.Name, config.AppConfiguration.Version, res)
+//	return res
+//}
 
 func InstallApp(conf base.AppConfiguration) bool {
 	ClientLogger.Infof("Starting Install of app %s:%d", conf.Name, conf.Version)
@@ -230,14 +195,14 @@ func StopAll(appName base.AppName) bool {
 	return res
 }
 
-func DeleteApp(config base.PushConfiguration) bool {
-	ClientLogger.Infof("Starting deletion of app %s", config.AppConfiguration.Name)
-	apps := AppsState.GetAll(config.AppConfiguration.Name)
+func DeleteApp(config base.AppConfiguration) bool {
+	ClientLogger.Infof("Starting deletion of app %s", config.Name)
+	apps := AppsState.GetAll(config.Name)
 	for _, app := range apps {
 		AppsState.Remove(app.Id)
 	}
-	res := cli.DeleteApp(config.AppConfiguration, &AppsState, &Configuration)
-	ClientLogger.Infof("Finished deletion of app %s. Success=%t", config.AppConfiguration.Name, res)
+	res := cli.DeleteApp(config, &AppsState, &Configuration)
+	ClientLogger.Infof("Finished deletion of app %s. Success=%t", config.Name, res)
 	return res
 }
 

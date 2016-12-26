@@ -27,9 +27,7 @@ import (
 	"gatoor/orca/rewriteTrainer/state/needs"
 	"gatoor/orca/rewriteTrainer/state/cloud"
 	Logger "gatoor/orca/rewriteTrainer/log"
-	"gatoor/orca/rewriteTrainer/responder"
 	"gatoor/orca/rewriteTrainer/db"
-	"gatoor/orca/rewriteTrainer/tracker"
 	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/config"
 )
@@ -49,7 +47,10 @@ func (api Api) Init() {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/push", pushHandler)
+	/* Routes for the client */
+	r.HandleFunc("/push", pushHandler) //This route pushes state and already pulls back []ChangeRequests
+	r.HandleFunc("/push/events", pushHandler) //TODO: This route is to push errors/failures
+	r.HandleFunc("/push/logs", pushHandler) //TODO: This route is to push logs from stdout/stderr
 
 	r.HandleFunc("/state/config", getStateConfiguration)
 	r.HandleFunc("/state/config/applications", getStateConfigurationApplications)
@@ -97,21 +98,8 @@ func pushHandler(w http.ResponseWriter, r *http.Request) {
 
 	/* Update the state and host tracker */
 	state_cloud.GlobalCloudLayout.Current.UpdateHost(wrapper.HostInfo,wrapper.Stats)
-	tracker.GlobalHostTracker.Update(wrapper.HostInfo.HostId)
-
-	responder.CheckAppState(wrapper.HostInfo)
-	config, err := responder.GetConfigForHost(wrapper.HostInfo.HostId)
-
-	if err != nil {
-		ApiLogger.Infof("Sending empty response to host '%s'", wrapper.HostInfo.HostId)
-		config = base.PushConfiguration{}
-		config.OrcaVersion = ORCA_VERSION
-		returnJson(w, config)
-		return
-	}
-	config.OrcaVersion = ORCA_VERSION
-	ApiLogger.Infof("Sending new config to host '%s': '%+v'", wrapper.HostInfo.HostId, config)
-	returnJson(w, config)
+	changes := state_cloud.GlobalCloudLayout.PopChanges(wrapper.HostInfo.HostId)
+	returnJson(w, changes)
 }
 
 func getStateConfiguration(w http.ResponseWriter, r *http.Request) {
@@ -161,11 +149,10 @@ func getStateConfigurationApplications(w http.ResponseWriter, r *http.Request) {
 		ApiLogger.Infof("Read new configuration for application %s", object.Name)
 		ApiLogger.Infof("version %s", object.Version)
 
-		var new_version = object.Version + 1
 		state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 			Name: object.Name,
 			Type: object.Type,
-			Version: new_version,
+			Version: object.Version,
 			TargetDeploymentCount: object.TargetDeploymentCount,
 			MinDeploymentCount: object.MinDeploymentCount,
 
