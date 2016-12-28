@@ -302,7 +302,6 @@ func (c *CloudLayout) AddApp(host base.HostId, app base.AppName, version base.Ve
 	defer cloudLayoutMutex.Unlock()
 	if val, exists := (*c).Layout[host]; exists {
 		if val.Apps == nil {
-			fmt.Println("dudes")
 			val.Apps = make(map[base.AppName]AppsVersion)
 		}
 

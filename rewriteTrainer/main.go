@@ -28,7 +28,6 @@ import (
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/db"
 	"gatoor/orca/rewriteTrainer/scheduler"
-	"gatoor/orca/rewriteTrainer/planner"
 	"time"
 	"flag"
 )
@@ -58,7 +57,6 @@ func main() {
 
 	waitForCheckin()
 	scheduler.Start()
-	planner.InitialPlan()
 	Logger.InitLogger.Info("Trainer started")
 	ticker := time.NewTicker(time.Second * 60)
 	for {

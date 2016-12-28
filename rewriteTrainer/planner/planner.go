@@ -25,6 +25,7 @@ import (
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/needs"
+	"gatoor/orca/rewriteTrainer/db"
 )
 
 var PlannerLogger = Logger.LoggerWithField(Logger.Logger, "module", "planner")
@@ -54,7 +55,7 @@ func doPlanInternal() {
 	*/
 
 	apps := state_configuration.GlobalConfigurationState.AllAppsLatest()
-	missingServerNeeds := needs.AppNeeds{}
+	missingServerNeeds := make([]needs.AppNeeds, 0)
 
 	/* First check that the min needs are satisfied: Mins take priority over desired as they are part of the QOS we protect */
 	for _, appObject := range apps {
@@ -76,6 +77,12 @@ func doPlanInternal() {
 						AppConfig:appObject,
 					})
 
+					db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+						"message": "Min deployment count not satisfied for application " + string(appObject.Name) + ", installing application on host " + string(host.HostId),
+						"application": string(appObject.Name),
+						"host": string(host.HostId),
+					}})
+
 					/* With this change in mind, reduce the usedResources so that we dont overpopulate this host */
 					host.AvailableResources.UsedCpuResource += base.CpuResource(base.Resource(appObject.Needs.CpuNeeds))
 					host.AvailableResources.UsedMemoryResource += base.MemoryResource(base.Resource(appObject.Needs.MemoryNeeds))
@@ -87,41 +94,57 @@ func doPlanInternal() {
 
 			if !foundResource {
 				/* We could not find a server suitable for what we need */
-				missingServerNeeds.CpuNeeds += appObject.Needs.CpuNeeds
-				missingServerNeeds.MemoryNeeds += appObject.Needs.MemoryNeeds
-				missingServerNeeds.NetworkNeeds += appObject.Needs.NetworkNeeds
+				if len(missingServerNeeds) == 0 {
+					missingServerNeeds = append(missingServerNeeds, needs.AppNeeds{})
+				}
+
+				missingServerNeeds[0].CpuNeeds += appObject.Needs.CpuNeeds
+				missingServerNeeds[0].MemoryNeeds += appObject.Needs.MemoryNeeds
+				missingServerNeeds[0].NetworkNeeds+= appObject.Needs.NetworkNeeds
 			}
-		}else {
+		} else {
 			//We have a couple of cases here to account for:
 			//One: Desired is not meet
 			if appObject.TargetDeploymentCount > deployment_count {
-				foundResource := false
+				remainingDeloymentCount := appObject.TargetDeploymentCount
 				for _, host := range state_cloud.GlobalCloudLayout.Current.Layout {
-					if host.HostHasResourcesForApp(appObject.Needs) && !host.HostHasApp(appObject.Name) {
-						state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
-							Host: host.HostId,
-							Application:appObject.Name,
-							AppVersion:appObject.Version,
-							ChangeType:base.UPDATE_TYPE__ADD,
-							Cost:appObject.Needs,
+					if remainingDeloymentCount > 0 {
+						if host.HostHasResourcesForApp(appObject.Needs) && !host.HostHasApp(appObject.Name) {
+							state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
+								Host: host.HostId,
+								Application:appObject.Name,
+								AppVersion:appObject.Version,
+								ChangeType:base.UPDATE_TYPE__ADD,
+								Cost:appObject.Needs,
 
-							AppConfig:appObject,
-						})
+								AppConfig:appObject,
+							})
 
-						/* With this change in mind, reduce the usedResources so that we dont overpopulate this host */
-						host.AvailableResources.UsedCpuResource += base.CpuResource(base.Resource(appObject.Needs.CpuNeeds))
-						host.AvailableResources.UsedMemoryResource += base.MemoryResource(base.Resource(appObject.Needs.MemoryNeeds))
-						host.AvailableResources.UsedNetworkResource += base.NetworkResource(base.Resource(appObject.Needs.NetworkNeeds))
-						foundResource = true
-						break
+							db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+								"message": "Desired deployment count not satisfied for application " + string(appObject.Name) + ", installing application on host " + string(host.HostId),
+								"application": string(appObject.Name),
+								"host": string(host.HostId),
+							}})
+
+							/* With this change in mind, reduce the usedResources so that we dont overpopulate this host */
+							host.AvailableResources.UsedCpuResource += base.CpuResource(base.Resource(appObject.Needs.CpuNeeds))
+							host.AvailableResources.UsedMemoryResource += base.MemoryResource(base.Resource(appObject.Needs.MemoryNeeds))
+							host.AvailableResources.UsedNetworkResource += base.NetworkResource(base.Resource(appObject.Needs.NetworkNeeds))
+							remainingDeloymentCount--
+						}
 					}
 				}
 
-				if !foundResource {
-					/* We could not find a server suitable for what we need */
-					missingServerNeeds.CpuNeeds += appObject.Needs.CpuNeeds
-					missingServerNeeds.MemoryNeeds += appObject.Needs.MemoryNeeds
-					missingServerNeeds.NetworkNeeds += appObject.Needs.NetworkNeeds
+				if remainingDeloymentCount > 0 {
+					for i := 0; i < int(remainingDeloymentCount); i++{
+						if len(missingServerNeeds) > i - 1 {
+							missingServerNeeds = append(missingServerNeeds, needs.AppNeeds{})
+						}
+
+						missingServerNeeds[i].CpuNeeds += appObject.Needs.CpuNeeds
+						missingServerNeeds[i].MemoryNeeds += appObject.Needs.MemoryNeeds
+						missingServerNeeds[i].NetworkNeeds+= appObject.Needs.NetworkNeeds
+					}
 				}
 			}
 
@@ -135,6 +158,12 @@ func doPlanInternal() {
 							AppVersion:appObject.Version,
 							ChangeType:base.UPDATE_TYPE__REMOVE,
 						})
+
+						db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+							"message": "Removing old application version " + string(appObject.Name) + " from host " + string(host.HostId),
+							"application": string(appObject.Name),
+							"host": string(host.HostId),
+						}})
 					}
 				}
 			}
@@ -152,6 +181,12 @@ func doPlanInternal() {
 								AppVersion:appObject.Version,
 								ChangeType:base.UPDATE_TYPE__REMOVE,
 							})
+
+							db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+								"message": "Removing excessive application version " + string(appObject.Name) + " from host " + string(host.HostId),
+								"application": string(appObject.Name),
+								"host": string(host.HostId),
+							}})
 						}
 					}
 				}
@@ -160,21 +195,34 @@ func doPlanInternal() {
 	}
 
 	/* So, knowing what we now know, should we scale more servers up? */
-	if missingServerNeeds.CpuNeeds > 0 {
-		state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
+	for _, serverReqs := range missingServerNeeds {
+		change := base.ChangeRequest{
 			ChangeType:base.CHANGE_REQUEST__SPAWN_SERVER,
-		})
+		}
+		change.Cost.CpuNeeds += serverReqs.CpuNeeds
+		change.Cost.MemoryNeeds+= serverReqs.MemoryNeeds
+		change.Cost.NetworkNeeds+= serverReqs.NetworkNeeds
+		state_cloud.GlobalCloudLayout.AddChange(change)
+
+		db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+			"message": "Scaling server requirements were not meet, requesting new instance.",
+		}})
 	}
 
 	/* If we are here, with no changes, then the system is running in either optimised or an excessive fashion. Can we reduce it? */
 	if len(state_cloud.GlobalCloudLayout.Changes) == 0 {
 		/* First lets kill servers with no applications on them */
 		for _, host := range state_cloud.GlobalCloudLayout.Current.Layout {
-			if len(host.Apps) == 0{
+			if len(host.Apps) == 0 {
 				state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
 					ChangeType:base.CHANGE_REQUEST__TERMINATE_SERVER,
 					Host:host.HostId,
 				})
+
+				db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+					"message": "Scaling server requirements are oversubscribed, terminating blank instance " + string(host.HostId),
+					"host": string(host.HostId),
+				}})
 			}
 		}
 
@@ -185,7 +233,7 @@ func doPlanInternal() {
 	/* Done with this change iteration */
 }
 
-func doPromisedWork(){
+func doPromisedWork() {
 	//TODO: Each spawn should be executed in a separate thread and sync to that thread. This way success
 	//and failures can be dealt with correctly while not blocking future ops. We need to try hard to find a
 	//suitable host, and deal with errors that could pop up
@@ -197,7 +245,7 @@ func doPromisedWork(){
 			cloud.CurrentProvider.SpawnInstanceSync(base.InstanceType("t2.micro"))
 			state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
 
-		}else if change.ChangeType == base.CHANGE_REQUEST__TERMINATE_SERVER {
+		} else if change.ChangeType == base.CHANGE_REQUEST__TERMINATE_SERVER {
 			cloud.CurrentProvider.TerminateInstance(change.Host)
 			state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
 		}

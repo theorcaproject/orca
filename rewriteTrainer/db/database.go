@@ -72,6 +72,8 @@ func (a *OrcaDb) Insert__AppMetrics(host base.HostId, stats base.MetricsWrapper,
 }
 
 func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
+	fmt.Printf("AUDIT: %s\n", event.Details["message"])
+
 	if db.session == nil {
 		return
 	}

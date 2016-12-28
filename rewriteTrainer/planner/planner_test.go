@@ -174,8 +174,16 @@ func TestPlanner_AddApplication__MinNeedsSatisfiedDesiredNot(t *testing.T) {
 
 	doPlanInternal()
 
-	assert.Equal(t, len(state_cloud.GlobalCloudLayout.Changes), 1)
+	assert.Equal(t, len(state_cloud.GlobalCloudLayout.Changes), 5)
 	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].ChangeType, base.CHANGE_REQUEST__SPAWN_SERVER)
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].Cost.CpuNeeds, needs.CpuNeeds(1))
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].Cost.MemoryNeeds, needs.MemoryNeeds(1))
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].Cost.NetworkNeeds, needs.NetworkNeeds(1))
+
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].ChangeType, base.CHANGE_REQUEST__SPAWN_SERVER)
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].Cost.CpuNeeds, needs.CpuNeeds(1))
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].Cost.MemoryNeeds, needs.MemoryNeeds(1))
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].Cost.NetworkNeeds, needs.NetworkNeeds(1))
 }
 
 
