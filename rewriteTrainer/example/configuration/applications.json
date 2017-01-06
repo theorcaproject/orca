@@ -2,101 +2,29 @@
   {
     "Name": "nginx",
     "Type": "http",
-    "Version": 7,
-    "TargetDeploymentCount": 1,
+    "TargetDeploymentCount": 2,
     "MinDeploymentCount": 2,
-    "DockerConfig": {
-      "Tag": "latest",
-      "Repository": "nginx",
-      "Reference": "docker.io"
-    },
-    "RawConfig": {
-      "InstallCommands": null,
-      "RunCommand": {
-        "Type": "",
-        "Command": {
-          "Path": "",
-          "Args": ""
-        }
-      },
-      "QueryStateCommand": {
-        "Type": "",
-        "Command": {
-          "Path": "",
-          "Args": ""
-        }
-      },
-      "RemoveCommand": {
-        "Type": "",
-        "Command": {
-          "Path": "",
-          "Args": ""
-        }
-      },
-      "StopCommand": {
-        "Type": "",
-        "Command": {
-          "Path": "",
-          "Args": ""
-        }
-      }
-    },
-    "LoadBalancer": "elb1_2",
-    "Network": "vpc-c123_2",
     "Needs": {
-      "MemoryNeeds": 1,
-      "CpuNeeds": 1,
-      "NetworkNeeds": 1
-    }
-  },
-  {
-    "Name": "ubuntu",
-    "Type": "worker",
-    "Version": 1,
-    "TargetDeploymentCount": 4,
-    "MinDeploymentCount": 4,
-    "DockerConfig": {
-      "Tag": "latest",
-      "Repository": "ubuntu",
-      "Reference": "docker.io"
+      "MemoryNeeds": 2,
+      "CpuNeeds": 3,
+      "NetworkNeeds": 4
     },
-    "RawConfig": {
-      "InstallCommands": null,
-      "RunCommand": {
-        "Type": "",
-        "Command": {
-          "Path": "",
-          "Args": ""
-        }
-      },
-      "QueryStateCommand": {
-        "Type": "",
-        "Command": {
-          "Path": "",
-          "Args": ""
-        }
-      },
-      "RemoveCommand": {
-        "Type": "",
-        "Command": {
-          "Path": "",
-          "Args": ""
-        }
-      },
-      "StopCommand": {
-        "Type": "",
-        "Command": {
-          "Path": "",
-          "Args": ""
-        }
+    "ConfigurationSets": [
+      {
+        "Enabled": false,
+        "Version": 1,
+        "DockerConfig": {
+          "Tag": "latest",
+          "Repository": "nginx",
+          "Reference": "docker.io"
+        },
+        "LoadBalancer": "elb1",
+        "Network": "vpn1",
+        "PortMappings": null,
+        "VolumeMappings": null,
+        "EnvironmentVariables": null,
+        "Files": null
       }
-    },
-    "LoadBalancer": "",
-    "Network": "",
-    "Needs": {
-      "MemoryNeeds": 1,
-      "CpuNeeds": 1,
-      "NetworkNeeds": 1
-    }
+    ]
   }
 ]

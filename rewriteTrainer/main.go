@@ -30,8 +30,8 @@ import (
 	"gatoor/orca/rewriteTrainer/scheduler"
 	"time"
 	"flag"
+	"gatoor/orca/rewriteTrainer/planner"
 )
-
 
 const CHECKIN_WAIT_TIME = 30
 
@@ -39,21 +39,21 @@ func main() {
 	var configurationRoot = flag.String("configroot", "/orca/config/", "Configuration Root Directory")
 	flag.Parse()
 
-	db.Audit.Init("localhost")
+
+	var baseConfiguration config.JsonConfiguration
+	Logger.InitLogger.Info("Starting trainer...")
+	initState()
+	initConfig(&baseConfiguration, *configurationRoot)
+
+	db.Audit.Init(baseConfiguration.Trainer.DbUri)
 	db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
 		"message": "Orca Trainer Started",
 	}})
 
-	var baseConfiguration config.JsonConfiguration
-
-	Logger.InitLogger.Info("Starting trainer...")
-	initState()
-	initConfig(&baseConfiguration, *configurationRoot)
 	cloud.Init()
-	db.Audit.Init("")
 	initApi(&baseConfiguration)
-
 	state_cloud.GlobalCloudLayout.InitBaseInstances()
+	planner.Init(baseConfiguration.Trainer)
 
 	waitForCheckin()
 	scheduler.Start()

@@ -3,5 +3,9 @@
   "Policies": {
     "TRY_TO_REMOVE_HOSTS": false
   },
-  "Ip": ""
+  "Ip": "",
+  "DbUri": "localhost",
+  "DeadHostTimeout": 120,
+  "ChangeDefaultTimeout": 120,
+  "ChangeSpawnTimeout": 300
 }

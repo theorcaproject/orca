@@ -31,6 +31,11 @@ import (
 
 var PlannerLogger = Logger.LoggerWithField(Logger.Logger, "module", "planner")
 
+var trainerConfiguration base.TrainerConfigurationState
+func Init(configuration base.TrainerConfigurationState){
+	trainerConfiguration = configuration
+}
+
 func Plan() {
 	PlannerLogger.Info("Stating Plan()")
 
@@ -47,21 +52,18 @@ func Plan() {
 	PlannerLogger.Info("Finished Plan()")
 }
 
-var CHANGE_REQUEST__SPAWN_SERVER__MAX_ELAPSED_TIME = 300
-var CHANGE_REQUEST__DEFAULT_MAX_ELAPSED_TIME = 30
-var HOST_TIMEOUT = 120
 
 func doCheckForTimedOutChanges() {
 	for _, change := range state_cloud.GlobalCloudLayout.Changes {
 		if change.ChangeType == base.CHANGE_REQUEST__SPAWN_SERVER {
-			if (change.CreatedTime.Unix() + int64(CHANGE_REQUEST__SPAWN_SERVER__MAX_ELAPSED_TIME)) < time.Now().Unix() {
+			if (change.CreatedTime.Unix() + trainerConfiguration.ChangeSpawnTimeout) < time.Now().Unix() {
 				db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
 					"message": "Change request " + change.Id + " of type " + change.ChangeType + " failed. Removing change so planning can continue",
 				}})
 				state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
 			}
 		} else {
-			if (change.CreatedTime.Unix() + int64(CHANGE_REQUEST__DEFAULT_MAX_ELAPSED_TIME)) < time.Now().Unix() {
+			if (change.CreatedTime.Unix() + trainerConfiguration.ChangeDefaultTimeout) < time.Now().Unix() {
 				db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
 					"message": "Change request " + change.Id + " of type " + change.ChangeType + " failed. Removing change so planning can continue",
 				}})
@@ -280,7 +282,7 @@ func doPromisedWork() {
 
 func doCheckForTimeoutHosts() {
 	for _, host := range state_cloud.GlobalCloudLayout.Current.Layout {
-		if (host.LastSeen.Unix() + int64(HOST_TIMEOUT)) < time.Now().Unix() {
+		if (host.LastSeen.Unix() + trainerConfiguration.DeadHostTimeout) < time.Now().Unix() {
 			db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
 				"message": "Host "+ string(host.HostId) +" has disapeared, removing it from the system and nuking any changes associated with it",
 				"host": string(host.HostId),

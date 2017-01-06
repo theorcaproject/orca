@@ -28,7 +28,6 @@ type ApplicationCountStatistic struct {
 	Timestamp  time.Time
 	AppName    base.AppName
 	Running    base.DeploymentCount
-	Desired    base.DeploymentCount
 }
 
 type AuditEvent struct {

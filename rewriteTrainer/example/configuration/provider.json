@@ -1,9 +1,10 @@
 {
-  "Type": "AWS",
-  "MinInstances": 1,
-  "MaxInstances": 1,
+  "Type": "TEST",
   "SSHKey": "orcatest_michael",
-  "SSHUser":"ubuntu",
+  "SSHUser": "ubuntu",
+  "MinInstances": 5,
+  "MaxInstances": 52,
+  "BaseInstanceType": "",
   "AWSConfiguration": {
     "Key": "--",
     "Secret": "--",

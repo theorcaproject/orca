@@ -278,9 +278,14 @@ type TrainerPolicies struct {
 }
 
 type TrainerConfigurationState struct {
-	Port     int
-	Policies TrainerPolicies
-	Ip       IpAddr
+	Port                 int
+	Policies             TrainerPolicies
+	Ip                   IpAddr
+
+	DbUri                string
+	DeadHostTimeout      int64
+	ChangeDefaultTimeout int64
+	ChangeSpawnTimeout   int64
 }
 
 const (

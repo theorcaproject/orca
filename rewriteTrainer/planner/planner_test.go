@@ -323,7 +323,10 @@ func TestPlanner_AddApplication__KillEmptyServers(t *testing.T) {
 func TestPlanner__ChangesTimeOut(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
 	state_cloud.GlobalCloudLayout.Init()
-
+	Init(base.TrainerConfigurationState{
+		ChangeDefaultTimeout:100,
+		ChangeSpawnTimeout:120,
+	})
 	/* This change will be removed */
 	state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
 		CreatedTime: time.Unix(1, 0),
@@ -349,6 +352,9 @@ func TestPlanner__ChangesTimeOut(t *testing.T) {
 func TestPlanner__HostTimedOut(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
 	state_cloud.GlobalCloudLayout.Init()
+	Init(base.TrainerConfigurationState{
+		DeadHostTimeout:120,
+	})
 
 	/* This change will be removed */
 	state_cloud.GlobalCloudLayout.Current.AddHost("host1", state_cloud.CloudLayoutElement{

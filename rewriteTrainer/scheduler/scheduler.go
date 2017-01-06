@@ -44,7 +44,6 @@ func Start() {
 
 func Run() {
 	SchedulerLogger.Info("Starting run()")
-	state_cloud.GlobalCloudLayout.CheckCheckinTimeout()
 	planner.Plan()
 
 	/* Collect some statistics on whats running and whats desired */

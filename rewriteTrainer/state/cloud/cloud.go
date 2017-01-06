@@ -165,15 +165,6 @@ func (c *CloudLayoutAll) InitBaseInstances(){
 	}
 }
 
-func (c *CloudLayoutAll) CheckCheckinTimeout(){
-	for _, host := range c.Current.Layout{
-		if host.LastSeen.Before(time.Now().UTC().Add(-600)) && host.HostState == HOST_NORMAL{
-			/* We seem to have lost a host for some reason, in the next planning stage we will need to fix this */
-			host.HostState = HOST_VANISHED
-		}
-	}
-}
-
 func (c *CloudLayoutAll) Snapshot() CloudLayoutAll {
 	cloudLayoutMutex.Lock()
 	defer cloudLayoutMutex.Unlock()
