@@ -82,21 +82,21 @@ func (a AppsNeedState) lastValidNeeds(app base.AppName) needs.AppNeeds {
 	}
 	return needs.AppNeeds{1, 1, 1}
 }
-
-//TODO use WeeklyNeeds
-func (a AppsNeedState) UpdateNeeds(app base.AppName, version base.Version, ns needs.AppNeeds) {
-	needsStateMutex.Lock()
-	defer needsStateMutex.Unlock()
-	if _, exists := a[app]; !exists {
-		a[app] = make(map[base.Version]needs.AppNeeds)
-	}
-	if ns.CpuNeeds == 0 || ns.MemoryNeeds == 0 || ns.NetworkNeeds == 0 {
-		ns = a.lastValidNeeds(app)
-		StateNeedsLogger.Warnf("UpdateNeeds for %s:%d: Needs are 0, using last available needs %+v", app, version, ns)
-	}
-	StateNeedsLogger.Debugf("UpdateNeeds for %s:%d: %+v", app, version, ns)
-	a[app][version] = ns
-}
+//
+////TODO use WeeklyNeeds
+//func (a AppsNeedState) UpdateNeeds(app base.AppName, ns needs.AppNeeds) {
+//	needsStateMutex.Lock()
+//	defer needsStateMutex.Unlock()
+//	if _, exists := a[app]; !exists {
+//		a[app] = make(map[base.Version]needs.AppNeeds)
+//	}
+//	if ns.CpuNeeds == 0 || ns.MemoryNeeds == 0 || ns.NetworkNeeds == 0 {
+//		ns = a.lastValidNeeds(app)
+//		StateNeedsLogger.Warnf("UpdateNeeds for %s:%d: Needs are 0, using last available needs %+v", app, version, ns)
+//	}
+//	StateNeedsLogger.Debugf("UpdateNeeds for %s:%d: %+v", app, version, ns)
+//	a[app][version] = ns
+//}
 
 func (a AppsNeedState) Snapshot() AppsNeedState {
 	needsStateMutex.Lock()

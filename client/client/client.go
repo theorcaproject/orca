@@ -22,9 +22,7 @@ import (
 	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/base"
 	"gatoor/orca/client/docker"
-	"gatoor/orca/client/raw"
 	"gatoor/orca/client/types"
-	"gatoor/orca/client/testClient"
 )
 
 
@@ -40,27 +38,23 @@ type Client interface {
 	Type() types.ClientType
 	Init()
 
-	InstallApp(base.AppConfiguration, *types.AppsState, *types.Configuration) bool
-	RunApp(base.AppId, base.AppConfiguration, *types.AppsState, *types.Configuration) bool
-	QueryApp(base.AppId, base.AppConfiguration, *types.AppsState, *types.Configuration) bool
-	StopApp(base.AppId, base.AppConfiguration, *types.AppsState, *types.Configuration) bool
-	DeleteApp(base.AppConfiguration, *types.AppsState, *types.Configuration) bool
+	InstallApp(base.AppName, base.AppConfigurationSet, *types.AppsState, *types.Configuration) bool
+	RunApp(base.AppId, base.AppConfigurationSet, *types.AppsState, *types.Configuration) bool
+	QueryApp(base.AppId, base.AppConfigurationSet, *types.AppsState, *types.Configuration) bool
+	StopApp(base.AppId, base.AppConfigurationSet, *types.AppsState, *types.Configuration) bool
+	DeleteApp(base.AppConfigurationSet, *types.AppsState, *types.Configuration) bool
 	//
 	//HostMetrics()
-	AppMetrics(base.AppId, base.AppConfiguration, *types.AppsState, *types.Configuration, *types.AppsMetricsById) bool
+	AppMetrics(base.AppId, base.AppConfigurationSet, *types.AppsState, *types.Configuration, *types.AppsMetricsById) bool
 }
 
 func Init() {
 	ClientLogger.Info("Initializing Client...")
 	if Configuration.Type == types.DOCKER_CLIENT {
 		cli = &docker.Client{}
-	} else if Configuration.Type == types.RAW_CLIENT {
-		cli = &raw.Client{}
-	} else {
-		cli = &testClient.Client{}
 	}
 	AppsState = make(map[base.AppId]base.AppInfo)
-	AppsConfiguration = make(map[base.AppId]base.AppConfiguration)
+	AppsConfiguration = make(map[base.AppId]base.AppConfigurationSet)
 	AppsMetricsById = make(map[base.AppId]map[string]base.AppStats)
 	ClientLogger.Infof("Initialized Client of Type %s", cli.Type())
 }
@@ -68,7 +62,7 @@ func Init() {
 func Handle(changes []base.ChangeRequest) {
 	for _, change := range changes {
 		if change.ChangeType == base.UPDATE_TYPE__ADD {
-			newApp(change.AppConfig)
+			newApp(change.Application, change.AppConfig)
 		}
 
 		if change.ChangeType == base.UPDATE_TYPE__REMOVE {
@@ -77,56 +71,45 @@ func Handle(changes []base.ChangeRequest) {
 	}
 }
 
-func newApp(config base.AppConfiguration) bool {
-	return installAndRun(config)
+func newApp(name base.AppName, config base.AppConfigurationSet) bool {
+	return installAndRun(name, config)
 }
 
-func updateApp(existingApps []base.AppInfo, config base.AppConfiguration) bool {
-	ClientLogger.Infof("Starting update app %s:%d to %d", config.Name, existingApps[0].Version, config.Version)
-	for _, app := range existingApps {
-		StopApp(app.Id)
-	}
-	DeleteApp(config)
-	res := installAndRun(config)
-	ClientLogger.Infof("Finished update app %s:%d to %d. Success=%t", config.Name, existingApps[0].Version, config.Version, res)
-	return res
-}
-
-func installAndRun(config base.AppConfiguration) bool {
-	if !InstallApp(config) {
-		ClientLogger.Infof("Install of app %s:%d failed, skipping run", config.Name, config.Version)
+func installAndRun(name base.AppName, config base.AppConfigurationSet) bool {
+	if !InstallApp(name, config) {
+		ClientLogger.Infof("Install of app %s:%d failed, skipping run", config.DockerConfig.Repository, config.Version)
 		return false
 	}
-	return RunApp(config)
+	return RunApp(name, config)
 }
 
-func InstallApp(conf base.AppConfiguration) bool {
-	ClientLogger.Infof("Starting Install of app %s:%d", conf.Name, conf.Version)
-	res := cli.InstallApp(conf, &AppsState, &Configuration)
-	ClientLogger.Infof("Finished Install of app %s:%d done. Success=%t", conf.Name, conf.Version, res)
+func InstallApp(name base.AppName, conf base.AppConfigurationSet) bool {
+	ClientLogger.Infof("Starting Install of app %s:%d", conf.DockerConfig.Repository, conf.Version)
+	res := cli.InstallApp(name, conf, &AppsState, &Configuration)
+	ClientLogger.Infof("Finished Install of app %s:%d done. Success=%t", conf.DockerConfig.Repository, conf.Version, res)
 	return res
 }
 
-func RunApp(conf base.AppConfiguration) bool {
-	ClientLogger.Infof("Starting app %s:%d", conf.Name, conf.Version)
-	id := types.GenerateId(conf.Name)
-	info := base.AppInfo{Name: conf.Name, Type: conf.Type, Version: conf.Version, Id: id, Status: base.STATUS_DEPLOYING}
+func RunApp(name base.AppName, conf base.AppConfigurationSet) bool {
+	ClientLogger.Infof("Starting app %s:%d", conf.DockerConfig.Repository, conf.Version)
+	id := types.GenerateId(name)
+	info := base.AppInfo{Name: name, Type: base.APP_HTTP, Version: conf.Version, Id: id, Status: base.STATUS_DEPLOYING}
 	AppsConfiguration.Add(id, conf)
 	AppsState.Add(id, info)
 	res := cli.RunApp(id, conf, &AppsState, &Configuration)
 	if !res {
 		AppsState.Set(id, base.STATUS_DEAD)
 	}
-	ClientLogger.Infof("Starting app %s:%d done. Success=%t", conf.Name, conf.Version, res)
+	ClientLogger.Infof("Starting app %s:%d done. Success=%t", name, conf.Version, res)
 	return res
 }
 
 func StopApp(id base.AppId) bool {
 	conf := AppsConfiguration.Get(id)
-	ClientLogger.Infof("Stopping app %s (%s:%d)", id, conf.Name, conf.Version)
+	ClientLogger.Infof("Stopping app %s", id)
 	AppsState.Set(id, base.STATUS_DEAD)
 	res := cli.StopApp(id, conf, &AppsState, &Configuration)
-	ClientLogger.Infof("Stopping app %s (%s:%d) done. Success=%t", id, conf.Name, conf.Version, res)
+	ClientLogger.Infof("Stopping app %s done. Success=%t", id, res)
 	return res
 }
 
@@ -155,14 +138,14 @@ func StopAll(appName base.AppName) bool {
 	return res
 }
 
-func DeleteApp(config base.AppConfiguration) bool {
-	ClientLogger.Infof("Starting deletion of app %s", config.Name)
-	apps := AppsState.GetAll(config.Name)
+func DeleteApp(name base.AppName, config base.AppConfigurationSet) bool {
+	ClientLogger.Infof("Starting deletion of app %s", name)
+	apps := AppsState.GetAll(name)
 	for _, app := range apps {
 		AppsState.Remove(app.Id)
 	}
 	res := cli.DeleteApp(config, &AppsState, &Configuration)
-	ClientLogger.Infof("Finished deletion of app %s. Success=%t", config.Name, res)
+	ClientLogger.Infof("Finished deletion of app %s. Success=%t", name, res)
 	return res
 }
 

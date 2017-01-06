@@ -32,7 +32,6 @@ import (
 	"fmt"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"os"
-	"github.com/aws/aws-sdk-go/service/elb"
 	"gatoor/orca/rewriteTrainer/db"
 )
 
@@ -197,61 +196,61 @@ func (a AWSProvider) SpawnInstanceSync(ty base.InstanceType) base.HostId {
 }
 
 func (a *AWSProvider) UpdateLoadBalancers(hostId base.HostId, app base.AppName, version base.Version, event string) {
-	var app_configuration, _ = state_configuration.GlobalConfigurationState.GetApp(app, version)
-	if app_configuration.Type == base.APP_HTTP {
-		if event == base.STATUS_DEAD {
-			svc := elb.New(session.New(&aws.Config{Region: aws.String(a.ProviderConfiguration.AWSConfiguration.Region)}))
-
-			params := &elb.DeregisterInstancesFromLoadBalancerInput{
-				Instances: []*elb.Instance{{InstanceId: aws.String(string(hostId))}},
-				LoadBalancerName: aws.String(string(app_configuration.LoadBalancer)),
-			}
-			_, err := svc.DeregisterInstancesFromLoadBalancer(params)
-			if err != nil {
-				db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
-					"message": fmt.Sprintf("Could not deregister instance %s from elb %s. Reason was %s", hostId, app_configuration.LoadBalancer, err.Error()),
-					"subsystem": "cloud.aws",
-					"level": "error",
-				}})
-
-				return
-			}
-
-			db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
-				"message": fmt.Sprintf("Deregistered instance %s from elb %s", hostId, app_configuration.LoadBalancer),
-				"subsystem": "cloud.aws",
-				"level": "info",
-			}})
-
-		} else if event == base.STATUS_RUNNING {
-			svc := elb.New(session.New(&aws.Config{Region: aws.String(a.ProviderConfiguration.AWSConfiguration.Region)}))
-
-			params := &elb.RegisterInstancesWithLoadBalancerInput{
-				Instances: []*elb.Instance{
-					{
-						InstanceId: aws.String(string(hostId)),
-					},
-				},
-				LoadBalancerName: aws.String(string(app_configuration.LoadBalancer)),
-			}
-			_, err := svc.RegisterInstancesWithLoadBalancer(params)
-			if err != nil {
-				db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
-					"message": fmt.Sprintf("Error linking instance %s from elb %s. Reason was %s", hostId, app_configuration.LoadBalancer, err.Error()),
-					"subsystem": "cloud.aws",
-					"level": "error",
-				}})
-
-				return
-			}
-
-			db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
-				"message": fmt.Sprintf("Linked instance %s to elb %s", hostId, app_configuration.LoadBalancer),
-				"subsystem": "cloud.aws",
-				"level": "info",
-			}})
-		}
-	}
+	//var app_configuration, _ = state_configuration.GlobalConfigurationState.GetApp(app, version)
+	//if app_configuration.Type == base.APP_HTTP {
+	//	if event == base.STATUS_DEAD {
+	//		svc := elb.New(session.New(&aws.Config{Region: aws.String(a.ProviderConfiguration.AWSConfiguration.Region)}))
+	//
+	//		params := &elb.DeregisterInstancesFromLoadBalancerInput{
+	//			Instances: []*elb.Instance{{InstanceId: aws.String(string(hostId))}},
+	//			LoadBalancerName: aws.String(string(app_configuration.LoadBalancer)),
+	//		}
+	//		_, err := svc.DeregisterInstancesFromLoadBalancer(params)
+	//		if err != nil {
+	//			db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+	//				"message": fmt.Sprintf("Could not deregister instance %s from elb %s. Reason was %s", hostId, app_configuration.LoadBalancer, err.Error()),
+	//				"subsystem": "cloud.aws",
+	//				"level": "error",
+	//			}})
+	//
+	//			return
+	//		}
+	//
+	//		db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+	//			"message": fmt.Sprintf("Deregistered instance %s from elb %s", hostId, app_configuration.LoadBalancer),
+	//			"subsystem": "cloud.aws",
+	//			"level": "info",
+	//		}})
+	//
+	//	} else if event == base.STATUS_RUNNING {
+	//		svc := elb.New(session.New(&aws.Config{Region: aws.String(a.ProviderConfiguration.AWSConfiguration.Region)}))
+	//
+	//		params := &elb.RegisterInstancesWithLoadBalancerInput{
+	//			Instances: []*elb.Instance{
+	//				{
+	//					InstanceId: aws.String(string(hostId)),
+	//				},
+	//			},
+	//			LoadBalancerName: aws.String(string(app_configuration.LoadBalancer)),
+	//		}
+	//		_, err := svc.RegisterInstancesWithLoadBalancer(params)
+	//		if err != nil {
+	//			db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+	//				"message": fmt.Sprintf("Error linking instance %s from elb %s. Reason was %s", hostId, app_configuration.LoadBalancer, err.Error()),
+	//				"subsystem": "cloud.aws",
+	//				"level": "error",
+	//			}})
+	//
+	//			return
+	//		}
+	//
+	//		db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+	//			"message": fmt.Sprintf("Linked instance %s to elb %s", hostId, app_configuration.LoadBalancer),
+	//			"subsystem": "cloud.aws",
+	//			"level": "info",
+	//		}})
+	//	}
+	//}
 }
 
 func (a *AWSProvider) SpawnInstanceLike(hostId base.HostId) base.HostId {

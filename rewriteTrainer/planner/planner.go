@@ -26,6 +26,7 @@ import (
 	"gatoor/orca/rewriteTrainer/cloud"
 	"gatoor/orca/rewriteTrainer/needs"
 	"gatoor/orca/rewriteTrainer/db"
+	"time"
 )
 
 var PlannerLogger = Logger.LoggerWithField(Logger.Logger, "module", "planner")
@@ -33,9 +34,8 @@ var PlannerLogger = Logger.LoggerWithField(Logger.Logger, "module", "planner")
 func Plan() {
 	PlannerLogger.Info("Stating Plan()")
 
-	//TODO: A single stuck change can block the system. To protect against this we need to search for changes that
-	//have been in the system for more than X minutes and remove them.
-	//TOD: When a host vanishes for what ever reason, if there were changes for that host nuke them.
+	doCheckForTimeoutHosts()
+	doCheckForTimedOutChanges()
 
 	/* We do not run several scheduling cycles at once */
 	if len(state_cloud.GlobalCloudLayout.Changes) > 0 {
@@ -45,6 +45,30 @@ func Plan() {
 	doPlanInternal()
 	doPromisedWork()
 	PlannerLogger.Info("Finished Plan()")
+}
+
+var CHANGE_REQUEST__SPAWN_SERVER__MAX_ELAPSED_TIME = 300
+var CHANGE_REQUEST__DEFAULT_MAX_ELAPSED_TIME = 30
+var HOST_TIMEOUT = 120
+
+func doCheckForTimedOutChanges() {
+	for _, change := range state_cloud.GlobalCloudLayout.Changes {
+		if change.ChangeType == base.CHANGE_REQUEST__SPAWN_SERVER {
+			if (change.CreatedTime.Unix() + int64(CHANGE_REQUEST__SPAWN_SERVER__MAX_ELAPSED_TIME)) < time.Now().Unix() {
+				db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+					"message": "Change request " + change.Id + " of type " + change.ChangeType + " failed. Removing change so planning can continue",
+				}})
+				state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
+			}
+		} else {
+			if (change.CreatedTime.Unix() + int64(CHANGE_REQUEST__DEFAULT_MAX_ELAPSED_TIME)) < time.Now().Unix() {
+				db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+					"message": "Change request " + change.Id + " of type " + change.ChangeType + " failed. Removing change so planning can continue",
+				}})
+				state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
+			}
+		}
+	}
 }
 
 func doPlanInternal() {
@@ -59,7 +83,9 @@ func doPlanInternal() {
 
 	/* First check that the min needs are satisfied: Mins take priority over desired as they are part of the QOS we protect */
 	for _, appObject := range apps {
-		deployment_count, _ := state_cloud.GlobalCloudLayout.Current.DeploymentCount(appObject.Name, appObject.Version)
+		latestAppObjectConfiguration := appObject.LatestConfiguration()
+
+		deployment_count, _ := state_cloud.GlobalCloudLayout.Current.DeploymentCount(appObject.Name, latestAppObjectConfiguration.Version)
 		if appObject.MinDeploymentCount > deployment_count {
 			/* Dudes we have an issue!! */
 			/* Find a server that could meet our needs */
@@ -70,11 +96,11 @@ func doPlanInternal() {
 					state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
 						Host: host.HostId,
 						Application:appObject.Name,
-						AppVersion:appObject.Version,
+						AppVersion:latestAppObjectConfiguration.Version,
 						ChangeType:base.UPDATE_TYPE__ADD,
 						Cost:appObject.Needs,
 
-						AppConfig:appObject,
+						AppConfig:appObject.LatestConfiguration(),
 					})
 
 					db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
@@ -100,7 +126,7 @@ func doPlanInternal() {
 
 				missingServerNeeds[0].CpuNeeds += appObject.Needs.CpuNeeds
 				missingServerNeeds[0].MemoryNeeds += appObject.Needs.MemoryNeeds
-				missingServerNeeds[0].NetworkNeeds+= appObject.Needs.NetworkNeeds
+				missingServerNeeds[0].NetworkNeeds += appObject.Needs.NetworkNeeds
 			}
 		} else {
 			//We have a couple of cases here to account for:
@@ -113,11 +139,11 @@ func doPlanInternal() {
 							state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
 								Host: host.HostId,
 								Application:appObject.Name,
-								AppVersion:appObject.Version,
+								AppVersion:latestAppObjectConfiguration.Version,
 								ChangeType:base.UPDATE_TYPE__ADD,
 								Cost:appObject.Needs,
 
-								AppConfig:appObject,
+								AppConfig:appObject.LatestConfiguration(),
 							})
 
 							db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
@@ -136,14 +162,14 @@ func doPlanInternal() {
 				}
 
 				if remainingDeloymentCount > 0 {
-					for i := 0; i < int(remainingDeloymentCount); i++{
+					for i := 0; i < int(remainingDeloymentCount); i++ {
 						if len(missingServerNeeds) > i - 1 {
 							missingServerNeeds = append(missingServerNeeds, needs.AppNeeds{})
 						}
 
 						missingServerNeeds[i].CpuNeeds += appObject.Needs.CpuNeeds
 						missingServerNeeds[i].MemoryNeeds += appObject.Needs.MemoryNeeds
-						missingServerNeeds[i].NetworkNeeds+= appObject.Needs.NetworkNeeds
+						missingServerNeeds[i].NetworkNeeds += appObject.Needs.NetworkNeeds
 					}
 				}
 			}
@@ -151,11 +177,11 @@ func doPlanInternal() {
 			//Two: Search for old versions of the application that we need to kull */
 			for _, host := range state_cloud.GlobalCloudLayout.Current.Layout {
 				if appsOfType, ok := host.Apps[appObject.Name]; ok {
-					if appsOfType.Version != appObject.Version {
+					if appsOfType.Version != latestAppObjectConfiguration.Version {
 						state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
 							Host: host.HostId,
 							Application:appObject.Name,
-							AppVersion:appObject.Version,
+							AppVersion:appsOfType.Version,
 							ChangeType:base.UPDATE_TYPE__REMOVE,
 						})
 
@@ -172,13 +198,13 @@ func doPlanInternal() {
 			running_instance_counter := 0
 			for _, host := range state_cloud.GlobalCloudLayout.Current.Layout {
 				if appsOfType, ok := host.Apps[appObject.Name]; ok {
-					if appsOfType.Version == appObject.Version {
+					if appsOfType.Version == latestAppObjectConfiguration.Version {
 						running_instance_counter += 1
 						if running_instance_counter > int(appObject.TargetDeploymentCount) {
 							state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
 								Host: host.HostId,
 								Application:appObject.Name,
-								AppVersion:appObject.Version,
+								AppVersion:latestAppObjectConfiguration.Version,
 								ChangeType:base.UPDATE_TYPE__REMOVE,
 							})
 
@@ -200,8 +226,8 @@ func doPlanInternal() {
 			ChangeType:base.CHANGE_REQUEST__SPAWN_SERVER,
 		}
 		change.Cost.CpuNeeds += serverReqs.CpuNeeds
-		change.Cost.MemoryNeeds+= serverReqs.MemoryNeeds
-		change.Cost.NetworkNeeds+= serverReqs.NetworkNeeds
+		change.Cost.MemoryNeeds += serverReqs.MemoryNeeds
+		change.Cost.NetworkNeeds += serverReqs.NetworkNeeds
 		state_cloud.GlobalCloudLayout.AddChange(change)
 
 		db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
@@ -248,6 +274,25 @@ func doPromisedWork() {
 		} else if change.ChangeType == base.CHANGE_REQUEST__TERMINATE_SERVER {
 			cloud.CurrentProvider.TerminateInstance(change.Host)
 			state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
+		}
+	}
+}
+
+func doCheckForTimeoutHosts() {
+	for _, host := range state_cloud.GlobalCloudLayout.Current.Layout {
+		if (host.LastSeen.Unix() + int64(HOST_TIMEOUT)) < time.Now().Unix() {
+			db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+				"message": "Host "+ string(host.HostId) +" has disapeared, removing it from the system and nuking any changes associated with it",
+				"host": string(host.HostId),
+			}})
+
+			state_cloud.GlobalCloudLayout.Current.RemoveHost(host.HostId)
+
+			for _, change := range state_cloud.GlobalCloudLayout.Changes {
+				if change.Host == host.HostId {
+					state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
+				}
+			}
 		}
 	}
 }

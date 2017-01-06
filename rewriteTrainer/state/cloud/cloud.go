@@ -106,10 +106,16 @@ func (c *CloudLayoutAll) Init() {
 	c.Current = CloudLayout{
 		Layout: make(map[base.HostId]CloudLayoutElement),
 	}
+
+	c.Changes = make([]base.ChangeRequest, 0)
 }
 
 func (object *CloudLayoutAll) AddChange(change base.ChangeRequest){
 	change.Id = uuid.NewV4().String()
+
+	if change.CreatedTime.Unix() == 0 {
+		change.CreatedTime = time.Now()
+	}
 	object.Changes = append(object.Changes, change)
 }
 
@@ -293,7 +299,7 @@ func (c *CloudLayout) RemoveHost(host base.HostId) {
 	StateCloudLogger.Infof("Removing host '%s'", host)
 	cloudLayoutMutex.Lock()
 	defer cloudLayoutMutex.Unlock()
-	delete((*c).Layout, host)
+	delete(c.Layout, host)
 }
 
 func (c *CloudLayout) AddApp(host base.HostId, app base.AppName, version base.Version, count base.DeploymentCount) {

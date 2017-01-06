@@ -26,6 +26,8 @@ import (
 	"gatoor/orca/base"
 	"gatoor/orca/rewriteTrainer/needs"
 	"github.com/docker/docker/pkg/testutil/assert"
+	"time"
+	"fmt"
 )
 
 func TestPlanner_DoNothing(t *testing.T) {
@@ -38,11 +40,18 @@ func TestPlanner_DoNothing(t *testing.T) {
 
 func TestPlanner_SpawnServer(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
-	state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
+	state_cloud.GlobalCloudLayout.Init()
+
+	appConfigSets := make([]base.AppConfigurationSet, 1)
+	appConfigSets[0] = base.AppConfigurationSet{
 		Version:1,
+	}
+
+	state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 		Name:"testing",
 		MinDeploymentCount:1,
 		Needs: needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1},
+		ConfigurationSets:appConfigSets,
 	})
 
 	doPlanInternal()
@@ -54,11 +63,18 @@ func TestPlanner_SpawnServer(t *testing.T) {
 
 func TestPlanner_AddApplication__MinNeedsNotSatisfied(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
-	state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
+	state_cloud.GlobalCloudLayout.Init()
+
+	appConfigSets := make([]base.AppConfigurationSet, 1)
+	appConfigSets[0] = base.AppConfigurationSet{
 		Version:1,
+	}
+
+	state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 		Name:"testing",
 		MinDeploymentCount:1,
 		Needs: needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1},
+		ConfigurationSets:appConfigSets,
 	})
 
 	state_cloud.GlobalCloudLayout.Init()
@@ -83,12 +99,19 @@ func TestPlanner_AddApplication__MinNeedsNotSatisfied(t *testing.T) {
 
 func TestPlanner_AddApplication__MinNeedsSatisfied(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
-	application := base.AppConfiguration{
+	state_cloud.GlobalCloudLayout.Init()
+
+	appConfigSets := make([]base.AppConfigurationSet, 1)
+	appConfigSets[0] = base.AppConfigurationSet{
 		Version:1,
+	}
+
+	application := base.AppConfiguration{
 		Name:"testing",
 		MinDeploymentCount:1,
 		TargetDeploymentCount:1,
 		Needs: needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1},
+		ConfigurationSets:appConfigSets,
 	}
 	state_configuration.GlobalConfigurationState.ConfigureApp(application)
 
@@ -115,12 +138,19 @@ func TestPlanner_AddApplication__MinNeedsSatisfied(t *testing.T) {
 
 func TestPlanner_AddApplication__ToManyInstances(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
-	application := base.AppConfiguration{
+	state_cloud.GlobalCloudLayout.Init()
+
+	appConfigSets := make([]base.AppConfigurationSet, 1)
+	appConfigSets[0] = base.AppConfigurationSet{
 		Version:1,
+	}
+
+	application := base.AppConfiguration{
 		Name:"testing",
 		MinDeploymentCount:0,
 		TargetDeploymentCount:0,
 		Needs: needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1},
+		ConfigurationSets:appConfigSets,
 	}
 	state_configuration.GlobalConfigurationState.ConfigureApp(application)
 
@@ -148,12 +178,19 @@ func TestPlanner_AddApplication__ToManyInstances(t *testing.T) {
 
 func TestPlanner_AddApplication__MinNeedsSatisfiedDesiredNot(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
-	application := base.AppConfiguration{
+	state_cloud.GlobalCloudLayout.Init()
+
+	appConfigSets := make([]base.AppConfigurationSet, 1)
+	appConfigSets[0] = base.AppConfigurationSet{
 		Version:1,
+	}
+
+	application := base.AppConfiguration{
 		Name:"testing",
 		MinDeploymentCount:1,
 		TargetDeploymentCount:5,
 		Needs: needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1},
+		ConfigurationSets:appConfigSets,
 	}
 	state_configuration.GlobalConfigurationState.ConfigureApp(application)
 
@@ -189,23 +226,25 @@ func TestPlanner_AddApplication__MinNeedsSatisfiedDesiredNot(t *testing.T) {
 
 func TestPlanner_AddApplication__MinNeedsSatisfied_KillOldVersions(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
-	application := base.AppConfiguration{
+	state_cloud.GlobalCloudLayout.Init()
+
+	appConfigSets := make([]base.AppConfigurationSet, 2)
+	appConfigSets[0] = base.AppConfigurationSet{
 		Version:1,
+	}
+
+	appConfigSets[1] = base.AppConfigurationSet{
+		Version:2,
+	}
+
+	application := base.AppConfiguration{
 		Name:"testing",
 		MinDeploymentCount:1,
 		TargetDeploymentCount:1,
 		Needs: needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1},
+		ConfigurationSets:appConfigSets,
 	}
 	state_configuration.GlobalConfigurationState.ConfigureApp(application)
-
-	application2 := base.AppConfiguration{
-		Version:2,
-		Name:"testing",
-		MinDeploymentCount:1,
-		TargetDeploymentCount:1,
-		Needs: needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1},
-	}
-	state_configuration.GlobalConfigurationState.ConfigureApp(application2)
 
 	state_cloud.GlobalCloudLayout.Init()
 	host := state_cloud.CloudLayoutElement{
@@ -244,12 +283,19 @@ func TestPlanner_AddApplication__MinNeedsSatisfied_KillOldVersions(t *testing.T)
 
 func TestPlanner_AddApplication__KillEmptyServers(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
-	application := base.AppConfiguration{
+	state_cloud.GlobalCloudLayout.Init()
+
+	appConfigSets := make([]base.AppConfigurationSet, 1)
+	appConfigSets[0] = base.AppConfigurationSet{
 		Version:1,
+	}
+
+	application := base.AppConfiguration{
 		Name:"testing",
 		MinDeploymentCount:0,
 		TargetDeploymentCount:0,
 		Needs: needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1},
+		ConfigurationSets:appConfigSets,
 	}
 	state_configuration.GlobalConfigurationState.ConfigureApp(application)
 
@@ -272,4 +318,55 @@ func TestPlanner_AddApplication__KillEmptyServers(t *testing.T) {
 	assert.Equal(t, len(state_cloud.GlobalCloudLayout.Changes), 1)
 	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].ChangeType, base.CHANGE_REQUEST__TERMINATE_SERVER)
 	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].Host, host.HostId)
+}
+
+func TestPlanner__ChangesTimeOut(t *testing.T) {
+	state_configuration.GlobalConfigurationState.Init()
+	state_cloud.GlobalCloudLayout.Init()
+
+	/* This change will be removed */
+	state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
+		CreatedTime: time.Unix(1, 0),
+		ChangeType:base.CHANGE_REQUEST__SPAWN_SERVER,
+	})
+
+	/* This change will be removed */
+	state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
+		CreatedTime: time.Unix(1, 0),
+		ChangeType:base.CHANGE_REQUEST__TERMINATE_SERVER,
+	})
+
+	state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
+		CreatedTime: time.Now(),
+		ChangeType:base.CHANGE_REQUEST__TERMINATE_SERVER,
+	})
+
+	doCheckForTimedOutChanges()
+
+	assert.Equal(t, len(state_cloud.GlobalCloudLayout.Changes), 1)
+}
+
+func TestPlanner__HostTimedOut(t *testing.T) {
+	state_configuration.GlobalConfigurationState.Init()
+	state_cloud.GlobalCloudLayout.Init()
+
+	/* This change will be removed */
+	state_cloud.GlobalCloudLayout.Current.AddHost("host1", state_cloud.CloudLayoutElement{
+		InstanceType:"TEST",
+		IpAddress:"192.168.1.1",
+		LastSeen:time.Unix(1,0),
+		HostId:"host1",
+	})
+
+	state_cloud.GlobalCloudLayout.Current.AddHost("host2", state_cloud.CloudLayoutElement{
+		InstanceType:"TEST",
+		IpAddress:"192.168.1.1",
+		LastSeen: time.Now(),
+		HostId:"host2",
+	})
+
+	doCheckForTimeoutHosts()
+
+	fmt.Printf("%+v", state_cloud.GlobalCloudLayout.Current.Layout)
+	assert.Equal(t, len(state_cloud.GlobalCloudLayout.Current.Layout), 1)
 }

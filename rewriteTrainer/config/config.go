@@ -20,14 +20,14 @@ package config
 
 import (
 	"gatoor/orca/base"
-	Logger "gatoor/orca/rewriteTrainer/log"
-	"gatoor/orca/rewriteTrainer/state/needs"
 	"os"
 	"encoding/json"
 	"gatoor/orca/util"
 	"fmt"
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"io/ioutil"
+
+	Logger "gatoor/orca/rewriteTrainer/log"
 )
 
 
@@ -114,10 +114,8 @@ func (j *JsonConfiguration) Save() {
 
 func (j *JsonConfiguration)  ApplyToState() {
 	Logger.InitLogger.Infof("Applying config to State")
-	//applyHabitatConfig(j.Habitats)
 	applyTrainerConfig(j.Trainer)
 	applyAppsConfig(j.Apps)
-	applyNeeds(j.Apps)
 	applyCloudProviderConfiguration(j.CloudProvider)
 	Logger.InitLogger.Infof("Config was applied to State")
 }
@@ -138,34 +136,10 @@ func applyAppsConfig(appsConfs []base.AppConfiguration) {
 		state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 			Name: aConf.Name,
 			Type: aConf.Type,
-			Version: aConf.Version,
 			TargetDeploymentCount: aConf.TargetDeploymentCount,
 			MinDeploymentCount: aConf.MinDeploymentCount,
-			DockerConfig: aConf.DockerConfig,
-			LoadBalancer: aConf.LoadBalancer,
-			Network: aConf.Network,
-			PortMappings: aConf.PortMappings,
 			Needs: aConf.Needs,
-
-			VolumeMappings: aConf.VolumeMappings,
-			EnvironmentVariables: aConf.EnvironmentVariables,
-			Files: aConf.Files,
-
-			//InstallCommands: aConf.InstallCommands,
-			//QueryStateCommand: aConf.QueryStateCommand,
-			//RunCommand: aConf.RunCommand,
-			//StopCommand: aConf.StopCommand,
-			//RemoveCommand: aConf.RemoveCommand,
-		})
-	}
-}
-
-func applyHabitatConfig (habitatConfs []base.HabitatConfiguration) {
-	for _, hConf := range habitatConfs {
-		state_configuration.GlobalConfigurationState.ConfigureHabitat(base.HabitatConfiguration{
-			Name: hConf.Name,
-			Version: hConf.Version,
-			InstallCommands: hConf.InstallCommands,
+			ConfigurationSets: aConf.ConfigurationSets,
 		})
 	}
 }
@@ -175,14 +149,6 @@ func applyTrainerConfig (trainerConf base.TrainerConfigurationState) {
 	state_configuration.GlobalConfigurationState.Trainer.Ip = trainerConf.Ip
 	state_configuration.GlobalConfigurationState.Trainer.Policies.TRY_TO_REMOVE_HOSTS = trainerConf.Policies.TRY_TO_REMOVE_HOSTS
 }
-
-//TODO use WeeklyNeeds
-func applyNeeds(appConfs []base.AppConfiguration) {
-	for _, aNeeds := range appConfs {
-		state_needs.GlobalAppsNeedState.UpdateNeeds(aNeeds.Name, aNeeds.Version, aNeeds.Needs)
-	}
-}
-
 
 func (j *JsonConfiguration) Serialize() string {
 	res, err := json.MarshalIndent(j, "", "  ")

@@ -32,8 +32,6 @@ import (
 	"gatoor/orca/rewriteTrainer/config"
 )
 
-const ORCA_VERSION = "0.1"
-
 type Api struct{
 	ConfigManager *config.JsonConfiguration
 }
@@ -55,6 +53,7 @@ func (api Api) Init() {
 
 	r.HandleFunc("/state/config", getStateConfiguration)
 	r.HandleFunc("/state/config/applications", getStateConfigurationApplications)
+	r.HandleFunc("/state/config/applications/configuration", getStateConfigurationApplicationsConfigurationSet)
 	r.HandleFunc("/state/config/cloud", getStateConfigurationCloudProviders)
 	r.HandleFunc("/state/cloud", getStateCloud)
 	r.HandleFunc("/state/cloud/application/performance", getAppPerformance)
@@ -115,6 +114,10 @@ func getStateConfiguration(w http.ResponseWriter, r *http.Request) {
 func getStateConfigurationCloudProviders(w http.ResponseWriter, r *http.Request) {
 	ApiLogger.Infof("Query to getStateConfigurationCloudProviders")
 	if (r.Method == "POST") {
+		db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+			"message": "Cloud configuration was changed via the api",
+		}})
+
 		var object base.ProviderConfiguration
 		decoder := json.NewDecoder(r.Body)
 		if err := decoder.Decode(&object); err != nil {
@@ -145,37 +148,70 @@ func getStateConfigurationApplications(w http.ResponseWriter, r *http.Request) {
 	ApiLogger.Infof("Query to getStateConfigurationApplications")
 	if (r.Method == "POST") {
 		/* We need to create a new configuration object */
+
 		var object base.AppConfiguration
 		decoder := json.NewDecoder(r.Body)
 		if err := decoder.Decode(&object); err != nil {
 			ApiLogger.Infof("An error occurred while reading the application information")
 		}
 
+		db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+			"message": "Scaling configuration details were changed for application "+ string(object.Name) +" via the api",
+			"application":string(object.Name),
+		}})
+
 		ApiLogger.Infof("Read new configuration for application %s", object.Name)
-		ApiLogger.Infof("version %s", object.Version)
+		existingConfiguration, err := state_configuration.GlobalConfigurationState.GetApp(object.Name)
+		configurationSets := make([]base.AppConfigurationSet, 0)
+		if err == nil {
+			configurationSets = existingConfiguration.ConfigurationSets
+		}
 
 		state_configuration.GlobalConfigurationState.ConfigureApp(base.AppConfiguration{
 			Name: object.Name,
 			Type: object.Type,
-			Version: object.Version,
 			TargetDeploymentCount: object.TargetDeploymentCount,
 			MinDeploymentCount: object.MinDeploymentCount,
-
-			DockerConfig: object.DockerConfig,
-			LoadBalancer: object.LoadBalancer,
-			Network: object.Network,
 			Needs: object.Needs,
-			PortMappings: object.PortMappings,
-
-			VolumeMappings: object.VolumeMappings,
-			EnvironmentVariables: object.EnvironmentVariables,
-			Files: object.Files,
+			ConfigurationSets: configurationSets,
 		})
 
 		apiInstance.ConfigManager.Save()
 	}
 
 	returnJson(w, state_configuration.GlobalConfigurationState.AllAppsLatest())
+}
+
+func getStateConfigurationApplicationsConfigurationSet(w http.ResponseWriter, r *http.Request) {
+	ApiLogger.Infof("Query to setStateConfigurationApplicationsConfigurationSet")
+	applicationName := r.URL.Query().Get("application")
+
+	if (r.Method == "POST") {
+		/* We need to create a new configuration object */
+		var object base.AppConfigurationSet
+		decoder := json.NewDecoder(r.Body)
+		if err := decoder.Decode(&object); err != nil {
+			ApiLogger.Infof("An error occurred while reading the application information")
+		}
+
+		db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+			"message": "Application configuration details were changed for application "+  applicationName +" via the api",
+			"application":applicationName,
+		}})
+
+		ApiLogger.Infof("Read new configuration for application %s", applicationName)
+		targetApplication, _ := state_configuration.GlobalConfigurationState.GetApp(base.AppName(applicationName))
+		configurationSets := targetApplication.ConfigurationSets
+
+		//Add new configuration version
+		object.Version = targetApplication.FindNewConfigurationSetId()
+		targetApplication.ConfigurationSets = append(configurationSets, object)
+		state_configuration.GlobalConfigurationState.ConfigureApp(targetApplication)
+		apiInstance.ConfigManager.Save()
+	}
+
+	latestAppConfiguration, _ := state_configuration.GlobalConfigurationState.GetApp(base.AppName(applicationName))
+	returnJson(w, latestAppConfiguration.LatestConfiguration())
 }
 
 func getStateCloud(w http.ResponseWriter, r *http.Request) {
@@ -210,8 +246,4 @@ func getAppCount(w http.ResponseWriter, r *http.Request) {
 	ApiLogger.Infof("Query to getAppCount")
 	application := r.URL.Query().Get("application")
 	returnJson(w, db.Audit.Query__ApplicationCountStatistic(base.AppName(application)))
-}
-
-func doHandleCloudEvent() {
-
 }

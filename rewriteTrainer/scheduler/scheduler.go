@@ -30,9 +30,6 @@ import (
 
 var SchedulerLogger = Logger.LoggerWithField(Logger.Logger, "module", "scheduler")
 
-var ticker *time.Ticker
-var trackerTicker *time.Ticker
-
 
 func Start() {
 	SchedulerLogger.Infof("Scheduler starting")
@@ -40,16 +37,12 @@ func Start() {
 	go func () {
 		for {
 			<- ticker.C
-			run()
+			Run()
 		}
 	}()
 }
 
-func TriggerRun() {
-	run()
-}
-
-func run() {
+func Run() {
 	SchedulerLogger.Info("Starting run()")
 	state_cloud.GlobalCloudLayout.CheckCheckinTimeout()
 	planner.Plan()
@@ -59,12 +52,10 @@ func run() {
 		count_snapshot := db.ApplicationCountStatistic{}
 		current_state := state_cloud.GlobalCloudLayout.Snapshot()
 
-		running_count, _ :=current_state.Current.DeploymentCount(appName, app.Version)
-		desired_count, _ :=current_state.Current.DeploymentCount(appName, app.Version)
+		running_count, _ := current_state.Current.DeploymentCount(appName, app.LatestConfiguration().Version)
 
 		count_snapshot.AppName = appName
 		count_snapshot.Running = running_count
-		count_snapshot.Desired = desired_count
 		count_snapshot.Timestamp = time.Now()
 
 		db.Audit.Insert__ApplicationCountStatistic(count_snapshot)

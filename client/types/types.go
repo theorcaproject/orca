@@ -54,7 +54,7 @@ type Configuration struct {
 
 type AppsState map[base.AppId]base.AppInfo
 var appsStateMutex = &sync.Mutex{}
-type AppsConfiguration map[base.AppId]base.AppConfiguration
+type AppsConfiguration map[base.AppId]base.AppConfigurationSet
 var appsConfMutex = &sync.Mutex{}
 //type AppsRetryCounter map[base.AppId]RetryCounter
 //var appsRetryMutex = &sync.Mutex{}
@@ -88,7 +88,7 @@ func (a *AppsMetricsById) All() map[base.AppId]map[string]base.AppStats {
 	return res
 }
 
-func (a *AppsConfiguration) Add(id base.AppId, conf base.AppConfiguration) {
+func (a *AppsConfiguration) Add(id base.AppId, conf base.AppConfigurationSet) {
 	appsConfMutex.Lock()
 	defer appsConfMutex.Unlock()
 	(*a)[id] = conf
@@ -100,7 +100,7 @@ func (a *AppsConfiguration) Remove(id base.AppId) {
 	delete((*a), id)
 }
 
-func (a *AppsConfiguration) Get(id base.AppId) base.AppConfiguration {
+func (a *AppsConfiguration) Get(id base.AppId) base.AppConfigurationSet {
 	appsConfMutex.Lock()
 	defer appsConfMutex.Unlock()
 	conf := (*a)[id]

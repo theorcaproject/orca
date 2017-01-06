@@ -22,9 +22,7 @@ import (
 	"sync"
 	"gatoor/orca/base"
 	"errors"
-	"sort"
 	Logger "gatoor/orca/rewriteTrainer/log"
-	"gatoor/orca/rewriteTrainer/state/needs"
 )
 
 var ConfigLogger = Logger.LoggerWithField(Logger.Logger, "module", "configuration")
@@ -38,7 +36,6 @@ type ConfigurationState struct {
 
 	Trainer base.TrainerConfigurationState
 	Apps AppsConfigurationState
-	Habitats HabitatsConfigurationState
 	CloudProvider base.ProviderConfiguration
 }
 
@@ -46,7 +43,6 @@ func (c *ConfigurationState) Init() {
 	configurationStateMutex.Lock()
 	defer configurationStateMutex.Unlock()
 	c.Apps = AppsConfigurationState{}
-	c.Habitats = HabitatsConfigurationState{}
 	c.Trainer = base.TrainerConfigurationState{
 		Port: 5000,
 		Policies: base.TrainerPolicies{
@@ -62,85 +58,31 @@ func (c *ConfigurationState) Snapshot() ConfigurationState {
 	return res
 }
 
-func (c * ConfigurationState) AllAppsLatest() map[base.AppName]base.AppConfiguration {
-	apps := make(map[base.AppName]base.AppConfiguration)
-	configurationStateMutex.Lock()
-	confApps := c.Apps
-	configurationStateMutex.Unlock()
-	for appName, appObj := range confApps {
-		elem, err := c.GetApp(appName, appObj.LatestVersion())
-		if err == nil {
-			apps[appName] = elem
-		}
-	}
-	ConfigLogger.Infof("AllAppsLatest: %+v", apps)
-	return apps
+func (c *ConfigurationState) AllAppsLatest() map[base.AppName]base.AppConfiguration {
+	return c.Apps
 }
 
-func (c *ConfigurationState) GetApp (name base.AppName, version base.Version) (base.AppConfiguration, error) {
+func (c *ConfigurationState) GetApp (name base.AppName) (base.AppConfiguration, error) {
 	configurationStateMutex.Lock()
 	defer configurationStateMutex.Unlock()
 	if _, exists := (*c).Apps[name]; !exists {
 		return base.AppConfiguration{}, errors.New("No such App")
 	}
-	if _, exists := (*c).Apps[name][version]; !exists {
-		return base.AppConfiguration{}, errors.New("No such Version")
-	}
-	res := (*c).Apps[name][version]
-	return res, nil
-}
-
-func (c *ConfigurationState) GetHabitat (name base.HabitatName, version base.Version) (base.HabitatConfiguration, error){
-	configurationStateMutex.Lock()
-	defer configurationStateMutex.Unlock()
-	if _, exists := (*c).Habitats[name]; !exists {
-		return base.HabitatConfiguration{}, errors.New("No such Habitat")
-	}
-	if _, exists := (*c).Habitats[name][version]; !exists {
-		return base.HabitatConfiguration{}, errors.New("No such Version")
-	}
-	res := (*c).Habitats[name][version]
+	res := (*c).Apps[name]
 	return res, nil
 }
 
 func (c *ConfigurationState) ConfigureApp (conf base.AppConfiguration) {
-	ConfigLogger.Infof("ConfigureApp %s:%d", conf.Name, conf.Version)
+	ConfigLogger.Infof("ConfigureApp %s:%d", conf.Name)
 	configurationStateMutex.Lock()
 	defer configurationStateMutex.Unlock()
 	if _, exists := c.Apps[conf.Name]; !exists {
-		c.Apps[conf.Name] = AppConfigurationVersions{}
+		c.Apps[conf.Name] = base.AppConfiguration{}
 	}
-	c.Apps[conf.Name][conf.Version] = conf
-	state_needs.GlobalAppsNeedState.UpdateNeeds(conf.Name, conf.Version, conf.Needs)
+	c.Apps[conf.Name] = conf
 }
 
-func (c *ConfigurationState) ConfigureHabitat (conf base.HabitatConfiguration) {
-	configurationStateMutex.Lock()
-	defer configurationStateMutex.Unlock()
-	if _, exists := c.Habitats[conf.Name]; !exists {
-		c.Habitats[conf.Name] = HabitatConfigurationVersions{}
-	}
-	c.Habitats[conf.Name][conf.Version] = conf
-}
-
-type AppsConfigurationState map[base.AppName]AppConfigurationVersions
-type AppConfigurationVersions map[base.Version]base.AppConfiguration
-
-func (a AppConfigurationVersions) LatestVersion() base.Version {
-	var keys []int
-	for k := range a {
-		keys = append(keys, int(k))
-	}
-	if len(keys) == 0 {
-		return 0
-	}
-
-	sort.Sort(sort.Reverse(sort.IntSlice(keys)))
-	return base.Version(keys[0])
-}
-
-type HabitatsConfigurationState map[base.HabitatName]HabitatConfigurationVersions
-type HabitatConfigurationVersions map[base.Version]base.HabitatConfiguration
+type AppsConfigurationState map[base.AppName]base.AppConfiguration
 type ProviderConfigurationState base.ProviderConfiguration
 
 
