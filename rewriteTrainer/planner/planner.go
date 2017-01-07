@@ -253,6 +253,8 @@ func doPlanInternal() {
 			if bestInstanceTypeObject.SpotInstanceTerminationCount >= trainerConfiguration.SpotInstanceFailureThreshold {
 				change.SpotInstance = false
 			}
+		}else{
+			change.SpotInstance = false
 		}
 
 		change.InstanceType = bestInstanceType
