@@ -67,7 +67,7 @@ func (a AppsNeedState) Get(app base.AppName, version base.Version) (needs.AppNee
 
 func (a AppsNeedState) lastValidNeeds(app base.AppName) needs.AppNeeds {
 	if _, exists := a[app]; !exists {
-		return needs.AppNeeds{1, 1, 1}
+		return needs.AppNeeds{1, 1, 1, false}
 	}
 	var versions base.Versions
 	for version := range a[app] {
@@ -80,7 +80,7 @@ func (a AppsNeedState) lastValidNeeds(app base.AppName) needs.AppNeeds {
 			return a[app][version]
 		}
 	}
-	return needs.AppNeeds{1, 1, 1}
+	return needs.AppNeeds{1, 1, 1, false}
 }
 //
 ////TODO use WeeklyNeeds

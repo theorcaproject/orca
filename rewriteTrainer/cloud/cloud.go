@@ -22,7 +22,6 @@ import (
 	"gatoor/orca/base"
 	"strings"
 	"strconv"
-	"gatoor/orca/rewriteTrainer/state/configuration"
 )
 
 const (
@@ -43,47 +42,50 @@ type InstanceStatus string
 
 type ProviderEvent struct {
 	HostId base.HostId
-	Type ProviderEventType
+	Type   ProviderEventType
 }
 
 type Provider interface {
 	Init()
 	SpawnInstances([]base.InstanceType) bool
 	SpawnInstance(base.InstanceType) base.HostId
-	SpawnInstanceSync(base.InstanceType) base.HostId
+	SpawnInstanceSync(base.InstanceType, spot bool) base.HostId
 	SpawnInstanceLike(base.HostId) base.HostId
 	GetIp(base.HostId) base.IpAddr
 	GetResources(base.InstanceType) base.InstanceResources
 	GetInstanceType(base.HostId) base.InstanceType
-	SuitableInstanceTypes(base.InstanceResources) []base.InstanceType
 	CheckInstance(base.HostId) InstanceStatus
 	TerminateInstance(base.HostId) bool
 	GetSpawnLog() []base.HostId
 	RemoveFromSpawnLog(base.HostId)
+	GetIsSpotInstance(hostId base.HostId) bool
+
+	GetAvailableInstances(instanceType base.InstanceType) base.ProviderInstanceType
+	UpdateAvailableInstances(instanceType base.InstanceType, instance base.ProviderInstanceType)
+	GetAllAvailableInstanceTypes() map[base.InstanceType]base.ProviderInstanceType
 
 	UpdateLoadBalancers(hostId base.HostId, app base.AppName, version base.Version, event string)
 }
 
 var CurrentProvider Provider
 
-func Init() {
-	AWSLogger.Infof("Initializing CloudProvider of type %s", state_configuration.GlobalConfigurationState.CloudProvider.Type)
-	if state_configuration.GlobalConfigurationState.CloudProvider.Type == PROVIDER_AWS {
-		CurrentProvider = &AWSProvider{ProviderConfiguration: state_configuration.GlobalConfigurationState.CloudProvider}
+func Init(configuration base.ProviderConfiguration) {
+	AWSLogger.Infof("Initializing CloudProvider of type %s", configuration.Type)
+	if configuration.Type == PROVIDER_AWS {
+		CurrentProvider = &AWSProvider{ProviderConfiguration: configuration}
 	} else {
-		CurrentProvider = &TestProvider{ProviderConfiguration: state_configuration.GlobalConfigurationState.CloudProvider}
+		CurrentProvider = &TestProvider{ProviderConfiguration: configuration}
 	}
 	CurrentProvider.Init()
 }
 
-
 type TestProvider struct {
 	ProviderConfiguration base.ProviderConfiguration
 
-	Type base.ProviderType
-	InstanceTypes []base.InstanceType
-	SpawnList []base.HostId
-	KillList []base.HostId
+	Type                  base.ProviderType
+	InstanceTypes         []base.InstanceType
+	SpawnList             []base.HostId
+	KillList              []base.HostId
 }
 
 func (a *TestProvider) Init() {
@@ -91,7 +93,7 @@ func (a *TestProvider) Init() {
 	a.InstanceTypes = []base.InstanceType{"test", "otherstuff"}
 }
 
-func (a *TestProvider) UpdateLoadBalancers(hostId base.HostId, app base.AppName, version base.Version, event string){
+func (a *TestProvider) UpdateLoadBalancers(hostId base.HostId, app base.AppName, version base.Version, event string) {
 
 }
 
@@ -119,7 +121,7 @@ func (a *TestProvider) SpawnInstance(ty base.InstanceType) base.HostId {
 	return "TODO"
 }
 
-func (a *TestProvider) GetSpawnLog() []base.HostId{
+func (a *TestProvider) GetSpawnLog() []base.HostId {
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
@@ -132,17 +134,17 @@ func (a *TestProvider) RemoveFromSpawnLog(base.HostId) {
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 }
 
-func (a *TestProvider) TerminateInstance(hostId base.HostId) bool{
+func (a *TestProvider) TerminateInstance(hostId base.HostId) bool {
 	AWSLogger.Errorf("NOT IMPLEMENTED TerminateInstance")
 	a.KillList = append(a.KillList, hostId)
 	return true
 }
 
-func (a *TestProvider) GetInstanceType(hostId base.HostId) base.InstanceType{
+func (a *TestProvider) GetInstanceType(hostId base.HostId) base.InstanceType {
 	return base.InstanceType(hostId)
 }
 
-func (a *TestProvider) SpawnInstanceSync(ty base.InstanceType) base.HostId {
+func (a *TestProvider) SpawnInstanceSync(ty base.InstanceType, spot bool) base.HostId {
 	AWSLogger.Infof("Trying to spawn a single instance of type '%s'", ty)
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
@@ -150,7 +152,7 @@ func (a *TestProvider) SpawnInstanceSync(ty base.InstanceType) base.HostId {
 	return ""
 }
 
-func (a *TestProvider) SpawnInstanceLike(hostId base.HostId) base.HostId{
+func (a *TestProvider) SpawnInstanceLike(hostId base.HostId) base.HostId {
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
@@ -158,7 +160,7 @@ func (a *TestProvider) SpawnInstanceLike(hostId base.HostId) base.HostId{
 	return "new_" + hostId
 }
 
-func (a *TestProvider) SpawnInstances(tys []base.InstanceType) bool{
+func (a *TestProvider) SpawnInstances(tys []base.InstanceType) bool {
 	AWSLogger.Infof("Trying to spawn %d instances", len(tys))
 	AWSLogger.Errorf("NOT IMPLEMENTED")
 	AWSLogger.Errorf("NOT IMPLEMENTED")
@@ -173,6 +175,10 @@ func (a *TestProvider) GetIp(hostId base.HostId) base.IpAddr {
 func (a *TestProvider) SuitableInstanceTypes(resources base.InstanceResources) []base.InstanceType {
 	res := []base.InstanceType{}
 	return res
+}
+
+func (a *TestProvider) GetAvailableInstances(instanceType base.InstanceType) base.ProviderInstanceType {
+	return base.ProviderInstanceType{}
 }
 
 func (a *TestProvider) CheckInstance(hostId base.HostId) InstanceStatus {
@@ -190,4 +196,14 @@ func (a *TestProvider) CheckInstance(hostId base.HostId) InstanceStatus {
 	}
 	return INSTANCE_STATUS_HEALTHY
 }
+
+func (a *TestProvider) GetAllAvailableInstanceTypes() map[base.InstanceType]base.ProviderInstanceType {
+	return a.ProviderConfiguration.AvailableInstanceTypes
+}
+
+func (a *TestProvider) GetIsSpotInstance(hostId base.HostId) bool {
+	return false;
+}
+
+func (a *TestProvider)        UpdateAvailableInstances(instanceType base.InstanceType, instance base.ProviderInstanceType) {}
 

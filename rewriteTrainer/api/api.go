@@ -47,9 +47,9 @@ func (api Api) Init() {
 
 	/* Routes for the client */
 	r.HandleFunc("/client/changes", getChanges) //This route pushes state and already pulls back []ChangeRequests
-	r.HandleFunc("/client/push/events", pushHandler) //TODO: This route is to push errors/failures
-	r.HandleFunc("/client/push/logs", pushHandler) //TODO: This route is to push logs from stdout/stderr
-	r.HandleFunc("/client/push/state", pushHandler)
+	r.HandleFunc("/client/push/events", pushEventsHandler) //TODO: This route is to push errors/failures
+	r.HandleFunc("/client/push/logs", pushLogsHandler) //TODO: This route is to push logs from stdout/stderr
+	r.HandleFunc("/client/push/state", pushStateHandler)
 
 	r.HandleFunc("/state/config", getStateConfiguration)
 	r.HandleFunc("/state/config/applications", getStateConfigurationApplications)
@@ -90,7 +90,7 @@ func getChanges(w http.ResponseWriter, r *http.Request) {
 	returnJson(w, changes)
 }
 
-func pushHandler(w http.ResponseWriter, r *http.Request) {
+func pushStateHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
 	var wrapper base.TrainerPushWrapper
@@ -104,6 +104,12 @@ func pushHandler(w http.ResponseWriter, r *http.Request) {
 
 	state_cloud.GlobalCloudLayout.Current.UpdateHost(wrapper.HostInfo,wrapper.Stats)
 	returnJson(w, nil)
+}
+
+func pushEventsHandler(w http.ResponseWriter, r *http.Request) {
+}
+
+func pushLogsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getStateConfiguration(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +141,7 @@ func getStateConfigurationCloudProviders(w http.ResponseWriter, r *http.Request)
 			state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Key = object.AWSConfiguration.Key
 			state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Secret = object.AWSConfiguration.Secret
 			state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.Region = object.AWSConfiguration.Region
-			state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.SecurityGroupId= object.AWSConfiguration.SecurityGroupId
+			state_configuration.GlobalConfigurationState.CloudProvider.AWSConfiguration.SecurityGroupId = object.AWSConfiguration.SecurityGroupId
 		}
 
 		apiInstance.ConfigManager.Save()

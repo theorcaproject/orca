@@ -27,6 +27,7 @@ import (
 	"gatoor/orca/rewriteTrainer/needs"
 	"gatoor/orca/rewriteTrainer/db"
 	"time"
+	"sort"
 )
 
 var PlannerLogger = Logger.LoggerWithField(Logger.Logger, "module", "planner")
@@ -123,12 +124,15 @@ func doPlanInternal() {
 			if !foundResource {
 				/* We could not find a server suitable for what we need */
 				if len(missingServerNeeds) == 0 {
-					missingServerNeeds = append(missingServerNeeds, needs.AppNeeds{})
+					missingServerNeeds = append(missingServerNeeds, needs.AppNeeds{
+						SpotAllowed:true,
+					})
 				}
 
 				missingServerNeeds[0].CpuNeeds += appObject.Needs.CpuNeeds
 				missingServerNeeds[0].MemoryNeeds += appObject.Needs.MemoryNeeds
 				missingServerNeeds[0].NetworkNeeds += appObject.Needs.NetworkNeeds
+				missingServerNeeds[0].SpotAllowed = false
 			}
 		} else {
 			//We have a couple of cases here to account for:
@@ -166,7 +170,9 @@ func doPlanInternal() {
 				if remainingDeloymentCount > 0 {
 					for i := 0; i < int(remainingDeloymentCount); i++ {
 						if len(missingServerNeeds) > i - 1 {
-							missingServerNeeds = append(missingServerNeeds, needs.AppNeeds{})
+							missingServerNeeds = append(missingServerNeeds, needs.AppNeeds{
+								SpotAllowed:true,
+							})
 						}
 
 						missingServerNeeds[i].CpuNeeds += appObject.Needs.CpuNeeds
@@ -226,12 +232,31 @@ func doPlanInternal() {
 	for _, serverReqs := range missingServerNeeds {
 		change := base.ChangeRequest{
 			ChangeType:base.CHANGE_REQUEST__SPAWN_SERVER,
+			SpotInstance: true,
 		}
-		change.Cost.CpuNeeds += serverReqs.CpuNeeds
-		change.Cost.MemoryNeeds += serverReqs.MemoryNeeds
-		change.Cost.NetworkNeeds += serverReqs.NetworkNeeds
-		state_cloud.GlobalCloudLayout.AddChange(change)
 
+		bestInstanceType := findSuitableInstances(base.InstanceResources{
+			TotalCpuResource: base.CpuResource(serverReqs.CpuNeeds),
+			TotalMemoryResource: base.MemoryResource(serverReqs.MemoryNeeds),
+			TotalNetworkResource: base.NetworkResource(serverReqs.NetworkNeeds),
+		})
+
+		/* Ok, so we found a good instance to work with, can we spot it? */
+		bestInstanceTypeObject := cloud.CurrentProvider.GetAvailableInstances(bestInstanceType)
+		if bestInstanceTypeObject.SupportsSpotInstance && serverReqs.SpotAllowed {
+			if (bestInstanceTypeObject.LastSpotInstanceFailure.Unix() + trainerConfiguration.SpotInstanceFailureTimeThreshold) < time.Now().Unix() {
+				bestInstanceTypeObject.LastSpotInstanceFailure = time.Unix(0,0)
+				bestInstanceTypeObject.SpotInstanceTerminationCount = 0
+				cloud.CurrentProvider.UpdateAvailableInstances(bestInstanceType, bestInstanceTypeObject)
+			}
+
+			if bestInstanceTypeObject.SpotInstanceTerminationCount >= trainerConfiguration.SpotInstanceFailureThreshold {
+				change.SpotInstance = false
+			}
+		}
+
+		change.InstanceType = bestInstanceType
+		state_cloud.GlobalCloudLayout.AddChange(change)
 		db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
 			"message": "Scaling server requirements were not meet, requesting new instance.",
 		}})
@@ -253,13 +278,69 @@ func doPlanInternal() {
 				}})
 			}
 		}
-
 		/* Now lets see if there is resource we can move of servers */
 		/* Can we relaunch an instance as a spot instance???*/
 	}
 
 	/* Done with this change iteration */
 }
+
+func checkResources(available base.InstanceResources, needed base.InstanceResources, safety float32) bool {
+	if float32(available.TotalCpuResource) < float32(needed.TotalCpuResource) * safety {
+		return false
+	}
+	if float32(available.TotalMemoryResource) < float32(needed.TotalMemoryResource) * safety {
+		return false
+	}
+	if float32(available.TotalNetworkResource) < float32(needed.TotalNetworkResource) * safety {
+		return false
+	}
+	return true
+}
+
+type CostSort struct {
+	InstanceType base.InstanceType
+	Cost         base.Cost
+}
+
+type CostSorts []CostSort
+
+func (slice CostSorts) Len() int {
+	return len(slice)
+}
+
+func (slice CostSorts) Less(i, j int) bool {
+	return slice[i].Cost < slice[j].Cost;
+}
+
+func (slice CostSorts) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
+}
+
+func sortByCost(tys []base.InstanceType) []base.InstanceType {
+	sorted := CostSorts{}
+	for _, ty := range tys {
+		sorted = append(sorted, CostSort{InstanceType: ty, Cost: cloud.CurrentProvider.GetAvailableInstances(ty).InstanceCost})
+	}
+	sort.Sort(sorted)
+	res := []base.InstanceType{}
+	for _, t := range sorted {
+		res = append(res, t.InstanceType)
+	}
+	return res
+}
+
+func findSuitableInstances(resources base.InstanceResources) base.InstanceType {
+	suitableInstances := []base.InstanceType{}
+	for _, ty := range cloud.CurrentProvider.GetAllAvailableInstanceTypes(){
+		if checkResources(ty.InstanceResources, resources, 1) {
+			suitableInstances = append(suitableInstances, ty.Type)
+		}
+	}
+	suitableInstances = sortByCost(suitableInstances)
+	return suitableInstances[0]
+}
+
 
 func doPromisedWork() {
 	//TODO: Each spawn should be executed in a separate thread and sync to that thread. This way success
@@ -270,11 +351,16 @@ func doPromisedWork() {
 	for _, change := range changes {
 		if change.ChangeType == base.CHANGE_REQUEST__SPAWN_SERVER {
 			//TODO: Work out which instance type we should be using here
-			cloud.CurrentProvider.SpawnInstanceSync(base.InstanceType("t2.micro"))
+			cloud.CurrentProvider.SpawnInstanceSync(change.InstanceType, change.SpotInstance)
 			state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
 
 		} else if change.ChangeType == base.CHANGE_REQUEST__TERMINATE_SERVER {
 			cloud.CurrentProvider.TerminateInstance(change.Host)
+			host, err := state_cloud.GlobalCloudLayout.Current.GetHost(change.Host)
+			if err == nil {
+				host.HostState = state_cloud.HOST_PLANNING_TERMINATING
+			}
+			state_cloud.GlobalCloudLayout.Current.AddHost(change.Host, host)
 			state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
 		}
 	}
@@ -283,13 +369,22 @@ func doPromisedWork() {
 func doCheckForTimeoutHosts() {
 	for _, host := range state_cloud.GlobalCloudLayout.Current.Layout {
 		if (host.LastSeen.Unix() + trainerConfiguration.DeadHostTimeout) < time.Now().Unix() {
-			db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
-				"message": "Host "+ string(host.HostId) +" has disapeared, removing it from the system and nuking any changes associated with it",
-				"host": string(host.HostId),
-			}})
+			if(host.HostState != state_cloud.HOST_PLANNING_TERMINATING){
+				db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+					"message": "Host "+ string(host.HostId) +" has disapeared, removing it from the system and nuking any changes associated with it",
+					"host": string(host.HostId),
+				}})
+
+				/* Was this host a spot instance? If so then we might have lost it because shit is shit */
+				if host.SpotInstance {
+					providerInstanceMetadata := cloud.CurrentProvider.GetAvailableInstances(host.InstanceType)
+					providerInstanceMetadata.LastSpotInstanceFailure = time.Now()
+					providerInstanceMetadata.SpotInstanceTerminationCount += 1
+					cloud.CurrentProvider.UpdateAvailableInstances(host.InstanceType, providerInstanceMetadata)
+				}
+			}
 
 			state_cloud.GlobalCloudLayout.Current.RemoveHost(host.HostId)
-
 			for _, change := range state_cloud.GlobalCloudLayout.Changes {
 				if change.Host == host.HostId {
 					state_cloud.GlobalCloudLayout.DeleteChange(change.Id)

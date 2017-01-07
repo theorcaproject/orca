@@ -61,9 +61,7 @@ type CloudLayoutAll struct {
 
 const (
 	HOST_NORMAL="HOST_NORMAL"
-	HOST_VANISHED="HOST_VANISHED"
 	HOST_PLANNING_TERMINATING="HOST_PLANNING_TERMINATING"
-	HOST_PLANNING_TERMINATED="HOST_PLANNING_TERMINATED"
 )
 
 
@@ -81,6 +79,7 @@ type CloudLayoutElement struct {
 	HostState      string
 
 	AvailableResources base.InstanceResources
+	SpotInstance   bool
 }
 
 type PlannedCloudLayoutElement struct {
@@ -392,6 +391,8 @@ func (c *CloudLayout) UpdateHost(hostInfo base.HostInfo, stats base.MetricsWrapp
 		existingHostObject.IpAddress = cloud.CurrentProvider.GetIp(hostInfo.HostId)
 		existingHostObject.FirstSeen = time.Now()
 		existingHostObject.HostState = HOST_NORMAL
+		existingHostObject.SpotInstance = cloud.CurrentProvider.GetIsSpotInstance(hostInfo.HostId)
+		existingHostObject.InstanceType = instance_type
 	}
 
 	existingHostObject.Apps = apps

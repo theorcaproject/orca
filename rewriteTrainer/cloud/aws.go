@@ -33,6 +33,7 @@ import (
 	"gatoor/orca/rewriteTrainer/state/configuration"
 	"os"
 	"gatoor/orca/rewriteTrainer/db"
+	"strconv"
 )
 
 var AWSLogger = Logger.LoggerWithField(Logger.Logger, "module", "aws")
@@ -63,9 +64,7 @@ func (s SpawnLog) Remove(hostId base.HostId) {
 
 type AWSProvider struct {
 	ProviderConfiguration base.ProviderConfiguration
-
 	Type                  base.ProviderType
-	SpawnLog              SpawnLog
 }
 
 func (a *AWSProvider) CheckCredentials() bool {
@@ -101,28 +100,43 @@ func (a *AWSProvider) Init() {
 	os.Setenv("AWS_ACCESS_KEY_ID", a.ProviderConfiguration.AWSConfiguration.Key)
 	os.Setenv("AWS_SECRET_ACCESS_KEY", a.ProviderConfiguration.AWSConfiguration.Secret)
 
-	//TODO: When the cloud provider init is called, we use the aws api based on the credentials set to populate below:
-	a.ProviderConfiguration.AWSConfiguration.InstanceTypes = []base.InstanceType{"t2.micro"}
-	a.ProviderConfiguration.AWSConfiguration.InstanceResources = make(map[base.InstanceType]base.InstanceResources)
-	a.ProviderConfiguration.AWSConfiguration.InstanceResources["t2.micro"] = base.InstanceResources{
-		TotalCpuResource:100,
-		TotalMemoryResource:100,
-		TotalNetworkResource:100,
-	}
-	a.ProviderConfiguration.AWSConfiguration.InstanceSafety = make(map[base.InstanceType]base.SafeInstance)
-	a.ProviderConfiguration.AWSConfiguration.InstanceSafety["t2.micro"] = true
+	////TODO: When the cloud provider init is called, we use the aws api based on the credentials set to populate below:
+	//t2_micro := base.ProviderInstanceType{
+	//	InstanceCost: 0.2,
+	//	InstanceResources:base.InstanceResources{
+	//		TotalCpuResource:10000,
+	//		TotalNetworkResource:10000,
+	//		TotalMemoryResource:10000,
+	//	},
+	//	SpotInstanceCost:0.02,
+	//	SupportsSpotInstance:true,
+	//	Type:"t2.micro",
+	//}
+	//
+	//a.ProviderConfiguration.AvailableInstanceTypes = make(map[base.InstanceType]base.ProviderInstanceType)
+	//a.ProviderConfiguration.AvailableInstanceTypes["t2.micro"] = t2_micro
+}
 
-	a.ProviderConfiguration.AWSConfiguration.InstanceCost = make(map[base.InstanceType]base.Cost)
-	a.ProviderConfiguration.AWSConfiguration.InstanceCost["t2.micro"] = 1.0
+func (a *AWSProvider) GetAvailableInstances(instanceType base.InstanceType) base.ProviderInstanceType {
+	return a.ProviderConfiguration.AvailableInstanceTypes[instanceType]
+}
 
+func (a *AWSProvider) UpdateAvailableInstances(instanceType base.InstanceType, instance base.ProviderInstanceType) {
+	a.ProviderConfiguration.AvailableInstanceTypes[instanceType] = instance
+}
+
+func (a *AWSProvider) GetAllAvailableInstanceTypes() map[base.InstanceType]base.ProviderInstanceType {
+	return a.ProviderConfiguration.AvailableInstanceTypes
 }
 
 func (a *AWSProvider) SpawnInstance(ty base.InstanceType) base.HostId {
-	db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
-		"message": fmt.Sprintf("Trying to spawn a single instance of type '%s' in region %s with AMI %s", ty, a.ProviderConfiguration.AWSConfiguration.Region, a.ProviderConfiguration.AWSConfiguration.AMI),
-		"subsystem": "cloud.aws",
-		"level": "info",
-	}})
+	db.Audit.Insert__AuditEvent(db.AuditEvent{
+		Details:map[string]string{
+			"message": fmt.Sprintf("Trying to spawn a single instance of type '%s' in region %s with AMI %s",
+				ty, a.ProviderConfiguration.AWSConfiguration.Region, a.ProviderConfiguration.AWSConfiguration.AMI),
+			"subsystem": "cloud.aws",
+			"level": "info",
+		}})
 
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.ProviderConfiguration.AWSConfiguration.Region)}))
 
@@ -151,8 +165,48 @@ func (a *AWSProvider) SpawnInstance(ty base.InstanceType) base.HostId {
 		"subsystem": "cloud.aws",
 		"level": "info",
 	}})
-	a.SpawnLog.Add(id)
+	return id
+}
 
+func (a *AWSProvider) SpawnSpotInstance(ty base.InstanceType, price float64) base.HostId {
+	db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+		"message": fmt.Sprintf("Trying to spawn a single spot instance of type '%s' in region %s with AMI %s",
+			ty, a.ProviderConfiguration.AWSConfiguration.Region, a.ProviderConfiguration.AWSConfiguration.AMI),
+		"subsystem": "cloud.aws",
+		"level": "info",
+	}})
+
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.ProviderConfiguration.AWSConfiguration.Region)}))
+
+	runResult, err := svc.RunInstances(&ec2.RequestSpotInstancesInput{
+		LaunchSpecification: &ec2.RequestSpotLaunchSpecification{
+			ImageId:      aws.String(a.ProviderConfiguration.AWSConfiguration.AMI),
+			InstanceType: aws.String(string(ty)),
+			KeyName:      &a.ProviderConfiguration.SSHKey,
+			SecurityGroupIds: aws.StringSlice([]string{string(a.ProviderConfiguration.AWSConfiguration.SecurityGroupId)}),
+		},
+
+		Type: aws.String("one-time"),
+		InstanceCount: aws.Int64(1),
+		SpotPrice: aws.String(strconv.FormatFloat(price, "f", 4, 64)),
+	})
+
+	if err != nil {
+		db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+			"message": fmt.Sprintf("Could not spawn instance of type %s: %s", ty, err),
+			"subsystem": "cloud.aws",
+			"level": "error",
+		}})
+
+		return ""
+	}
+
+	id := base.HostId(*runResult.Instances[0].InstanceId)
+	db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
+		"message": fmt.Sprintf("Spawned a single instance of type '%s'. Id=%s", ty, id),
+		"subsystem": "cloud.aws",
+		"level": "info",
+	}})
 	return id
 }
 
@@ -178,14 +232,26 @@ func installOrcaClient(hostId base.HostId, ip base.IpAddr, trainerIp base.IpAddr
 	installer.InstallNewInstance(clientConf, ip, sshKey, sshUser)
 }
 
-func (a AWSProvider) SpawnInstanceSync(ty base.InstanceType) base.HostId {
+func (a AWSProvider) SpawnInstanceSync(ty base.InstanceType, spot bool) base.HostId {
 	AWSLogger.Infof("Spawning Instance synchronously, type %s", ty)
-	id := a.SpawnInstance(ty)
-	if id == "" {
-		return ""
-	}
-	if !a.waitOnInstanceReady(id) {
-		return ""
+	id := ""
+	if spot {
+		id = a.SpawnSpotInstance(ty, a.GetAvailableInstances(ty).SpotInstanceCost)
+		if id == "" {
+			return ""
+		}
+		if !a.waitOnInstanceReady(id) {
+			return ""
+		}
+	} else {
+		id = a.SpawnInstance(ty)
+		if id == "" {
+			return ""
+		}
+		if !a.waitOnInstanceReady(id) {
+			return ""
+		}
+
 	}
 
 	ipAddr := a.GetIp(id)
@@ -292,6 +358,16 @@ func (a *AWSProvider) GetIp(hostId base.HostId) base.IpAddr {
 	return ip
 }
 
+func (a *AWSProvider) GetIsSpotInstance(hostId base.HostId) bool {
+	AWSLogger.Infof("Getting GetIsSpotInstance of instance %s", hostId)
+	info, err := a.getInstanceInfo(hostId)
+	if err != nil {
+		AWSLogger.Infof("Got GetIsSpotInstance for instance %s failed: %s", hostId, err)
+		return false
+	}
+	return info.SpotInstanceRequestId != nil
+}
+
 func (a *AWSProvider) GetInstanceType(hostId base.HostId) base.InstanceType {
 	AWSLogger.Infof("Getting InstanceType of instance %s", hostId)
 	info, err := a.getInstanceInfo(hostId)
@@ -304,68 +380,8 @@ func (a *AWSProvider) GetInstanceType(hostId base.HostId) base.InstanceType {
 	return ty
 }
 
-func checkResources(available base.InstanceResources, needed base.InstanceResources, safety float32) bool {
-	if float32(available.TotalCpuResource) < float32(needed.TotalCpuResource) * safety {
-		return false
-	}
-	if float32(available.TotalMemoryResource) < float32(needed.TotalMemoryResource) * safety {
-		return false
-	}
-	if float32(available.TotalNetworkResource) < float32(needed.TotalNetworkResource) * safety {
-		return false
-	}
-	return true
-}
-
 func (a *AWSProvider) GetResources(ty base.InstanceType) base.InstanceResources {
-	return a.ProviderConfiguration.AWSConfiguration.InstanceResources[ty]
-}
-
-type CostSort struct {
-	InstanceType base.InstanceType
-	Cost         base.Cost
-}
-
-type CostSorts []CostSort
-
-func (slice CostSorts) Len() int {
-	return len(slice)
-}
-
-func (slice CostSorts) Less(i, j int) bool {
-	return slice[i].Cost < slice[j].Cost;
-}
-
-func (slice CostSorts) Swap(i, j int) {
-	slice[i], slice[j] = slice[j], slice[i]
-}
-
-func sortByCost(tys []base.InstanceType, costMap map[base.InstanceType]base.Cost) []base.InstanceType {
-	sorted := CostSorts{}
-	for _, ty := range tys {
-		if _, exists := costMap[ty]; exists {
-			sorted = append(sorted, CostSort{InstanceType: ty, Cost: costMap[ty]})
-		}
-	}
-	sort.Sort(sorted)
-	res := []base.InstanceType{}
-	for _, t := range sorted {
-		res = append(res, t.InstanceType)
-	}
-	return res
-}
-
-func (a *AWSProvider) SuitableInstanceTypes(resources base.InstanceResources) []base.InstanceType {
-	AWSLogger.Infof("Get Suitable Instances for needs: %+v", resources)
-	suitableInstances := []base.InstanceType{}
-	for _, ty := range a.ProviderConfiguration.AWSConfiguration.InstanceTypes {
-		if checkResources(a.GetResources(ty), resources, a.ProviderConfiguration.AWSConfiguration.SuitableInstanceSafetyFactor) {
-			suitableInstances = append(suitableInstances, ty)
-		}
-	}
-	suitableInstances = sortByCost(suitableInstances, a.ProviderConfiguration.AWSConfiguration.InstanceCost)
-	AWSLogger.Infof("Suitable Instances for needs %+v: %v", resources, suitableInstances)
-	return suitableInstances
+	return a.GetAvailableInstances(ty).InstanceResources
 }
 
 func (a *AWSProvider) CheckInstance(hostId base.HostId) InstanceStatus {
@@ -411,14 +427,7 @@ func (a *AWSProvider) TerminateInstance(hostId base.HostId) bool {
 		"level": "error",
 	}})
 
-	a.SpawnLog.Remove(hostId)
 	return true
 
 }
 
-func (a *AWSProvider) GetSpawnLog() []base.HostId {
-	return a.SpawnLog
-}
-
-func (a *AWSProvider) RemoveFromSpawnLog(hostId base.HostId) {
-}

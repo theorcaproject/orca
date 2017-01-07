@@ -28,6 +28,7 @@ import (
 	"github.com/docker/docker/pkg/testutil/assert"
 	"time"
 	"fmt"
+	"gatoor/orca/rewriteTrainer/cloud"
 )
 
 func TestPlanner_DoNothing(t *testing.T) {
@@ -65,6 +66,22 @@ func TestPlanner_AddApplication__MinNeedsNotSatisfied(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
 	state_cloud.GlobalCloudLayout.Init()
 
+	Init(base.TrainerConfigurationState{
+		SpotInstanceFailureThreshold: 10,
+	})
+
+	cloud.Init(base.ProviderConfiguration{
+		Type:"AWS",
+		AvailableInstanceTypes: map[base.InstanceType]base.ProviderInstanceType{
+			base.InstanceType("instance1"): base.ProviderInstanceType{
+				Type:"instance1",
+				InstanceCost: 1.0,
+				SupportsSpotInstance:true,
+				InstanceResources: base.InstanceResources{TotalCpuResource:100, TotalMemoryResource:100, TotalNetworkResource:100},
+			},
+		},
+	})
+
 	appConfigSets := make([]base.AppConfigurationSet, 1)
 	appConfigSets[0] = base.AppConfigurationSet{
 		Version:1,
@@ -94,6 +111,7 @@ func TestPlanner_AddApplication__MinNeedsNotSatisfied(t *testing.T) {
 	assert.Equal(t, len(state_cloud.GlobalCloudLayout.Changes), 1)
 	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].ChangeType, base.UPDATE_TYPE__ADD)
 	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].Application, base.AppName("testing"))
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].SpotInstance, false)
 }
 
 
@@ -176,9 +194,29 @@ func TestPlanner_AddApplication__ToManyInstances(t *testing.T) {
 	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].Application, base.AppName("testing"))
 }
 
-func TestPlanner_AddApplication__MinNeedsSatisfiedDesiredNot(t *testing.T) {
+func TestPlanner_AddApplication__MinNeedsSatisfiedDesiredNot__SpotOk(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
 	state_cloud.GlobalCloudLayout.Init()
+
+	Init(base.TrainerConfigurationState{
+		SpotInstanceFailureThreshold: 10,
+		SpotInstanceFailureTimeThreshold: 120,
+	})
+
+	state_configuration.GlobalConfigurationState.CloudProvider.Type = "AWS"
+	cloud.Init(base.ProviderConfiguration{
+		Type:"AWS",
+		AvailableInstanceTypes: map[base.InstanceType]base.ProviderInstanceType{
+			base.InstanceType("instance1"): base.ProviderInstanceType{
+				Type:"instance1",
+				InstanceCost: 1.0,
+				InstanceResources: base.InstanceResources{TotalCpuResource:100, TotalMemoryResource:100, TotalNetworkResource:100},
+				SupportsSpotInstance:true,
+				SpotInstanceTerminationCount:0,
+				LastSpotInstanceFailure:time.Unix(0,0),
+			},
+		},
+	})
 
 	appConfigSets := make([]base.AppConfigurationSet, 1)
 	appConfigSets[0] = base.AppConfigurationSet{
@@ -213,16 +251,79 @@ func TestPlanner_AddApplication__MinNeedsSatisfiedDesiredNot(t *testing.T) {
 
 	assert.Equal(t, len(state_cloud.GlobalCloudLayout.Changes), 5)
 	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].ChangeType, base.CHANGE_REQUEST__SPAWN_SERVER)
-	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].Cost.CpuNeeds, needs.CpuNeeds(1))
-	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].Cost.MemoryNeeds, needs.MemoryNeeds(1))
-	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].Cost.NetworkNeeds, needs.NetworkNeeds(1))
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].SpotInstance, true)
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].InstanceType, base.InstanceType("instance1"))
 
 	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].ChangeType, base.CHANGE_REQUEST__SPAWN_SERVER)
-	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].Cost.CpuNeeds, needs.CpuNeeds(1))
-	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].Cost.MemoryNeeds, needs.MemoryNeeds(1))
-	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].Cost.NetworkNeeds, needs.NetworkNeeds(1))
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].SpotInstance, true)
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].InstanceType, base.InstanceType("instance1"))
 }
 
+
+func TestPlanner_AddApplication__MinNeedsSatisfiedDesiredNot__SpotsExceeded(t *testing.T) {
+	state_configuration.GlobalConfigurationState.Init()
+	state_cloud.GlobalCloudLayout.Init()
+
+	Init(base.TrainerConfigurationState{
+		SpotInstanceFailureThreshold: 1,
+		SpotInstanceFailureTimeThreshold:120,
+	})
+
+	state_configuration.GlobalConfigurationState.CloudProvider.Type = "AWS"
+	cloud.Init(base.ProviderConfiguration{
+		Type:"AWS",
+		AvailableInstanceTypes: map[base.InstanceType]base.ProviderInstanceType{
+			base.InstanceType("instance1"): base.ProviderInstanceType{
+				Type:"instance1",
+				InstanceCost: 1.0,
+				SupportsSpotInstance:true,
+				InstanceResources: base.InstanceResources{TotalCpuResource:100, TotalMemoryResource:100, TotalNetworkResource:100},
+				SpotInstanceTerminationCount:2,
+				LastSpotInstanceFailure:time.Now(),
+			},
+		},
+	})
+
+	appConfigSets := make([]base.AppConfigurationSet, 1)
+	appConfigSets[0] = base.AppConfigurationSet{
+		Version:1,
+	}
+
+	application := base.AppConfiguration{
+		Name:"testing",
+		MinDeploymentCount:1,
+		TargetDeploymentCount:5,
+		Needs: needs.AppNeeds{CpuNeeds:1, MemoryNeeds:1, NetworkNeeds:1},
+		ConfigurationSets:appConfigSets,
+	}
+	state_configuration.GlobalConfigurationState.ConfigureApp(application)
+
+	state_cloud.GlobalCloudLayout.Init()
+	host := state_cloud.CloudLayoutElement{
+		HostId:"host1",
+		InstanceType:"t2.micro",
+		IpAddress:"172.16.0.1",
+		AvailableResources: base.InstanceResources{
+			TotalMemoryResource:100,
+			TotalNetworkResource:100,
+			TotalCpuResource:100,
+		},
+	}
+
+	state_cloud.GlobalCloudLayout.Current.AddHost("host1", host)
+	state_cloud.GlobalCloudLayout.Current.AddApp("host1", "testing", 1, 1)
+
+	doPlanInternal()
+
+	assert.Equal(t, len(state_cloud.GlobalCloudLayout.Changes), 5)
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].ChangeType, base.CHANGE_REQUEST__SPAWN_SERVER)
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].SpotInstance, false)
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[0].InstanceType, base.InstanceType("instance1"))
+
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].ChangeType, base.CHANGE_REQUEST__SPAWN_SERVER)
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].SpotInstance, false)
+	assert.Equal(t, state_cloud.GlobalCloudLayout.Changes[1].InstanceType, base.InstanceType("instance1"))
+}
 
 func TestPlanner_AddApplication__MinNeedsSatisfied_KillOldVersions(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
@@ -375,4 +476,52 @@ func TestPlanner__HostTimedOut(t *testing.T) {
 
 	fmt.Printf("%+v", state_cloud.GlobalCloudLayout.Current.Layout)
 	assert.Equal(t, len(state_cloud.GlobalCloudLayout.Current.Layout), 1)
+}
+
+
+func TestPlanner__HostTimedOut_SpotInstance(t *testing.T) {
+	state_configuration.GlobalConfigurationState.Init()
+	state_cloud.GlobalCloudLayout.Init()
+	Init(base.TrainerConfigurationState{
+		DeadHostTimeout:120,
+	})
+
+	cloud.Init(base.ProviderConfiguration{
+		Type:"AWS",
+		AvailableInstanceTypes: map[base.InstanceType]base.ProviderInstanceType{
+			base.InstanceType("instance1"): base.ProviderInstanceType{
+				Type:"instance1",
+				InstanceCost: 1.0,
+				SupportsSpotInstance:true,
+				InstanceResources: base.InstanceResources{TotalCpuResource:100, TotalMemoryResource:100, TotalNetworkResource:100},
+				SpotInstanceTerminationCount:0,
+				LastSpotInstanceFailure:time.Now(),
+			},
+		},
+	})
+
+	/* This change will be removed */
+	state_cloud.GlobalCloudLayout.Current.AddHost("host1", state_cloud.CloudLayoutElement{
+		InstanceType:"instance1",
+		IpAddress:"192.168.1.1",
+		LastSeen:time.Unix(1,0),
+		HostId:"host1",
+		SpotInstance:true,
+	})
+
+	state_cloud.GlobalCloudLayout.Current.AddHost("host2", state_cloud.CloudLayoutElement{
+		InstanceType:"instance1",
+		IpAddress:"192.168.1.1",
+		LastSeen: time.Now(),
+		HostId:"host2",
+	})
+
+	doCheckForTimeoutHosts()
+
+	fmt.Printf("%+v\n", state_cloud.GlobalCloudLayout.Current.Layout)
+	assert.Equal(t, len(state_cloud.GlobalCloudLayout.Current.Layout), 1)
+
+	instanceObject := cloud.CurrentProvider.GetAvailableInstances("instance1")
+	fmt.Printf("count %d\n", instanceObject.SpotInstanceTerminationCount)
+	assert.Equal(t, instanceObject.SpotInstanceTerminationCount, int64(1))
 }

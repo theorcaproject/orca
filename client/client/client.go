@@ -43,8 +43,6 @@ type Client interface {
 	QueryApp(base.AppId, base.AppConfigurationSet, *types.AppsState, *types.Configuration) bool
 	StopApp(base.AppId, base.AppConfigurationSet, *types.AppsState, *types.Configuration) bool
 	DeleteApp(base.AppConfigurationSet, *types.AppsState, *types.Configuration) bool
-	//
-	//HostMetrics()
 	AppMetrics(base.AppId, base.AppConfigurationSet, *types.AppsState, *types.Configuration, *types.AppsMetricsById) bool
 }
 
@@ -66,7 +64,7 @@ func Handle(changes []base.ChangeRequest) {
 		}
 
 		if change.ChangeType == base.UPDATE_TYPE__REMOVE {
-			//TODO
+			DeleteApp(change.Application, change.AppConfig)
 		}
 	}
 }

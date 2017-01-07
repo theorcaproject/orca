@@ -35,7 +35,6 @@ type JsonConfiguration struct {
 	configRoot string
 
 	Trainer base.TrainerConfigurationState
-	AvailableInstances []base.HostId
 	Habitats []base.HabitatConfiguration
 	Apps []base.AppConfiguration
 	CloudProvider base.ProviderConfiguration
@@ -93,7 +92,6 @@ func (j *JsonConfiguration) Init(configurationRoot string){
 func (j *JsonConfiguration) Load() {
 	loadConfigFromFile(j.configRoot + TRAINER_CONFIGURATION_FILE, &j.Trainer)
 	loadConfigFromFile(j.configRoot + APPS_CONFIGURATION_FILE, &j.Apps)
-	loadConfigFromFile(j.configRoot + AVAILABLE_INSTANCES_CONFIGURATION_FILE, &j.AvailableInstances)
 	loadConfigFromFile(j.configRoot + CLOUD_PROVIDER_CONFIGURATION_FILE, &j.CloudProvider)
 }
 
@@ -107,7 +105,6 @@ func (j *JsonConfiguration) Save() {
 	}
 
 	saveConfigToFile(j.configRoot + APPS_CONFIGURATION_FILE, buffer)
-	//loadConfigFromFile(j.configRoot + AVAILABLE_INSTANCES_CONFIGURATION_FILE + ".saved", state_configuration.GlobalConfigurationState.)
 	saveConfigToFile(j.configRoot + CLOUD_PROVIDER_CONFIGURATION_FILE, state_configuration.GlobalConfigurationState.CloudProvider)
 }
 

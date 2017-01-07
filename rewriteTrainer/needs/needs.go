@@ -32,6 +32,7 @@ type AppNeeds struct {
 	MemoryNeeds MemoryNeeds
 	CpuNeeds CpuNeeds
 	NetworkNeeds NetworkNeeds
+	SpotAllowed bool
 }
 
 const (

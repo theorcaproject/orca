@@ -243,18 +243,22 @@ type InstanceResources struct {
 }
 
 type AWSConfiguration struct {
-	Key                          string
-	Secret                       string
-	Region                       string
-	AMI                          string
-	SecurityGroupId              string
+	Key                    string
+	Secret                 string
+	Region                 string
+	AMI                    string
+	SecurityGroupId        string
+}
 
-	// Transient Fields that are populated by the system when the aws provider is inited
-	InstanceTypes                []InstanceType
-	InstanceCost                 map[InstanceType]Cost
-	InstanceResources            map[InstanceType]InstanceResources
-	InstanceSafety               map[InstanceType]SafeInstance
-	SuitableInstanceSafetyFactor float32
+type ProviderInstanceType struct {
+	Type                 InstanceType
+	InstanceCost         Cost
+	SpotInstanceCost     Cost
+	InstanceResources    InstanceResources
+	SupportsSpotInstance bool
+
+	LastSpotInstanceFailure time.Time
+	SpotInstanceTerminationCount int64
 }
 
 type ProviderConfiguration struct {
@@ -264,6 +268,8 @@ type ProviderConfiguration struct {
 	MinInstances     InstanceCount
 	MaxInstances     InstanceCount
 	BaseInstanceType InstanceType
+
+	AvailableInstanceTypes map[InstanceType]ProviderInstanceType
 	AWSConfiguration AWSConfiguration
 }
 
@@ -286,6 +292,9 @@ type TrainerConfigurationState struct {
 	DeadHostTimeout      int64
 	ChangeDefaultTimeout int64
 	ChangeSpawnTimeout   int64
+
+	SpotInstanceFailureTimeThreshold int64
+	SpotInstanceFailureThreshold int64
 }
 
 const (
@@ -298,16 +307,17 @@ const (
 
 type ChangeRequest struct {
 	Id          string
-	Cost        needs.AppNeeds
 	ChangeType  string
 	CreatedTime time.Time
 
 	Application AppName
 	AppVersion  Version
 	Host        HostId
-
+	Cost 	needs.AppNeeds
 	/* Optional fields, only required when type is UPDATE_TYPE__ADD */
 	AppConfig   AppConfigurationSet
+	InstanceType InstanceType
+	SpotInstance bool
 }
 
 var appsMetricsMutex = &sync.Mutex{}
@@ -528,7 +538,7 @@ func timeToWeekdayMinutes(t time.Time) (time.Weekday, Minutes) {
 	return w, Minutes(m)
 }
 
-func (app *AppConfiguration) FindNewConfigurationSetId() Version{
+func (app *AppConfiguration) FindNewConfigurationSetId() Version {
 	ret := 0
 	for _, configurationSet := range app.ConfigurationSets {
 		if int(configurationSet.Version) > ret {

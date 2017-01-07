@@ -113,7 +113,7 @@ func clientPush(clientObj base.TrainerPushWrapper) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest("POST", "/push", b)
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(pushHandler)
+	handler := http.HandlerFunc(pushStateHandler)
 
 	handler.ServeHTTP(rr, req)
 	return rr
