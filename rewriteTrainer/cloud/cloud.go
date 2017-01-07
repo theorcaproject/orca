@@ -49,15 +49,13 @@ type Provider interface {
 	Init()
 	SpawnInstances([]base.InstanceType) bool
 	SpawnInstance(base.InstanceType) base.HostId
-	SpawnInstanceSync(base.InstanceType, spot bool) base.HostId
+	SpawnInstanceSync(base.InstanceType, bool) base.HostId
 	SpawnInstanceLike(base.HostId) base.HostId
 	GetIp(base.HostId) base.IpAddr
 	GetResources(base.InstanceType) base.InstanceResources
 	GetInstanceType(base.HostId) base.InstanceType
 	CheckInstance(base.HostId) InstanceStatus
 	TerminateInstance(base.HostId) bool
-	GetSpawnLog() []base.HostId
-	RemoveFromSpawnLog(base.HostId)
 	GetIsSpotInstance(hostId base.HostId) bool
 
 	GetAvailableInstances(instanceType base.InstanceType) base.ProviderInstanceType

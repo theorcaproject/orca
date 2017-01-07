@@ -30,7 +30,6 @@ import (
 	"fmt"
 	"sort"
 	"gatoor/orca/rewriteTrainer/cloud"
-	"gatoor/orca/rewriteTrainer/state/configuration"
 	"time"
 )
 
@@ -154,14 +153,6 @@ func (object *CloudLayoutAll) PopChanges(host base.HostId) []base.ChangeRequest{
 
 	object.Changes = changesMinusHost
 	return ret
-}
-
-func (c *CloudLayoutAll) InitBaseInstances(){
-	if len(GlobalCloudLayout.Current.Layout) < int(state_configuration.GlobalConfigurationState.CloudProvider.MinInstances) {
-		for i := len(GlobalCloudLayout.Current.Layout); i < int(state_configuration.GlobalConfigurationState.CloudProvider.MinInstances); i++ {
-			cloud.CurrentProvider.SpawnInstanceSync(state_configuration.GlobalConfigurationState.CloudProvider.BaseInstanceType)
-		}
-	}
 }
 
 func (c *CloudLayoutAll) Snapshot() CloudLayoutAll {

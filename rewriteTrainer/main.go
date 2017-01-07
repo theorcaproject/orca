@@ -52,7 +52,6 @@ func main() {
 
 	cloud.Init(baseConfiguration.CloudProvider)
 	initApi(&baseConfiguration)
-	state_cloud.GlobalCloudLayout.InitBaseInstances()
 	planner.Init(baseConfiguration.Trainer)
 
 	waitForCheckin()

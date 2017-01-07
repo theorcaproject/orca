@@ -25,8 +25,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
-	"sync"
-	"sort"
 	"gatoor/orca/rewriteTrainer/installer"
 	"gatoor/orca/client/types"
 	"fmt"
@@ -37,30 +35,6 @@ import (
 )
 
 var AWSLogger = Logger.LoggerWithField(Logger.Logger, "module", "aws")
-
-type SpawnLog []base.HostId
-
-var spawnLogMutex = &sync.Mutex{}
-
-func (s SpawnLog) Add(hostId base.HostId) {
-	spawnLogMutex.Lock()
-	defer spawnLogMutex.Unlock()
-	s = append(s, hostId)
-}
-
-func (s SpawnLog) Remove(hostId base.HostId) {
-	spawnLogMutex.Lock()
-	defer spawnLogMutex.Unlock()
-	i := -1
-	for iter, host := range s {
-		if host == hostId {
-			i = iter
-		}
-	}
-	if i >= 0 {
-		s = append(s[:i], s[i + 1:]...)
-	}
-}
 
 type AWSProvider struct {
 	ProviderConfiguration base.ProviderConfiguration
@@ -168,7 +142,7 @@ func (a *AWSProvider) SpawnInstance(ty base.InstanceType) base.HostId {
 	return id
 }
 
-func (a *AWSProvider) SpawnSpotInstance(ty base.InstanceType, price float64) base.HostId {
+func (a *AWSProvider) SpawnSpotInstance(ty base.InstanceType, price float32) base.HostId {
 	db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
 		"message": fmt.Sprintf("Trying to spawn a single spot instance of type '%s' in region %s with AMI %s",
 			ty, a.ProviderConfiguration.AWSConfiguration.Region, a.ProviderConfiguration.AWSConfiguration.AMI),
@@ -178,7 +152,7 @@ func (a *AWSProvider) SpawnSpotInstance(ty base.InstanceType, price float64) bas
 
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.ProviderConfiguration.AWSConfiguration.Region)}))
 
-	runResult, err := svc.RunInstances(&ec2.RequestSpotInstancesInput{
+	params := ec2.RequestSpotInstancesInput{
 		LaunchSpecification: &ec2.RequestSpotLaunchSpecification{
 			ImageId:      aws.String(a.ProviderConfiguration.AWSConfiguration.AMI),
 			InstanceType: aws.String(string(ty)),
@@ -188,9 +162,10 @@ func (a *AWSProvider) SpawnSpotInstance(ty base.InstanceType, price float64) bas
 
 		Type: aws.String("one-time"),
 		InstanceCount: aws.Int64(1),
-		SpotPrice: aws.String(strconv.FormatFloat(price, "f", 4, 64)),
-	})
+		SpotPrice: aws.String(strconv.FormatFloat(float64(price), 'f', 4, 32)),
+	}
 
+	runResult, err := svc.RequestSpotInstances(&params)
 	if err != nil {
 		db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
 			"message": fmt.Sprintf("Could not spawn instance of type %s: %s", ty, err),
@@ -201,7 +176,7 @@ func (a *AWSProvider) SpawnSpotInstance(ty base.InstanceType, price float64) bas
 		return ""
 	}
 
-	id := base.HostId(*runResult.Instances[0].InstanceId)
+	id := base.HostId(*runResult.SpotInstanceRequests[0].InstanceId)
 	db.Audit.Insert__AuditEvent(db.AuditEvent{Details:map[string]string{
 		"message": fmt.Sprintf("Spawned a single instance of type '%s'. Id=%s", ty, id),
 		"subsystem": "cloud.aws",
@@ -234,9 +209,9 @@ func installOrcaClient(hostId base.HostId, ip base.IpAddr, trainerIp base.IpAddr
 
 func (a AWSProvider) SpawnInstanceSync(ty base.InstanceType, spot bool) base.HostId {
 	AWSLogger.Infof("Spawning Instance synchronously, type %s", ty)
-	id := ""
+	id := base.HostId("")
 	if spot {
-		id = a.SpawnSpotInstance(ty, a.GetAvailableInstances(ty).SpotInstanceCost)
+		id = a.SpawnSpotInstance(ty, float32(a.GetAvailableInstances(ty).SpotInstanceCost))
 		if id == "" {
 			return ""
 		}
