@@ -200,7 +200,7 @@ func installOrcaClient(hostId base.HostId, ip base.IpAddr, trainerIp base.IpAddr
 		TrainerPollInterval: 30,
 		AppStatusPollInterval: 10,
 		MetricsPollInterval: 10,
-		TrainerUrl: fmt.Sprintf("http://%s:5000/push", trainerIp),
+		TrainerUrl: fmt.Sprintf("http://%s:5000", trainerIp),
 		Port: 5001,
 		HostId: hostId,
 	}
