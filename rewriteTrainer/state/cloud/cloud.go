@@ -110,10 +110,7 @@ func (c *CloudLayoutAll) Init() {
 
 func (object *CloudLayoutAll) AddChange(change base.ChangeRequest){
 	change.Id = uuid.NewV4().String()
-
-	if change.CreatedTime.Unix() == 0 {
-		change.CreatedTime = time.Now()
-	}
+	change.CreatedTime = time.Now()
 	object.Changes = append(object.Changes, change)
 }
 

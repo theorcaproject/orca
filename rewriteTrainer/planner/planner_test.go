@@ -29,6 +29,7 @@ import (
 	"time"
 	"fmt"
 	"gatoor/orca/rewriteTrainer/cloud"
+	"github.com/satori/go.uuid"
 )
 
 func TestPlanner_DoNothing(t *testing.T) {
@@ -42,6 +43,19 @@ func TestPlanner_DoNothing(t *testing.T) {
 func TestPlanner_SpawnServer(t *testing.T) {
 	state_configuration.GlobalConfigurationState.Init()
 	state_cloud.GlobalCloudLayout.Init()
+	cloud.Init(base.ProviderConfiguration{
+		Type:"AWS",
+		AvailableInstanceTypes: map[base.InstanceType]base.ProviderInstanceType{
+			base.InstanceType("instance1"): base.ProviderInstanceType{
+				Type:"instance1",
+				InstanceCost: 1.0,
+				SupportsSpotInstance:true,
+				InstanceResources: base.InstanceResources{TotalCpuResource:100, TotalMemoryResource:100, TotalNetworkResource:100},
+				SpotInstanceTerminationCount:0,
+				LastSpotInstanceFailure:time.Now(),
+			},
+		},
+	})
 
 	appConfigSets := make([]base.AppConfigurationSet, 1)
 	appConfigSets[0] = base.AppConfigurationSet{
@@ -429,19 +443,22 @@ func TestPlanner__ChangesTimeOut(t *testing.T) {
 		ChangeSpawnTimeout:120,
 	})
 	/* This change will be removed */
-	state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
+	state_cloud.GlobalCloudLayout.Changes = append(state_cloud.GlobalCloudLayout.Changes, base.ChangeRequest{
+		Id:uuid.NewV4().String(),
 		CreatedTime: time.Unix(1, 0),
 		ChangeType:base.CHANGE_REQUEST__SPAWN_SERVER,
 	})
 
 	/* This change will be removed */
-	state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
+	state_cloud.GlobalCloudLayout.Changes = append(state_cloud.GlobalCloudLayout.Changes, base.ChangeRequest{
 		CreatedTime: time.Unix(1, 0),
+		Id:uuid.NewV4().String(),
 		ChangeType:base.CHANGE_REQUEST__TERMINATE_SERVER,
 	})
 
-	state_cloud.GlobalCloudLayout.AddChange(base.ChangeRequest{
+	state_cloud.GlobalCloudLayout.Changes = append(state_cloud.GlobalCloudLayout.Changes, base.ChangeRequest{
 		CreatedTime: time.Now(),
+		Id:uuid.NewV4().String(),
 		ChangeType:base.CHANGE_REQUEST__TERMINATE_SERVER,
 	})
 
@@ -525,3 +542,4 @@ func TestPlanner__HostTimedOut_SpotInstance(t *testing.T) {
 	fmt.Printf("count %d\n", instanceObject.SpotInstanceTerminationCount)
 	assert.Equal(t, instanceObject.SpotInstanceTerminationCount, int64(1))
 }
+
