@@ -114,6 +114,19 @@ func (object *CloudLayoutAll) AddChange(change base.ChangeRequest){
 	object.Changes = append(object.Changes, change)
 }
 
+func (object *CloudLayoutAll) UpdateChange(updatedChange base.ChangeRequest){
+	updateChanges := make([]base.ChangeRequest, 0)
+	for _, change := range object.Changes {
+		if change.Id== updatedChange.Id {
+			updateChanges = append(updateChanges, updatedChange)
+		}else{
+			updateChanges = append(updateChanges, change)
+		}
+	}
+
+	object.Changes = updateChanges
+}
+
 func (object *CloudLayoutAll) GetChanges(host base.HostId) []base.ChangeRequest{
 	changes := make([]base.ChangeRequest, 0)
 	for _, change := range object.Changes {

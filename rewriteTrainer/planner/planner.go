@@ -347,6 +347,7 @@ func doPromisedWork() {
 		if change.ChangeType == base.CHANGE_REQUEST__SPAWN_SERVER {
 			//TODO: Work out which instance type we should be using here
 			change.Host = cloud.CurrentProvider.SpawnInstanceSync(change.InstanceType, change.SpotInstance)
+			state_cloud.GlobalCloudLayout.UpdateChange(change)
 
 		} else if change.ChangeType == base.CHANGE_REQUEST__TERMINATE_SERVER {
 			cloud.CurrentProvider.TerminateInstance(change.Host)
