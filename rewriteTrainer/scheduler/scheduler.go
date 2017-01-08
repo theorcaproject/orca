@@ -83,5 +83,4 @@ func Run() {
 
 		db.Audit.Insert__ApplicationUtilisationStatistic(statistic)
 	}
-
 }

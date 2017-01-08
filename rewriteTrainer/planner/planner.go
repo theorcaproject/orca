@@ -75,12 +75,6 @@ func doCheckForTimedOutChanges() {
 }
 
 func doPlanInternal() {
-	/* TODO: Spot instances:
-		1. Always try to launch a spot instance unless the node is marked as critical.
-		2. If the spot instance launch fails, then pick a more expensive instance to try and launch.
-		3. If a running node drops of due to a spot instance culling, then immediately launch a more expensive instance, then perform planning.
-	*/
-
 	apps := state_configuration.GlobalConfigurationState.AllAppsLatest()
 	missingServerNeeds := make([]needs.AppNeeds, 0)
 
@@ -125,7 +119,6 @@ func doPlanInternal() {
 				/* We could not find a server suitable for what we need */
 				if len(missingServerNeeds) == 0 {
 					missingServerNeeds = append(missingServerNeeds, needs.AppNeeds{
-						SpotAllowed:true,
 					})
 				}
 
@@ -353,8 +346,7 @@ func doPromisedWork() {
 	for _, change := range changes {
 		if change.ChangeType == base.CHANGE_REQUEST__SPAWN_SERVER {
 			//TODO: Work out which instance type we should be using here
-			cloud.CurrentProvider.SpawnInstanceSync(change.InstanceType, change.SpotInstance)
-			state_cloud.GlobalCloudLayout.DeleteChange(change.Id)
+			change.Host = cloud.CurrentProvider.SpawnInstanceSync(change.InstanceType, change.SpotInstance)
 
 		} else if change.ChangeType == base.CHANGE_REQUEST__TERMINATE_SERVER {
 			cloud.CurrentProvider.TerminateInstance(change.Host)

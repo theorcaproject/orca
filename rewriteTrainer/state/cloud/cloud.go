@@ -384,6 +384,13 @@ func (c *CloudLayout) UpdateHost(hostInfo base.HostInfo, stats base.MetricsWrapp
 		existingHostObject.HostState = HOST_NORMAL
 		existingHostObject.SpotInstance = cloud.CurrentProvider.GetIsSpotInstance(hostInfo.HostId)
 		existingHostObject.InstanceType = instance_type
+
+		/* Since this is a new host, lets check the changes in case we need to evict some items	*/
+		for _, change := range GlobalCloudLayout.GetChanges(hostInfo.HostId) {
+			if change.ChangeType == base.CHANGE_REQUEST__SPAWN_SERVER  && change.Host == hostInfo.HostId {
+				GlobalCloudLayout.DeleteChange(change.Id)
+			}
+		}
 	}
 
 	existingHostObject.Apps = apps
