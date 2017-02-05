@@ -43,22 +43,9 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r := mux.NewRouter()
 
 	/* Routes for the client */
-	//r.HandleFunc("/client/changes", getChanges) //This route pushes state and already pulls back []ChangeRequests
-	//r.HandleFunc("/client/push/events", pushEventsHandler) //TODO: This route is to push errors/failures
-	//r.HandleFunc("/client/push/logs", pushLogsHandler) //TODO: This route is to push logs from stdout/stderr
-	//r.HandleFunc("/client/push/state", pushStateHandler)
-
 	r.HandleFunc("/config", api.getAllConfiguration)
 	r.HandleFunc("/state", api.getAllRunningState)
 	r.HandleFunc("/checkin", api.hostCheckin)
-	//r.HandleFunc("/state/config/applications", getStateConfigurationApplications)
-	//r.HandleFunc("/state/config/applications/configuration", getStateConfigurationApplicationsConfigurationSet)
-	//r.HandleFunc("/state/config/cloud", getStateConfigurationCloudProviders)
-	//r.HandleFunc("/state/cloud", getStateCloud)
-	//r.HandleFunc("/state/cloud/application/performance", getAppPerformance)
-	//r.HandleFunc("/state/cloud/application/count", getAppCount)
-	//r.HandleFunc("/state/needs", getStateNeeds)
-	//r.HandleFunc("/audit", getAuditEvents)
 
 	http.Handle("/", r)
 
@@ -92,9 +79,8 @@ func (api *Api) getAllRunningState(w http.ResponseWriter, r *http.Request) {
 }
 
 
-
 func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
-	var apps []state.Application
+	var apps []state.ApplicationStateFromHost
 	hostId := r.URL.Query().Get("host")
 
 	decoder := json.NewDecoder(r.Body)
