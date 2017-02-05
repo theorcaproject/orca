@@ -1,0 +1,39 @@
+/*
+Copyright Alex Mack
+This file is part of Orca.
+Orca is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+Orca is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with Orca.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+package logs
+
+import log "github.com/Sirupsen/logrus"
+
+
+func SetLogLevel(lvl log.Level) {
+	log.SetLevel(lvl)
+}
+
+var Logger = log.WithFields(log.Fields {
+	"Orca": "Trainer",
+})
+
+func LoggerWithField(logger *log.Entry, key string, val string) *log.Entry {
+	return logger.WithFields(log.Fields{
+		key: val,
+	})
+}
+
+var InitLogger = LoggerWithField(Logger, "module", "init")
+
+var AuditLogger = Logger.WithFields(log.Fields{
+	"module": "audit",
+})
