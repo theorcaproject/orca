@@ -8,66 +8,35 @@ import (
 	"gatoor/orca/util"
 	Logger "gatoor/orca/trainer/logs"
 	"io/ioutil"
+	"gatoor/orca/trainer/state"
+	"gatoor/orca/trainer/model"
 )
 
-type DockerConfig struct {
-	Tag        string
-	Repository string
-	Reference  string
-}
-
-type PortMapping struct {
-	HostPort      string
-	ContainerPort string
-}
-
-type VolumeMapping struct {
-	HostPath      string
-	ContainerPath string
-}
-
-type File struct {
-	HostPath           string
-	Base64FileContents string
-}
-
-type EnvironmentVariable struct {
-	Key   string
-	Value string
-}
-
-
-type VersionConfig struct {
-	Needs 		     string
-	LoadBalancer         string
-	Network              string
-	PortMappings         []PortMapping
-	VolumeMappings       []VolumeMapping
-	EnvironmentVariables []EnvironmentVariable
-	Files                []File
-}
-
-type ApplicationConfiguration struct {
-	Name string
-	MinDeployment int
-	DesiredDeployment int
-	Config map[int]VersionConfig
-
-}
-
 type ConfigurationStore struct {
-	Configurations map[string]*ApplicationConfiguration;
+	Configurations map[string]*model.ApplicationConfiguration;
+	AuditDatabaseUri string;
+
+	trainerConfigurationFilePath string;
 }
 
-func (store *ConfigurationStore) Init(){
-	store.Configurations = make(map[string]*ApplicationConfiguration);
+func (store *ConfigurationStore) Init(trainerConfigurationFilePath string){
+	store.trainerConfigurationFilePath = trainerConfigurationFilePath
+	store.Configurations = make(map[string]*model.ApplicationConfiguration);
 }
 
 func (store *ConfigurationStore) DumpConfig(){
 	fmt.Printf("Loading config file from %+v", store.Configurations)
 }
 
-func (store* ConfigurationStore) LoadFromFile(filename string) {
+func (store* ConfigurationStore) Load(){
+	store.loadFromFile(store.trainerConfigurationFilePath)
+}
+
+func (store* ConfigurationStore) Save(){
+	store.saveConfigToFile(store.trainerConfigurationFilePath)
+}
+
+func (store* ConfigurationStore) loadFromFile(filename string) {
 	Logger.InitLogger.Infof("Loading config file from %s", filename)
 	file, err := os.Open(filename)
 	if err != nil {
@@ -93,32 +62,35 @@ func (store* ConfigurationStore) LoadFromFile(filename string) {
 	file.Close()
 }
 
-func (store* ConfigurationStore) Add(name string, config *ApplicationConfiguration) {
+func (store* ConfigurationStore) Add(name string, config *model.ApplicationConfiguration) *model.ApplicationConfiguration{
+	state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
+		"message": "Adding application " + name + " to orca",
+	}})
+
 	store.Configurations[name] = config;
+	return config
 }
 
-func (store* ConfigurationStore) SaveConfigToFile(filename string) {
-	fmt.Printf("%+v", store)
+func (store* ConfigurationStore) saveConfigToFile(filename string) {
 	res, err := json.MarshalIndent(store, "", "  ")
 	if err != nil {
 		Logger.InitLogger.Errorf("JsonConfiguration Derialize failed: %s; %+v", err, store)
 	}
 	var result = string(res)
-	fmt.Println(result)
 	err = ioutil.WriteFile(filename, []byte(result), 0644)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (store *ConfigurationStore) GetConfiguration(application string) (*ApplicationConfiguration, error) {
-	if app, ok := store.Configurations[application]; !ok {
+func (store *ConfigurationStore) GetConfiguration(application string) (*model.ApplicationConfiguration, error) {
+	if app, ok := store.Configurations[application]; ok {
 		return app, nil;
 	}
 
 	return nil, errors.New("Could not find application");
 }
 
-func (store *ConfigurationStore) GetAllConfiguration() (map[string]*ApplicationConfiguration) {
+func (store *ConfigurationStore) GetAllConfiguration() (map[string]*model.ApplicationConfiguration) {
 	return store.Configurations
 }

@@ -3,100 +3,66 @@ package state
 import (
 	"errors"
 	"time"
+	"gatoor/orca/trainer/model"
+	"fmt"
 )
 
-type ChangeApplication struct {
-	Id     string
-	Type   string
-	HostId string
-	Time   string
-}
-
-type ChangeServer struct {
-	Id   string
-	Type string
-	Time string
-}
-
-type HostResources struct {
-
-}
-
-type Application struct {
-	Name     string
-	State    string
-	Version  int
-	ChangeId string
-	Metrics  string
-}
-
-type ApplicationStateFromHost struct {
-	Name           string
-	Application    Application
-	ChangesApplied map[string]bool
-}
-
-type Host struct {
-	Id        string
-	LastSeen  string
-	FirstSeen string
-	State     string
-	Apps      []Application
-	Changes   []ChangeApplication
-	Resources HostResources
-}
-
 type StateStore struct {
-	hosts map[string]*Host;
+	hosts map[string]*model.Host;
 }
 
 func (store *StateStore) Init() {
-	store.hosts = make(map[string]*Host);
+	store.hosts = make(map[string]*model.Host);
 }
 
-func (store *StateStore) GetConfiguration(hostId string) (*Host, error) {
+func (store *StateStore) GetConfiguration(hostId string) (*model.Host, error) {
 	if app, ok := store.hosts[hostId]; ok {
 		return app, nil;
 	}
 	return nil, errors.New("Could not ");
 }
 
-func (store *StateStore) GetAllHosts() map[string]*Host {
+func (store *StateStore) GetAllHosts() map[string]*model.Host {
 	return store.hosts
 }
 
-func (store *StateStore) GetApplication(hostId string, applicationName string) (Application, error) {
+func (store *StateStore) GetApplication(hostId string, applicationName string) (model.Application, error) {
 	host, _ := store.GetConfiguration(hostId)
 	for _, application := range host.Apps {
 		if application.Name == applicationName {
 			return application, nil
 		}
 	}
-	return Application{}, errors.New("Could not find application")
+	return model.Application{}, errors.New("Could not find application")
 }
 
-func (store *StateStore) HostCheckin(hostId string, apps []ApplicationStateFromHost) (*Host, error) {
+func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDataPackage) (*model.Host, error) {
 	host, err := store.GetConfiguration(hostId)
 	if err != nil {
-		host = &Host{
-			Id: hostId, LastSeen: "", FirstSeen: time.Now().Format(time.RFC3339Nano), State: "running", Apps: []Application{}, Changes: []ChangeApplication{}, Resources: HostResources{},
+		host = &model.Host{
+			Id: hostId, LastSeen: "", FirstSeen: time.Now().Format(time.RFC3339Nano), State: "running", Apps: []model.Application{}, Changes: []model.ChangeApplication{}, Resources: model.HostResources{},
 		}
 		store.hosts[hostId] = host
+
+		Audit.Insert__AuditEvent(AuditEvent{Details:map[string]string{
+			"message": "Discovered new host " + hostId,
+			"host": hostId,
+		}})
 	}
 
-	for _, application := range apps {
-		for change, contains:= range application.ChangesApplied {
-			if contains {
-				store.RemoveChange(host.Id, change)
-			}
+	for change, contains := range checkin.ChangesApplied {
+		if contains {
+			store.RemoveChange(host.Id, change)
 		}
 	}
 
 	host.LastSeen = time.Now().Format(time.RFC3339Nano)
-	host.Apps = make([]Application, 0)
-	for _, appStateFromHost := range apps {
+	host.Apps = make([]model.Application, 0)
+	for _, appStateFromHost := range checkin.State {
 		host.Apps = append(host.Apps, appStateFromHost.Application)
 	}
+
+	fmt.Println("Metrics were ", checkin.Metrics)
 	return store.GetConfiguration(hostId)
 }
 
@@ -112,7 +78,7 @@ func (store *StateStore) HasChanges() bool {
 
 func (store *StateStore) RemoveChange(hostId string, changeId string) {
 	host, _ := store.GetConfiguration(hostId)
-	newChanges := make([]ChangeApplication, 0)
+	newChanges := make([]model.ChangeApplication, 0)
 	for _, change := range host.Changes {
 		if change.Id != changeId {
 			newChanges = append(newChanges, change)

@@ -23,17 +23,18 @@ import (
 	"net/http"
 	"fmt"
 	"encoding/json"
-	Logger "gatoor/orca/rewriteTrainer/log"
 	"gatoor/orca/trainer/configuration"
+	"gatoor/orca/trainer/model"
 	"gatoor/orca/trainer/state"
+	log "gatoor/orca/util/log"
 )
 
-type Api struct{
+type Api struct {
 	configurationStore *configuration.ConfigurationStore
-	state *state.StateStore
+	state              *state.StateStore
 }
 
-var ApiLogger = Logger.LoggerWithField(Logger.Logger, "module", "api")
+var ApiLogger = log.LoggerWithField(log.Logger, "module", "api")
 
 func (api *Api) Init(port int, configurationStore *configuration.ConfigurationStore, state *state.StateStore) {
 	api.configurationStore = configurationStore
@@ -44,8 +45,13 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 
 	/* Routes for the client */
 	r.HandleFunc("/config", api.getAllConfiguration)
+	r.HandleFunc("/config/applications", api.getAllConfigurationApplications)
+	r.HandleFunc("/config/applications/configuration/latest", api.getAllConfigurationApplications_Configurations_Latest)
 	r.HandleFunc("/state", api.getAllRunningState)
 	r.HandleFunc("/checkin", api.hostCheckin)
+
+	r.HandleFunc("/audit", api.getAudit)
+	r.HandleFunc("/audit/application", api.getAuditApplication)
 
 	http.Handle("/", r)
 
@@ -74,13 +80,72 @@ func (api *Api) getAllConfiguration(w http.ResponseWriter, r *http.Request) {
 	returnJson(w, api.configurationStore.GetAllConfiguration())
 }
 
+func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		applicationName := r.URL.Query().Get("application")
+
+		var object model.ApplicationConfiguration
+		decoder := json.NewDecoder(r.Body)
+		if err := decoder.Decode(&object); err == nil {
+			application, err := api.configurationStore.GetConfiguration(applicationName)
+			if err != nil {
+				object.Config = make(map[string]model.VersionConfig)
+				application = api.configurationStore.Add(applicationName, &object)
+			}
+
+			state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
+				"message": "Modified application " + applicationName + " in pool",
+				"application": applicationName,
+			}})
+
+			application.MinDeployment = object.MinDeployment
+			application.DesiredDeployment = object.DesiredDeployment
+			api.configurationStore.Save()
+		}
+
+	}
+
+	listOfApplications := []*model.ApplicationConfiguration{}
+	for _, application := range api.configurationStore.GetAllConfiguration() {
+		listOfApplications = append(listOfApplications, application)
+	}
+	returnJson(w, listOfApplications)
+}
+
+func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.ResponseWriter, r *http.Request) {
+	applicationName := r.URL.Query().Get("application")
+	application, err := api.configurationStore.GetConfiguration(applicationName)
+	if err == nil {
+		if r.Method == "POST" {
+			var object model.VersionConfig
+			decoder := json.NewDecoder(r.Body)
+			if err := decoder.Decode(&object); err == nil {
+				newVersion := application.GetNextVersion()
+				object.Version = newVersion
+				application.Config[newVersion] = object
+
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
+					"message": "Modified application " + applicationName + ", created new configuration",
+					"application": applicationName,
+				}})
+
+				api.configurationStore.Save()
+			}
+		}
+
+		returnJson(w, application.GetLatestConfiguration())
+		return
+	}
+
+	returnJson(w, nil)
+}
+
 func (api *Api) getAllRunningState(w http.ResponseWriter, r *http.Request) {
 	returnJson(w, api.state.GetAllHosts())
 }
 
-
 func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
-	var apps []state.ApplicationStateFromHost
+	var apps model.HostCheckinDataPackage
 	hostId := r.URL.Query().Get("host")
 
 	decoder := json.NewDecoder(r.Body)
@@ -90,9 +155,18 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 
 	result, err := api.state.HostCheckin(hostId, apps)
 	if err == nil {
-		returnJson(w, result)
+		returnJson(w, result.Changes)
 		return
 	} else {
 		returnJson(w, nil)
 	}
+}
+
+func (api *Api) getAudit(w http.ResponseWriter, r *http.Request) {
+	returnJson(w, state.Audit.Query__AuditEvents(""))
+}
+
+func (api *Api) getAuditApplication(w http.ResponseWriter, r *http.Request) {
+	applicationName := r.URL.Query().Get("application")
+	returnJson(w, state.Audit.Query__AuditEvents(applicationName))
 }

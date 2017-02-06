@@ -9,51 +9,41 @@ import (
 	"time"
 	"github.com/twinj/uuid"
 	"gatoor/orca/trainer/cloud"
+	"flag"
+	"gatoor/orca/trainer/model"
 )
 
 const MAX_ELAPSED_TIME_FOR_APP_CHANGE = 120
 
 func main() {
 	fmt.Println("starting")
+	var configurationRoot = flag.String("configroot", "/orca/config", "Configuration Root Directory")
+	var apiPort = flag.Int("port", 5001, "API Port")
+	flag.Parse()
 
 	store := &configuration.ConfigurationStore{};
-	store.Init()
+	store.Init(*configurationRoot + "/trainer.conf")
 
 	state_store := &state.StateStore{};
 	state_store.Init()
 
-	versionMap := make(map[int]configuration.VersionConfig)
-	versionConfig := configuration.VersionConfig{
-		Needs: "needs",
-		LoadBalancer:"lb1",
-		Network:"aa",
-		PortMappings:         []configuration.PortMapping{{HostPort:"11",ContainerPort:"22"}},
-		VolumeMappings:       []configuration.VolumeMapping{{}},
-		EnvironmentVariables: []configuration.EnvironmentVariable{{}},
-		Files:                []configuration.File{{}},
+	store.Load()
 
-	}
-	versionMap[20] = versionConfig
-	config := &configuration.ApplicationConfiguration{
-		Name: "app1",
-		MinDeployment: 1,
-		DesiredDeployment: 2,
-		Config: versionMap,
-	}
+	/* Init connection to the database for auditing */
+	state.Audit.Init(store.AuditDatabaseUri)
 
-	store.Add("someapp", config)
-	store.LoadFromFile("/orca/configuration/trainer.conf")
-	store.DumpConfig()
-
-	planner := planner.DiffPlan{}
+	planner := planner.BoringPlanner{}
 	planner.Init()
 
 	cloud_provider := cloud.CloudProvider{}
 
-	ticker := time.NewTicker(time.Second * 1)
+	ticker := time.NewTicker(time.Second * 10)
 	go func () {
 		for {
+
 			<- ticker.C
+			fmt.Println("Running Planning task")
+
 			/* Check for timeouts */
 			for _, host := range state_store.GetAllHosts() {
 				for _, change := range host.Changes {
@@ -72,17 +62,20 @@ func main() {
 			}
 
 			/* Can we actually run the planner ? */
-			if(state_store.HasChanges() || cloud_provider.HasChanges()){
+			if(state_store.HasChanges()){
+				fmt.Println("Still have unresolved changes, waiting")
 				continue;
 			}
 
 			changes := planner.Plan((*store), (*state_store))
+			fmt.Println("Changes from planner: %+v", changes)
 			for _, change := range changes {
 				if change.Type == "new_server" {
 					/* Add new server */
-					cloud_provider.ActionChange(&state.ChangeServer{
+					cloud_provider.ActionChange(&model.ChangeServer{
 						Id:uuid.NewV4().String(),
 						Type: "add",
+						Time:time.Now().Format(time.RFC3339Nano),
 					})
 
 					continue
@@ -90,18 +83,23 @@ func main() {
 				if change.Type == "add_application" || change.Type == "remove_application" {
 					/* Add new server */
 					host, _ := state_store.GetConfiguration(change.HostId)
-					host.Changes = append(host.Changes, state.ChangeApplication{
+					app, _ := store.GetConfiguration(change.ApplicationName)
+					host.Changes = append(host.Changes, model.ChangeApplication{
 						Id: uuid.NewV4().String(),
 						Type: change.Type,
 						HostId: host.Id,
+						AppConfig: app.GetLatestConfiguration(),
+						Name: change.ApplicationName,
+						Time:time.Now().Format(time.RFC3339Nano),
 					})
 
 					continue
 				}
 				if change.Type == "kill_server" {
-					cloud_provider.ActionChange(&state.ChangeServer{
+					cloud_provider.ActionChange(&model.ChangeServer{
 						Id:uuid.NewV4().String(),
 						Type: "remove",
+						Time:time.Now().Format(time.RFC3339Nano),
 					})
 					continue
 				}
@@ -110,6 +108,7 @@ func main() {
 	}()
 
 	api := api.Api{}
-	api.Init(5001, store, state_store)
+	api.Init(*apiPort, store, state_store)
+
 }
 
