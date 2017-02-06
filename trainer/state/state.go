@@ -22,7 +22,6 @@ import (
 	"errors"
 	"time"
 	"gatoor/orca/trainer/model"
-	"fmt"
 )
 
 type StateStore struct {
@@ -80,7 +79,6 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 		host.Apps = append(host.Apps, appStateFromHost.Application)
 	}
 
-	fmt.Println("Metrics were ", checkin.Metrics)
 	return store.GetConfiguration(hostId)
 }
 

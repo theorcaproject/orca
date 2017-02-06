@@ -34,6 +34,8 @@ type PlanningChange struct {
 	/* Creation or removal of server*/
 	InstanceId string
 	InstanceNeeds string
+	RequiresReliableInstance bool
+
 }
 
 type Planner interface {

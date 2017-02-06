@@ -22,7 +22,6 @@ import (
 	"gatoor/orca/trainer/configuration"
 	"gatoor/orca/trainer/state"
 	"github.com/twinj/uuid"
-	"fmt"
 )
 
 type BoringPlanner struct {
@@ -35,9 +34,9 @@ func (*BoringPlanner) Init() {
 func (*BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
 
-	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
-		fmt.Println("BoringPlanner checking application " + name + " with min %d", applicationConfiguration.MinDeployment)
+	requiresMinServer := false;
 
+	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
 		currentCount := 0
 		for _, hostEntity := range currentState.GetAllHosts() {
 			for _, runningApplicationState := range hostEntity.Apps {
@@ -50,6 +49,7 @@ func (*BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, 
 		}
 
 		if currentCount < applicationConfiguration.MinDeployment {
+			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
 				if !hostEntity.HasApp(name, applicationConfiguration.GetLatestVersion()){
 					change := PlanningChange{
@@ -60,8 +60,13 @@ func (*BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, 
 					}
 
 					ret = append(ret, change)
-
+					foundServer = true
+					break
 				}
+			}
+
+			if !foundServer {
+				requiresMinServer = true
 			}
 		}
 
@@ -79,6 +84,16 @@ func (*BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, 
 				}
 			}
 		}
+	}
+
+	if requiresMinServer {
+		change := PlanningChange{
+			Type: "new_server",
+			Id:uuid.NewV4().String(),
+			RequiresReliableInstance: true,
+		}
+
+		ret = append(ret, change)
 	}
 
 	return ret

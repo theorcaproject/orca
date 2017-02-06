@@ -37,6 +37,8 @@ type ChangeServer struct {
 	Id   string
 	Type string
 	Time string
+	NewHostId string
+	RequiresReliableInstance bool
 }
 
 type HostResources struct {

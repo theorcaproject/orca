@@ -37,6 +37,19 @@ func main() {
 	fmt.Println("starting")
 	var configurationRoot = flag.String("configroot", "/orca/config", "Configuration Root Directory")
 	var apiPort = flag.Int("port", 5001, "API Port")
+
+	//AWS Properties
+	var cloudProvider = flag.String("cloudprovider", "aws", "Cloud Provider")
+	var awsAccessKeyId = flag.String("awsaccesskeyid", "", "Amazon AWS Access Key")
+	var awsAccessKeySecret = flag.String("awsaccesskeysecret", "", "Amazon AWS Access Key Secret")
+	var awsRegion = flag.String("awsregion", "", "Amazon Region")
+	var awsBaseAmi = flag.String("awsbaseami", "", "Amazon Base AMI")
+	var awsSshKey = flag.String("awssshkey", "", "Amazon SSH Key")
+	var awsSecurityGroupId = flag.String("awssgroup", "", "Amazon Security Group")
+	var plannerAlg = flag.String("planner", "boringplanner", "Planning Algorithm")
+	var instanceUsername = flag.String("instanceusername", "ubuntu", "User account for the AMI")
+	var uri = flag.String("uri", "http://localhost:5001", "Public Trainer Endpoint")
+
 	flag.Parse()
 
 	store := &configuration.ConfigurationStore{};
@@ -50,15 +63,30 @@ func main() {
 	/* Init connection to the database for auditing */
 	state.Audit.Init(store.AuditDatabaseUri)
 
-	planner := planner.BoringPlanner{}
-	planner.Init()
+	var plannerEngine planner.Planner;
+	if (*plannerAlg) == "boringplanner"{
+		//WARNING: This planner is verrrry dumb, it will cost you moneyzzzzz
+		//Mostly implemented to prove the system actually works, and the interface has been
+		//defined well enough to support a more complicated planner
+		plannerEngine = &planner.BoringPlanner{}
+
+	}else if (*plannerAlg) == "diffplan" {
+		//TODO: @Alex implement this guy
+		plannerEngine = &planner.DiffPlan{}
+	}
 
 	cloud_provider := cloud.CloudProvider{}
 
+	if (*cloudProvider) == "aws" {
+		awsEngine := cloud.AwsCloudEngine{}
+		awsEngine.Init((*awsAccessKeyId), (*awsAccessKeySecret), (*awsRegion), (*awsBaseAmi), (*awsSshKey), (*awsSecurityGroupId))
+		cloud_provider.Init(&awsEngine, (*instanceUsername), (*uri))
+	}
+
 	ticker := time.NewTicker(time.Second * 10)
+
 	go func () {
 		for {
-
 			<- ticker.C
 			fmt.Println("Running Planning task")
 
@@ -80,20 +108,21 @@ func main() {
 			}
 
 			/* Can we actually run the planner ? */
-			if(state_store.HasChanges()){
+			if(state_store.HasChanges() || cloud_provider.HasChanges()){
 				fmt.Println("Still have unresolved changes, waiting")
 				continue;
 			}
 
-			changes := planner.Plan((*store), (*state_store))
+			changes := plannerEngine.Plan((*store), (*state_store))
 			fmt.Println("Changes from planner: %+v", changes)
 			for _, change := range changes {
 				if change.Type == "new_server" {
 					/* Add new server */
 					cloud_provider.ActionChange(&model.ChangeServer{
 						Id:uuid.NewV4().String(),
-						Type: "add",
+						Type: "new_server",
 						Time:time.Now().Format(time.RFC3339Nano),
+						RequiresReliableInstance: change.RequiresReliableInstance,
 					})
 
 					continue
