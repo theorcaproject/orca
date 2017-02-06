@@ -1,5 +1,5 @@
 /*
-Copyright Alex Mack
+Copyright Alex Mack and Michael Lawson (michael@sphinix.com)
 This file is part of Orca.
 
 Orca is free software: you can redistribute it and/or modify
