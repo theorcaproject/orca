@@ -20,7 +20,7 @@ package model
 
 import (
 	"strconv"
-	"gatoor/orca/trainer/schedule"
+	"orca/trainer/schedule"
 )
 
 type ChangeApplication struct {
