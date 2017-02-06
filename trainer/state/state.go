@@ -21,7 +21,7 @@ package state
 import (
 	"errors"
 	"time"
-	"gatoor/orca/trainer/model"
+	"orca/trainer/model"
 )
 
 type StateStore struct {

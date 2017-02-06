@@ -19,8 +19,8 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package planner
 
 import (
-	"gatoor/orca/trainer/configuration"
-	"gatoor/orca/trainer/state"
+	"orca/trainer/configuration"
+	"orca/trainer/state"
 )
 
 type DiffPlan struct {

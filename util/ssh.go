@@ -21,7 +21,7 @@ package util
 import (
 ssh "golang.org/x/crypto/ssh"
 "fmt"
-log "gatoor/orca/util/log"
+log "orca/util/log"
 "github.com/Sirupsen/logrus"
 "io"
 "time"

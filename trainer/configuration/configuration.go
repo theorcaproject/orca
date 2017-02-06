@@ -24,11 +24,11 @@ import (
 	"time"
 	"encoding/json"
 	"fmt"
-	"gatoor/orca/util"
-	Logger "gatoor/orca/trainer/logs"
+	"orca/util"
+	Logger "orca/trainer/logs"
 	"io/ioutil"
-	"gatoor/orca/trainer/state"
-	"gatoor/orca/trainer/model"
+	"orca/trainer/state"
+	"orca/trainer/model"
 )
 
 type ConfigurationStore struct {

@@ -23,10 +23,10 @@ import (
 	"net/http"
 	"fmt"
 	"encoding/json"
-	"gatoor/orca/trainer/configuration"
-	"gatoor/orca/trainer/model"
-	"gatoor/orca/trainer/state"
-	log "gatoor/orca/util/log"
+	"orca/trainer/configuration"
+	"orca/trainer/model"
+	"orca/trainer/state"
+	log "orca/util/log"
 )
 
 type Api struct {

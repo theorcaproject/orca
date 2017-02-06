@@ -19,8 +19,8 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package cloud
 
 import (
-	"gatoor/orca/trainer/model"
-	orcaSSh "gatoor/orca/util"
+	"orca/trainer/model"
+	orcaSSh "orca/util"
 )
 
 type CloudProvider struct {
@@ -52,7 +52,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 				/* A new server was created, wahoo */
 				/* Next we should install some stuff to it */
 				ipAddr := cloud.Engine.GetIp(newHostId)
-				sshKeyPath := cloud.Engine.GetPem() + ".pem"
+				sshKeyPath := cloud.Engine.GetPem()
 
 				for {
 					session, addr := orcaSSh.Connect(cloud.sshUser, string(ipAddr) + ":22", sshKeyPath)
@@ -78,9 +78,9 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 						"echo orca | sudo -S mkdir -p /orca/client/config",
 						"echo orca | sudo -S chmod -R 777 /orca",
 
-						"rm -rf /orca/src/bluewhale && mkdir -p /orca/src/bluewhale && cd /orca/src/bluewhale && git clone https://github.com/bluewhale/orcahostd.git",
-						"GOPATH=/orca bash -c 'cd /orca/src/bluewhale/orcahostd && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/fsouza/go-dockerclient && go get github.com/gorilla/mux'",
-						"GOPATH=/orca bash -c 'cd /orca/src/bluewhale/orcahostd && go build && go install'",
+						"rm -rf /orca/src && mkdir -p /orca/src && cd /orca/src && git clone https://github.com/bluewhale/orcahostd.git",
+						"GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/fsouza/go-dockerclient && go get github.com/gorilla/mux'",
+						"GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go build && go install'",
 						"echo orca | sudo -S service supervisor restart",
 					}
 
