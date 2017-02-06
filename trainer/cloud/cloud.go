@@ -78,9 +78,9 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 						"echo orca | sudo -S mkdir -p /orca/client/config",
 						"echo orca | sudo -S chmod -R 777 /orca",
 
-						"rm -rf /orca/src/bluewhale && mkdir -p /orca/src/bluewhale && cd /orca/src/bluewhale && git clone https://github.com/bluewhale/orcahostd.git",
-						"GOPATH=/orca bash -c 'cd /orca/src/bluewhale/orcahostd && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/fsouza/go-dockerclient && go get github.com/gorilla/mux'",
-						"GOPATH=/orca bash -c 'cd /orca/src/bluewhale/orcahostd && go build && go install'",
+						"rm -rf /orca/src && mkdir -p /orca/src && cd /orca/src && git clone https://github.com/bluewhale/orcahostd.git",
+						"GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/fsouza/go-dockerclient && go get github.com/gorilla/mux'",
+						"GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go build && go install'",
 						"echo orca | sudo -S service supervisor restart",
 					}
 
