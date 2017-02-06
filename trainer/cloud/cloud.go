@@ -19,8 +19,8 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package cloud
 
 import (
-	"gatoor/orca/trainer/model"
-	orcaSSh "gatoor/orca/util"
+	"orca/trainer/model"
+	orcaSSh "orca/util"
 )
 
 type CloudProvider struct {
@@ -52,7 +52,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 				/* A new server was created, wahoo */
 				/* Next we should install some stuff to it */
 				ipAddr := cloud.Engine.GetIp(newHostId)
-				sshKeyPath := cloud.Engine.GetPem() + ".pem"
+				sshKeyPath := cloud.Engine.GetPem()
 
 				for {
 					session, addr := orcaSSh.Connect(cloud.sshUser, string(ipAddr) + ":22", sshKeyPath)

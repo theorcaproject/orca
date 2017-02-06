@@ -20,15 +20,15 @@ package main
 
 import (
 	"fmt"
-	"gatoor/orca/trainer/configuration"
-	"gatoor/orca/trainer/state"
-	"gatoor/orca/trainer/api"
-	"gatoor/orca/trainer/planner"
+	"orca/trainer/configuration"
+	"orca/trainer/state"
+	"orca/trainer/api"
+	"orca/trainer/planner"
 	"time"
 	"github.com/twinj/uuid"
-	"gatoor/orca/trainer/cloud"
+	"orca/trainer/cloud"
 	"flag"
-	"gatoor/orca/trainer/model"
+	"orca/trainer/model"
 )
 
 const MAX_ELAPSED_TIME_FOR_APP_CHANGE = 120
@@ -45,6 +45,7 @@ func main() {
 	var awsRegion = flag.String("awsregion", "", "Amazon Region")
 	var awsBaseAmi = flag.String("awsbaseami", "", "Amazon Base AMI")
 	var awsSshKey = flag.String("awssshkey", "", "Amazon SSH Key")
+	var awsSshKeyPath = flag.String("awssshkeypath", "", "Amazon SSH Key Absolute Path")
 	var awsSecurityGroupId = flag.String("awssgroup", "", "Amazon Security Group")
 	var plannerAlg = flag.String("planner", "boringplanner", "Planning Algorithm")
 	var instanceUsername = flag.String("instanceusername", "ubuntu", "User account for the AMI")
@@ -79,7 +80,7 @@ func main() {
 
 	if (*cloudProvider) == "aws" {
 		awsEngine := cloud.AwsCloudEngine{}
-		awsEngine.Init((*awsAccessKeyId), (*awsAccessKeySecret), (*awsRegion), (*awsBaseAmi), (*awsSshKey), (*awsSecurityGroupId))
+		awsEngine.Init((*awsAccessKeyId), (*awsAccessKeySecret), (*awsRegion), (*awsBaseAmi), (*awsSshKey),(*awsSshKeyPath), (*awsSecurityGroupId))
 		cloud_provider.Init(&awsEngine, (*instanceUsername), (*uri))
 	}
 

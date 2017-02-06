@@ -15,11 +15,11 @@ type AwsCloudEngine struct {
 	awsRegion          string
 	awsBaseAmi          string
 	sshKey          string
+	sshKeyPath	string
 	securityGroupId          string
 }
 
-func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string, awsRegion string, awsBaseAmi string, sshKey string, securityGroupId string) {
-	aws.awsAccessKeySecret = awsAccessKeySecret
+func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string, awsRegion string, awsBaseAmi string, sshKey string,sshKeyPath string, securityGroupId string) {	aws.awsAccessKeySecret = awsAccessKeySecret
 	aws.awsAccessKeyId = awsAccessKeyId
 	aws.awsRegion = awsRegion
 	aws.awsBaseAmi = awsBaseAmi
@@ -101,5 +101,5 @@ func (aws *AwsCloudEngine) TerminateInstance(HostId) bool {
 }
 
 func (aws *AwsCloudEngine) GetPem() string {
-	return aws.sshKey
+	return aws.sshKeyPath
 }
