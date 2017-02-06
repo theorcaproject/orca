@@ -20,6 +20,7 @@ package model
 
 import (
 	"strconv"
+	"gatoor/orca/trainer/schedule"
 )
 
 type ChangeApplication struct {
@@ -143,6 +144,7 @@ type ApplicationConfiguration struct {
 	Name string
 	MinDeployment int
 	DesiredDeployment int
+	DeploymentSchedule schedule.DeploymentSchedule
 	Config map[string]VersionConfig
 }
 
@@ -167,3 +169,5 @@ func (app *ApplicationConfiguration) GetLatestConfiguration() (VersionConfig) {
 	last_version := app.GetLatestVersion()
 	return app.Config[last_version]
 }
+
+

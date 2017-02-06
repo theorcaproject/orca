@@ -21,6 +21,7 @@ package configuration
 import (
 	"errors"
 	"os"
+	"time"
 	"encoding/json"
 	"fmt"
 	"gatoor/orca/util"
@@ -111,4 +112,10 @@ func (store *ConfigurationStore) GetConfiguration(application string) (*model.Ap
 
 func (store *ConfigurationStore) GetAllConfiguration() (map[string]*model.ApplicationConfiguration) {
 	return store.Configurations
+}
+
+func (store *ConfigurationStore) ApplySchedules() {
+	for _, config := range store.Configurations {
+		config.DesiredDeployment = config.DeploymentSchedule.Get(time.Now())
+	}
 }

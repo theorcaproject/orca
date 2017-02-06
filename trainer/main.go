@@ -107,6 +107,8 @@ func main() {
 					}
 			}
 
+			store.ApplySchedules()
+			
 			/* Can we actually run the planner ? */
 			if(state_store.HasChanges() || cloud_provider.HasChanges()){
 				fmt.Println("Still have unresolved changes, waiting")
