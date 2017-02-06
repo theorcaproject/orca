@@ -27,18 +27,22 @@ import (
 	"orca/trainer/model"
 	"orca/trainer/state"
 	log "orca/util/log"
+	"orca/trainer/cloud"
 )
 
 type Api struct {
 	configurationStore *configuration.ConfigurationStore
 	state              *state.StateStore
+	cloudProvider  		*cloud.CloudProvider
 }
 
 var ApiLogger = log.LoggerWithField(log.Logger, "module", "api")
 
-func (api *Api) Init(port int, configurationStore *configuration.ConfigurationStore, state *state.StateStore) {
+func (api *Api) Init(port int, configurationStore *configuration.ConfigurationStore, state *state.StateStore, cloudProvider *cloud.CloudProvider) {
 	api.configurationStore = configurationStore
 	api.state = state
+	api.cloudProvider = cloudProvider
+
 	ApiLogger.Infof("Initializing Api on Port %d", port)
 
 	r := mux.NewRouter()
@@ -147,6 +151,9 @@ func (api *Api) getAllRunningState(w http.ResponseWriter, r *http.Request) {
 func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 	var apps model.HostCheckinDataPackage
 	hostId := r.URL.Query().Get("host")
+
+	/* First lets tell the cloud provider that this host has checked in */
+	api.cloudProvider.NotifyHostCheckIn(hostId)
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&apps); err != nil {

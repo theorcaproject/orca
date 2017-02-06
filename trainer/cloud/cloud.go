@@ -48,6 +48,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 			if newHostId != "" {
 				/* If the change times out we need to nuke it */
 				change.NewHostId = string(newHostId)
+				change.InstanceLaunched = true
 
 				/* A new server was created, wahoo */
 				/* Next we should install some stuff to it */
@@ -91,14 +92,25 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 						}
 					}
 
+					change.InstalledPackages = true
 					break
 				}
-
-				cloud.RemoveChange(change.Id)
 			}
 		}
 	}()
+}
 
+func (cloud *CloudProvider) NotifyHostCheckIn(hostId string){
+	/* Search for changes related to this instance */
+	for _, change := range cloud.Changes {
+		if change.Type == "new_server" {
+			if change.NewHostId == hostId {
+				/* The new server has checked in, lets nuke the change. It has been a success */
+				cloud.RemoveChange(change.Id)
+			}
+		}
+
+	}
 }
 
 func (cloud *CloudProvider) HasChanges() bool {
