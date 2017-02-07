@@ -44,7 +44,12 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 	go func() {
 		/* Here we can spawn a new server */
 		if change.Type == "new_server" {
-			newHostId := cloud.Engine.SpawnInstanceSync("t2.micro")
+			var newHostId HostId
+			if change.RequiresReliableInstance {
+				newHostId = cloud.Engine.SpawnInstanceSync("t2.micro")
+			} else {
+				newHostId = cloud.Engine.SpawnSpotInstanceSync("t2.micro")
+			}
 			if newHostId != "" {
 				/* If the change times out we need to nuke it */
 				change.NewHostId = string(newHostId)

@@ -8,6 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/elb"
+	"strconv"
+	"time"
+
 )
 
 type AwsCloudEngine struct {
@@ -55,6 +58,7 @@ func (a *AwsCloudEngine) GetIp(hostId HostId) string {
 	return string(*info.PublicIpAddress)
 }
 
+
 func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.awsRegion)}))
 
@@ -63,6 +67,7 @@ func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
 	}
 	return true
 }
+
 
 func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType) HostId {
 	fmt.Println("AwsCloudEngine SpawnInstanceSync called with ", instanceType)
@@ -112,7 +117,6 @@ func (engine *AwsCloudEngine) TerminateInstance(hostId HostId) bool {
 func (aws *AwsCloudEngine) GetPem() string {
 	return aws.sshKeyPath
 }
-
 func (engine *AwsCloudEngine) RegisterWithLb(hostId string, lbId string) {
 	svc := elb.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 
@@ -141,4 +145,73 @@ func (engine *AwsCloudEngine) DeRegisterWithLb(hostId string, lbId string) {
 	if err != nil {
 		return
 	}
+}
+
+func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType) HostId {
+	price := 0.5
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+
+	params := ec2.RequestSpotInstancesInput{
+		LaunchSpecification: &ec2.RequestSpotLaunchSpecification{
+			ImageId:      aws.String(engine.awsBaseAmi),
+			InstanceType: aws.String(string(ty)),
+			KeyName:      &engine.sshKey,
+			SecurityGroupIds: aws.StringSlice([]string{string(engine.securityGroupId)}),
+		},
+
+		Type: aws.String("one-time"),
+		InstanceCount: aws.Int64(1),
+		SpotPrice: aws.String(strconv.FormatFloat(float64(price), 'f', 4, 32)),
+	}
+
+	runResult, err := svc.RequestSpotInstances(&params)
+	if err != nil {
+		fmt.Println("AwsCloudEngine SpawnSpotInstance encountered an error ", err)
+		return ""
+	}
+	if len(runResult.SpotInstanceRequests) == 1 {
+		spotId := runResult.SpotInstanceRequests[0].SpotInstanceRequestId
+		var hostId HostId
+		for {
+			hostId, err := engine.GetSpotInstanceHostId(*spotId)
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
+			if hostId == "" {
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			return hostId
+		}
+
+		if err != nil {
+			fmt.Println("Could not get instance id of spot request")
+			return ""
+		}
+		return hostId
+	}
+	return ""
+}
+
+func (engine *AwsCloudEngine) GetSpotInstanceHostId(spotId string) (HostId, error) {
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+
+	params := &ec2.DescribeSpotInstanceRequestsInput{
+		SpotInstanceRequestIds: []*string{
+			aws.String(spotId),
+		},
+	}
+	resp, err := svc.DescribeSpotInstanceRequests(params)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return "", errors.New("Spawn spot failed")
+	}
+	if len(resp.SpotInstanceRequests) == 1 {
+		if *resp.SpotInstanceRequests[0].Status.Code == "fulfilled" {
+			return HostId(*resp.SpotInstanceRequests[0].InstanceId), nil
+		}
+	}
+	return "", nil
 }
