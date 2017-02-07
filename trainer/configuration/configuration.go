@@ -1,5 +1,5 @@
 /*
-Copyright Alex Mack and Michael Lawson (michael@sphinix.com)
+Copyright Alex Mack (al9mack@gmail.com) and Michael Lawson (michael@sphinix.com)
 This file is part of Orca.
 
 Orca is free software: you can redistribute it and/or modify
@@ -116,6 +116,10 @@ func (store *ConfigurationStore) GetAllConfiguration() (map[string]*model.Applic
 
 func (store *ConfigurationStore) ApplySchedules() {
 	for _, config := range store.Configurations {
-		config.DesiredDeployment = config.DeploymentSchedule.Get(time.Now())
+		if config.DeploymentSchedule.Get(time.Now()) > config.MinDeployment {
+			config.DesiredDeployment = config.DeploymentSchedule.Get(time.Now())
+		} else {
+			config.DesiredDeployment = config.MinDeployment
+		}
 	}
 }

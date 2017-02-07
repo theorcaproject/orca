@@ -1,5 +1,5 @@
 /*
-Copyright Alex Mack and Michael Lawson (michael@sphinix.com)
+Copyright Alex Mack (al9mack@gmail.com) and Michael Lawson (michael@sphinix.com)
 This file is part of Orca.
 
 Orca is free software: you can redistribute it and/or modify
@@ -34,17 +34,14 @@ func (*BoringPlanner) Init() {
 func (*BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
 
-	requiresMinServer := false;
+	requiresMinServer := false
+	requiresSpotServer := false
 
 	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
 		currentCount := 0
 		for _, hostEntity := range currentState.GetAllHosts() {
-			for _, runningApplicationState := range hostEntity.Apps {
-				if runningApplicationState.Name == name && runningApplicationState.Version == applicationConfiguration.GetLatestVersion() {
-					if runningApplicationState.State == "running" {
-						currentCount += 1
-					}
-				}
+			if hostEntity.HasApp(name, applicationConfiguration.GetLatestVersion()) {
+				currentCount += 1
 			}
 		}
 
@@ -70,18 +67,24 @@ func (*BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, 
 			}
 		}
 
-		if currentCount > applicationConfiguration.MinDeployment {
+		//spawn to desired
+		if currentCount >= applicationConfiguration.MinDeployment  && currentCount < applicationConfiguration.DesiredDeployment {
+			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if hostEntity.HasApp(name, applicationConfiguration.GetLatestVersion()){
+				if !hostEntity.HasApp(name, applicationConfiguration.GetLatestVersion()){
 					change := PlanningChange{
-						Type: "remove_application",
+						Type: "add_application",
 						ApplicationName: name,
 						HostId: hostEntity.Id,
 						Id:uuid.NewV4().String(),
 					}
 
 					ret = append(ret, change)
+					break
 				}
+			}
+			if !foundServer {
+				requiresSpotServer = true
 			}
 		}
 	}
@@ -91,6 +94,16 @@ func (*BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, 
 			Type: "new_server",
 			Id:uuid.NewV4().String(),
 			RequiresReliableInstance: true,
+		}
+
+		ret = append(ret, change)
+	}
+
+	if requiresSpotServer {
+		change := PlanningChange{
+			Type: "new_server",
+			Id:uuid.NewV4().String(),
+			RequiresReliableInstance: false,
 		}
 
 		ret = append(ret, change)

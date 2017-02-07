@@ -1,5 +1,5 @@
 /*
-Copyright Alex Mack and Michael Lawson (michael@sphinix.com)
+Copyright Alex Mack (al9mack@gmail.com) and Michael Lawson (michael@sphinix.com)
 This file is part of Orca.
 
 Orca is free software: you can redistribute it and/or modify
@@ -77,6 +77,7 @@ type HostCheckinDataPackage struct {
 
 type Host struct {
 	Id        string
+	CloudId   string
 	LastSeen  string
 	FirstSeen string
 	State     string
