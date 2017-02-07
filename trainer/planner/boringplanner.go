@@ -48,6 +48,7 @@ func (*BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, 
 
 		fmt.Println(fmt.Sprintf("Planning: currentCount: %d, minDeployment: %d, desiredDeployment: %d, AllHosts: %+v", currentCount,
 			applicationConfiguration.MinDeployment, applicationConfiguration.DesiredDeployment, currentState.GetAllHosts()))
+
 		currentCount += 1
 		if currentCount < applicationConfiguration.MinDeployment {
 			foundServer := false
@@ -84,6 +85,7 @@ func (*BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, 
 					}
 
 					ret = append(ret, change)
+					foundServer = true
 					break
 				}
 			}
