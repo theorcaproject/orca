@@ -54,7 +54,7 @@ func (a *AwsCloudEngine) getInstanceInfo(hostId HostId) (*ec2.Instance, error) {
 
 func (a *AwsCloudEngine) GetIp(hostId HostId) string {
 	info, err := a.getInstanceInfo(hostId)
-	if err != nil {
+	if err != nil || info == nil || info.PublicIpAddress == nil {
 		return ""
 	}
 
