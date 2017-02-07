@@ -5,6 +5,7 @@ type HostId string
 
 type CloudEngine interface {
 	SpawnInstanceSync(InstanceType) HostId
+	SpawnSpotInstanceSync(InstanceType) HostId
 	GetInstanceType(HostId) InstanceType
 	TerminateInstance(HostId) bool
 

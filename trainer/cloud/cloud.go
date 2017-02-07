@@ -44,7 +44,12 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 	go func() {
 		/* Here we can spawn a new server */
 		if change.Type == "new_server" {
-			newHostId := cloud.Engine.SpawnInstanceSync("t2.micro")
+			var newHostId HostId
+			if change.RequiresReliableInstance {
+				newHostId = cloud.Engine.SpawnInstanceSync("t2.micro")
+			} else {
+				newHostId = cloud.Engine.SpawnSpotInstanceSync("t2.micro")
+			}
 			if newHostId != "" {
 				/* If the change times out we need to nuke it */
 				change.NewHostId = string(newHostId)
@@ -62,7 +67,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 					}
 
 					SUPERVISOR_CONFIG := "'[unix_http_server]\\nfile=/var/run/supervisor.sock\\nchmod=0770\\nchown=root:supervisor\\n[supervisord]\\nlogfile=/var/log/supervisor/supervisord.log\\npidfile=/var/run/supervisord.pid\\nchildlogdir=/var/log/supervisor\\n[rpcinterface:supervisor]\\nsupervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\\n[supervisorctl]\\nserverurl=unix:///var/run/supervisor.sock\\n[include]\\nfiles = /etc/supervisor/conf.d/*.conf' > /etc/supervisor/supervisord.conf"
-					ORCA_SUPERVISOR_CONFIG := "'[program:orca_client]\\ncommand=/orca/bin/orcahostd --interval 30 --hostid "+string(newHostId)+" --traineruri "+cloud.apiEndpoint+"\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=root\\nredirect_stderr=true\\nstdout_logfile=/orca/log/client.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
+					ORCA_SUPERVISOR_CONFIG := "'[program:orca_client]\\ncommand=/orca/bin/orcahostd --interval 30 --hostid " + string(newHostId) + " --traineruri " + cloud.apiEndpoint + "\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=root\\nredirect_stderr=true\\nstdout_logfile=/orca/log/client.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
 
 					instance := []string{
 						"echo orca | sudo -S addgroup --system supervisor",
