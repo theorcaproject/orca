@@ -65,6 +65,7 @@ func main() {
 
 	/* Init connection to the database for auditing */
 	state.Audit.Init(store.AuditDatabaseUri)
+	state.Stats.Init(store.AuditDatabaseUri)
 
 	var plannerEngine planner.Planner;
 	if (*plannerAlg) == "boringplanner"{
@@ -86,11 +87,10 @@ func main() {
 		cloud_provider.Init(&awsEngine, (*instanceUsername), (*uri))
 	}
 
-	ticker := time.NewTicker(time.Second * 10)
-
+	plannerAndTimeoutsTicker := time.NewTicker(time.Second * 10)
 	go func () {
 		for {
-			<- ticker.C
+			<- plannerAndTimeoutsTicker.C
 			/* Check for timeouts */
 			for _, host := range state_store.GetAllHosts() {
 				for _, change := range host.Changes {
@@ -206,6 +206,30 @@ func main() {
 					})
 					continue
 				}
+			}
+		}
+	}()
+
+	metricsCollectionTicker := time.NewTicker(time.Second * 120)
+	go func () {
+		for {
+			<-metricsCollectionTicker.C
+
+			for appName, _ := range store.GetAllConfiguration() {
+				metric := state.ApplicationUtilisationStatistic{}
+				metric.AppName = appName
+				metric.Timestamp = time.Now()
+
+				for hostId, _ := range state_store.GetAllHosts() {
+					appHostEntry, err := state_store.GetApplication(hostId,  appName)
+					if err == nil{
+						metric.Cpu += appHostEntry.Metrics.CpuUsage
+						metric.Mbytes += appHostEntry.Metrics.MemoryUsage
+						metric.Network += appHostEntry.Metrics.NetworkUsage
+						metric.InstanceCount += 1
+					}
+				}
+				state.Stats.Insert__ApplicationUtilisationStatistic(metric)
 			}
 		}
 	}()

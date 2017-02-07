@@ -55,7 +55,8 @@ type Application struct {
 	State    string
 	Version  string
 	ChangeId string
-	Metrics  string
+
+	Metrics  Metric
 }
 
 type ApplicationStateFromHost struct {
@@ -64,15 +65,15 @@ type ApplicationStateFromHost struct {
 }
 
 type Metric struct {
-	CpuUsage uint64
-	MemoryUsage uint64
-	NetworkUsage uint64
+	CpuUsage int64
+	MemoryUsage int64
+	NetworkUsage int64
 }
 
 type HostCheckinDataPackage struct {
 	State          []ApplicationStateFromHost
 	ChangesApplied map[string]bool
-	Metrics        map[string]Metric
+	HostMetrics 	Metric
 }
 
 type Host struct {
