@@ -40,6 +40,10 @@ type ChangeServer struct {
 	Time string
 	NewHostId string
 	RequiresReliableInstance bool
+
+	// Internal Status Information
+	InstanceLaunched bool
+	InstalledPackages bool
 }
 
 type HostResources struct {

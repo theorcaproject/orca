@@ -79,6 +79,8 @@ func main() {
 	cloud_provider := cloud.CloudProvider{}
 
 	if (*cloudProvider) == "aws" {
+		fmt.Println("security group is ", awsSecurityGroupId)
+
 		awsEngine := cloud.AwsCloudEngine{}
 		awsEngine.Init((*awsAccessKeyId), (*awsAccessKeySecret), (*awsRegion), (*awsBaseAmi), (*awsSshKey),(*awsSshKeyPath), (*awsSecurityGroupId))
 		cloud_provider.Init(&awsEngine, (*instanceUsername), (*uri))
@@ -158,7 +160,7 @@ func main() {
 	}()
 
 	api := api.Api{}
-	api.Init(*apiPort, store, state_store)
+	api.Init(*apiPort, store, state_store, &cloud_provider)
 
 }
 
