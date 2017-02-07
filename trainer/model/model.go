@@ -133,11 +133,15 @@ type AppNeeds struct {
 	NetworkNeeds NetworkNeeds
 }
 
+type LoadBalancerEntry struct {
+	Domain string
+}
+
 type VersionConfig struct {
 	Version string
 	DockerConfig	     DockerConfig
 	Needs 		     AppNeeds
-	LoadBalancer         []string
+	LoadBalancer         []LoadBalancerEntry
 	Network              string
 	PortMappings         []PortMapping
 	VolumeMappings       []VolumeMapping
