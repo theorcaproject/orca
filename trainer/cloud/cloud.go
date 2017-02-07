@@ -21,6 +21,8 @@ package cloud
 import (
 	"orca/trainer/model"
 	orcaSSh "orca/util"
+	"orca/trainer/state"
+	"fmt"
 )
 
 type CloudProvider struct {
@@ -118,7 +120,6 @@ func (cloud *CloudProvider) NotifyHostCheckIn(hostId string){
 				cloud.RemoveChange(change.Id)
 			}
 		}
-
 	}
 }
 
@@ -135,6 +136,18 @@ func (cloud* CloudProvider) RemoveChange(changeId string){
 	for _, change := range cloud.Changes {
 		if change.Id != changeId {
 			newChanges = append(newChanges, change)
+		}else{
+			// Found the change:
+			if !change.RequiresReliableInstance {
+				change.RequiresReliableInstance = false
+
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
+					"message": fmt.Sprintf("Failed to launch spot instance, removing spot requirement and attempting to launch again"),
+					"host": change.NewHostId,
+				}})
+
+				newChanges = append(newChanges, change)
+			}
 		}
 	}
 	cloud.Changes = newChanges
