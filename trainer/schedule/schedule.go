@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	CAUTION_INTERVAL = 2
-	MINUTES_DELTA = 15
+	CAUTION_INTERVAL = 0
+	MINUTES_DELTA = 60
 )
 
 
