@@ -104,6 +104,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 		} else if change.Type == "remove" {
 			cloud.Engine.TerminateInstance(HostId(change.NewHostId))
 			cloud.RemoveChange(change.Id)
+
 		}
 	}()
 }

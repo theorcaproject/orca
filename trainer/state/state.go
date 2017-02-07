@@ -102,3 +102,7 @@ func (store *StateStore) RemoveChange(hostId string, changeId string) {
 	}
 	host.Changes = newChanges
 }
+
+func (store *StateStore) RemoveHost(hostId string) {
+	delete(store.hosts, hostId)
+}

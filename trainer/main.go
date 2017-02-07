@@ -134,6 +134,8 @@ func main() {
 						Time:time.Now().Format(time.RFC3339Nano),
 						NewHostId:host.Id,
 					})
+
+					state_store.RemoveHost(host.Id)
 				}
 			}
 
