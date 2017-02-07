@@ -48,7 +48,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 			if change.RequiresReliableInstance {
 				newHostId = cloud.Engine.SpawnInstanceSync("t2.micro")
 			} else {
-				newHostId = cloud.Engine.SpawnSpotInstanceSync("t2.micro")
+				newHostId = cloud.Engine.SpawnSpotInstanceSync("m4.large")
 			}
 			if newHostId != "" {
 				/* If the change times out we need to nuke it */
