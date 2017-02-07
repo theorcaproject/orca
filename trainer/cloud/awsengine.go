@@ -171,6 +171,7 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType) HostId {
 	}
 	if len(runResult.SpotInstanceRequests) == 1 {
 		spotId := runResult.SpotInstanceRequests[0].SpotInstanceRequestId
+		time.Sleep(2* time.Second)
 		var hostId HostId
 		for {
 			hostId, err := engine.GetSpotInstanceHostId(*spotId)
