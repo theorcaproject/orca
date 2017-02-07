@@ -53,6 +53,7 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r.HandleFunc("/config/applications/configuration/latest", api.getAllConfigurationApplications_Configurations_Latest)
 	r.HandleFunc("/state", api.getAllRunningState)
 	r.HandleFunc("/checkin", api.hostCheckin)
+	r.HandleFunc("/state/cloud/application/performance", getAppPerformance)
 
 	r.HandleFunc("/audit", api.getAudit)
 	r.HandleFunc("/audit/application", api.getAuditApplication)
@@ -176,4 +177,10 @@ func (api *Api) getAudit(w http.ResponseWriter, r *http.Request) {
 func (api *Api) getAuditApplication(w http.ResponseWriter, r *http.Request) {
 	applicationName := r.URL.Query().Get("application")
 	returnJson(w, state.Audit.Query__AuditEvents(applicationName))
+}
+
+func getAppPerformance(w http.ResponseWriter, r *http.Request) {
+	ApiLogger.Infof("Query to getAppPerformance")
+	application := r.URL.Query().Get("application")
+	returnJson(w, state.Stats.Query__ApplicationUtilisationStatistic(application))
 }
