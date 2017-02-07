@@ -111,12 +111,12 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 	}()
 }
 
-func (cloud *CloudProvider) NotifyHostCheckIn(hostId string){
+func (cloud *CloudProvider) NotifyHostCheckIn(host *model.Host){
 	/* Search for changes related to this instance */
 	for _, change := range cloud.Changes {
 		if change.Type == "new_server" {
-			if change.NewHostId == hostId {
-				/* The new server has checked in, lets nuke the change. It has been a success */
+			if change.NewHostId == host.Id {
+				host.SpotInstance = !change.RequiresReliableInstance
 				cloud.RemoveChange(change.Id)
 			}
 		}

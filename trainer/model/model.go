@@ -84,6 +84,7 @@ type Host struct {
 	Apps      []Application
 	Changes   []ChangeApplication
 	Resources HostResources
+	SpotInstance bool
 }
 
 func (host *Host) HasApp(name string, version string) bool {

@@ -152,8 +152,6 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 	var apps model.HostCheckinDataPackage
 	hostId := r.URL.Query().Get("host")
 
-	/* First lets tell the cloud provider that this host has checked in */
-	api.cloudProvider.NotifyHostCheckIn(hostId)
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&apps); err != nil {
@@ -162,6 +160,8 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 
 	result, err := api.state.HostCheckin(hostId, apps)
 	if err == nil {
+		/* Lets tell the cloud provider that this host has checked in */
+		api.cloudProvider.NotifyHostCheckIn(result)
 		returnJson(w, result.Changes)
 		return
 	} else {
