@@ -22,6 +22,7 @@ import (
 	"orca/trainer/configuration"
 	"orca/trainer/state"
 	"github.com/twinj/uuid"
+	"fmt"
 )
 
 type BoringPlanner struct {
@@ -44,6 +45,9 @@ func (*BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, 
 				currentCount += 1
 			}
 		}
+
+		fmt.Println(fmt.Sprintf("Planning: currentCount: %d, minDeployment: %d, desiredDeployment: %d", currentCount,
+			applicationConfiguration.MinDeployment, applicationConfiguration.DesiredDeployment))
 
 		if currentCount < applicationConfiguration.MinDeployment {
 			foundServer := false
@@ -108,6 +112,8 @@ func (*BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, 
 
 		ret = append(ret, change)
 	}
+
+	fmt.Println(fmt.Sprintf("Planning changes: %+v", ret))
 
 	return ret
 }
