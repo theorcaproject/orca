@@ -138,3 +138,10 @@ func (cloud* CloudProvider) AddChange(change *model.ChangeServer){
 	cloud.Changes = append(cloud.Changes, change)
 }
 
+func (cloud* CloudProvider) RegisterWithLb(hostId string, lbId string) {
+	cloud.Engine.RegisterWithLb(hostId, lbId)
+}
+
+func (cloud* CloudProvider) DeRegisterWithLb(hostId string, lbId string) {
+	cloud.Engine.DeRegisterWithLb(hostId, lbId)
+}

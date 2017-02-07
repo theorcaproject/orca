@@ -180,6 +180,16 @@ func main() {
 						Time:time.Now().Format(time.RFC3339Nano),
 					})
 
+					if change.Type == "add_application" {
+						for _, elb := range app.GetLatestConfiguration().LoadBalancer {
+							cloud_provider.RegisterWithLb(host.Id, elb)
+						}
+					}else if change.Type == "remove_application" {
+						for _, elb := range app.GetLatestConfiguration().LoadBalancer {
+							cloud_provider.RegisterWithLb(host.Id, elb)
+						}
+					}
+
 					continue
 				}
 				if change.Type == "kill_server" {

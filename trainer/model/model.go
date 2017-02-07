@@ -137,7 +137,7 @@ type VersionConfig struct {
 	Version string
 	DockerConfig	     DockerConfig
 	Needs 		     AppNeeds
-	LoadBalancer         string
+	LoadBalancer         []string
 	Network              string
 	PortMappings         []PortMapping
 	VolumeMappings       []VolumeMapping

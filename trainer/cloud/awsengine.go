@@ -7,19 +7,20 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/service/elb"
 )
 
 type AwsCloudEngine struct {
 	awsAccessKeyId     string
 	awsAccessKeySecret string
 	awsRegion          string
-	awsBaseAmi          string
-	sshKey          string
-	sshKeyPath	string
-	securityGroupId          string
+	awsBaseAmi         string
+	sshKey             string
+	sshKeyPath         string
+	securityGroupId    string
 }
 
-func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string, awsRegion string, awsBaseAmi string, sshKey string,sshKeyPath string, securityGroupId string) {
+func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string, awsRegion string, awsBaseAmi string, sshKey string, sshKeyPath string, securityGroupId string) {
 	aws.awsAccessKeySecret = awsAccessKeySecret
 	aws.awsAccessKeyId = awsAccessKeyId
 	aws.awsRegion = awsRegion
@@ -54,7 +55,6 @@ func (a *AwsCloudEngine) GetIp(hostId HostId) string {
 	return string(*info.PublicIpAddress)
 }
 
-
 func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.awsRegion)}))
 
@@ -63,7 +63,6 @@ func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
 	}
 	return true
 }
-
 
 func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType) HostId {
 	fmt.Println("AwsCloudEngine SpawnInstanceSync called with ", instanceType)
@@ -112,4 +111,34 @@ func (engine *AwsCloudEngine) TerminateInstance(hostId HostId) bool {
 
 func (aws *AwsCloudEngine) GetPem() string {
 	return aws.sshKeyPath
+}
+
+func (engine *AwsCloudEngine) RegisterWithLb(hostId string, lbId string) {
+	svc := elb.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+
+	params := &elb.RegisterInstancesWithLoadBalancerInput{
+		Instances: []*elb.Instance{
+			{
+				InstanceId: aws.String(string(hostId)),
+			},
+		},
+		LoadBalancerName: aws.String(string(lbId)),
+	}
+	_, err := svc.RegisterInstancesWithLoadBalancer(params)
+	if err != nil {
+		return
+	}
+}
+
+func (engine *AwsCloudEngine) DeRegisterWithLb(hostId string, lbId string) {
+	svc := elb.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+
+	params := &elb.DeregisterInstancesFromLoadBalancerInput{
+		Instances: []*elb.Instance{{InstanceId: aws.String(string(hostId))}},
+		LoadBalancerName: aws.String(string(lbId)),
+	}
+	_, err := svc.DeregisterInstancesFromLoadBalancer(params)
+	if err != nil {
+		return
+	}
 }
