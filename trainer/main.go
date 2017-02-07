@@ -182,11 +182,11 @@ func main() {
 
 					if change.Type == "add_application" {
 						for _, elb := range app.GetLatestConfiguration().LoadBalancer {
-							cloud_provider.RegisterWithLb(host.Id, elb)
+							cloud_provider.RegisterWithLb(host.Id, elb.Domain)
 						}
 					}else if change.Type == "remove_application" {
 						for _, elb := range app.GetLatestConfiguration().LoadBalancer {
-							cloud_provider.RegisterWithLb(host.Id, elb)
+							cloud_provider.RegisterWithLb(host.Id, elb.Domain)
 						}
 					}
 
