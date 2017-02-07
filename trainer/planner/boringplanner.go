@@ -107,9 +107,9 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 		}
 
 		//If the needs are greater than required, then scale them back
-		if currentCount > applicationConfiguration.MinDeployment || currentCount > applicationConfiguration.DesiredDeployment {
+		if currentCount > applicationConfiguration.DesiredDeployment {
 
-			/* Can we kill of some extra machines? */
+			/* Can we kill of some extra desired machines? */
 			if (applicationConfiguration.DesiredDeployment - applicationConfiguration.MinDeployment) > 0 {
 				/* Find potential spot instances */
 				terminateCandidateFound := false
@@ -161,6 +161,24 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 				}
 			}
 		}
+
+		//If currentCount is greater than the Min, but desired is fine, then kill some nodes
+		if currentCount > applicationConfiguration.MinDeployment && currentCount <= applicationConfiguration.DesiredDeployment {
+
+			for _, hostEntity := range currentState.GetAllHosts() {
+				if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+					change := PlanningChange{
+						Type: "remove_application",
+						ApplicationName: name,
+						HostId: hostEntity.Id,
+						Id:uuid.NewV4().String(),
+					}
+
+					ret = append(ret, change)
+					break
+				}
+			}
+		}
 	}
 
 	if requiresMinServer {
@@ -184,9 +202,9 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 	}
 
 	/* Second stage of planning: Terminate any instances that are left behind */
-	if !currentState.HasChanges() {
+	if len(ret) == 0 {
 		for _, hostEntity := range currentState.GetAllHosts() {
-			if len(hostEntity.Apps) == 0{
+			if len(hostEntity.Apps) == 0 {
 				change := PlanningChange{
 					Type: "kill_server",
 					HostId: hostEntity.Id,
