@@ -62,7 +62,10 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 				/* Next we should install some stuff to it */
 				ipAddr := cloud.Engine.GetIp(newHost.Id)
 				sshKeyPath := cloud.Engine.GetPem()
-
+				if ipAddr == "" {
+					fmt.Println(fmt.Sprintf("Missing IP address for host %s", newHost.Id))
+					return
+				}
 				for {
 					session, addr := orcaSSh.Connect(cloud.sshUser, string(ipAddr) + ":22", sshKeyPath)
 					if session == nil {
