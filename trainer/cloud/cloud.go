@@ -39,27 +39,28 @@ func (cloud* CloudProvider) Init(engine CloudEngine, sshUser string, apiEndpoint
 	cloud.sshUser= sshUser
 }
 
-func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
+func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore *state.StateStore){
 	/* First push this change onto the change queue for the cloud provider */
 	cloud.AddChange(change)
 
 	go func() {
 		/* Here we can spawn a new server */
 		if change.Type == "new_server" {
-			var newHostId HostId
+			var newHost model.Host
 			if change.RequiresReliableInstance {
-				newHostId = cloud.Engine.SpawnInstanceSync("t2.micro")
+				newHost = cloud.Engine.SpawnInstanceSync("t2.micro")
 			} else {
-				newHostId = cloud.Engine.SpawnSpotInstanceSync("m4.large")
+				newHost = cloud.Engine.SpawnSpotInstanceSync("m4.large")
 			}
-			if newHostId != "" {
+			if newHost.Id != "" {
+				stateStore.HostInit(newHost)
 				/* If the change times out we need to nuke it */
-				change.NewHostId = string(newHostId)
+				change.NewHostId = string(newHost.Id)
 				change.InstanceLaunched = true
 
 				/* A new server was created, wahoo */
 				/* Next we should install some stuff to it */
-				ipAddr := cloud.Engine.GetIp(newHostId)
+				ipAddr := cloud.Engine.GetIp(newHost.Id)
 				sshKeyPath := cloud.Engine.GetPem()
 
 				for {
@@ -69,7 +70,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer){
 					}
 
 					SUPERVISOR_CONFIG := "'[unix_http_server]\\nfile=/var/run/supervisor.sock\\nchmod=0770\\nchown=root:supervisor\\n[supervisord]\\nlogfile=/var/log/supervisor/supervisord.log\\npidfile=/var/run/supervisord.pid\\nchildlogdir=/var/log/supervisor\\n[rpcinterface:supervisor]\\nsupervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\\n[supervisorctl]\\nserverurl=unix:///var/run/supervisor.sock\\n[include]\\nfiles = /etc/supervisor/conf.d/*.conf' > /etc/supervisor/supervisord.conf"
-					ORCA_SUPERVISOR_CONFIG := "'[program:orca_client]\\ncommand=/orca/bin/orcahostd --interval 30 --hostid " + string(newHostId) + " --traineruri " + cloud.apiEndpoint + "\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=root\\nredirect_stderr=true\\nstdout_logfile=/orca/log/client.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
+					ORCA_SUPERVISOR_CONFIG := "'[program:orca_client]\\ncommand=/orca/bin/orcahostd --interval 30 --hostid " + string(newHost.Id) + " --traineruri " + cloud.apiEndpoint + "\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=root\\nredirect_stderr=true\\nstdout_logfile=/orca/log/client.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
 
 					instance := []string{
 						"echo orca | sudo -S addgroup --system supervisor",

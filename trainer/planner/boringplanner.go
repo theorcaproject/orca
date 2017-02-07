@@ -34,6 +34,9 @@ func (*BoringPlanner) Init() {
 }
 
 func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool {
+	if host.State != "running" {
+		return false
+	}
 	if host.HasAppWithSameVersion(app.Name, app.GetLatestVersion()) {
 		return false
 	}
@@ -65,7 +68,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 		if currentCount < applicationConfiguration.MinDeployment {
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if hostIsSuitable(hostEntity, applicationConfiguration) {
+				if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
 					change := PlanningChange{
 						Type: "add_application",
 						ApplicationName: name,
@@ -107,7 +110,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 		}
 
 		//If the needs are greater than required, then scale them back
-		if currentCount > applicationConfiguration.DesiredDeployment {
+		if currentCount > applicationConfiguration.DesiredDeployment && currentCount > applicationConfiguration.MinDeployment{
 
 			/* Can we kill of some extra desired machines? */
 			if (applicationConfiguration.DesiredDeployment - applicationConfiguration.MinDeployment) > 0 {

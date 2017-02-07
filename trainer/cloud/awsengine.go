@@ -72,7 +72,7 @@ func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
 }
 
 
-func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, appConfig *model.VersionConfig) HostId {
+func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, appConfig *model.VersionConfig) *model.Host {
 	fmt.Println("AwsCloudEngine SpawnInstanceSync called with ", instanceType)
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 
@@ -88,17 +88,22 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, appCo
 
 	if err != nil {
 		fmt.Println("AwsCloudEngine SpawnInstanceSync encountered an error ", err)
-		return ""
+		return &model.Host{}
 	}
 
 	id := HostId(*runResult.Instances[0].InstanceId)
 	fmt.Println("AwsCloudEngine SpawnInstanceSync got a new host, lets wait until its ready. HostID is ", id)
 	if !engine.waitOnInstanceReady(id) {
-		return ""
+		return &model.Host{}
 	}
 
 	fmt.Println("AwsCloudEngine SpawnInstanceSync finished")
-	return id
+	host := model.Host{
+		Id: id,
+		SecurityGroups: []string{appConfig.SecurityGroup},
+		Network: appConfig.Network,
+	}
+	return host
 }
 
 func (aws *AwsCloudEngine) GetInstanceType(HostId) InstanceType {

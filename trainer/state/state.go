@@ -53,6 +53,11 @@ func (store *StateStore) GetApplication(hostId string, applicationName string) (
 	return model.Application{}, errors.New("Could not find application")
 }
 
+func (store *StateStore) HostInit(host *model.Host) {
+	host.State = "initializing"
+	store.hosts[host.Id] = host
+}
+
 func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDataPackage) (*model.Host, error) {
 	host, err := store.GetConfiguration(hostId)
 	if err != nil {
@@ -72,7 +77,6 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 			store.RemoveChange(host.Id, change)
 		}
 	}
-
 	host.LastSeen = time.Now().Format(time.RFC3339Nano)
 	host.Apps = make([]model.Application, 0)
 	for _, appStateFromHost := range checkin.State {

@@ -134,7 +134,7 @@ func main() {
 						Type: "remove",
 						Time:time.Now().Format(time.RFC3339Nano),
 						NewHostId:host.Id,
-					})
+					}, state_store)
 
 					state_store.RemoveHost(host.Id)
 				}
@@ -160,7 +160,7 @@ func main() {
 						Type: "new_server",
 						Time:time.Now().Format(time.RFC3339Nano),
 						RequiresReliableInstance: change.RequiresReliableInstance,
-					})
+					}, state_store)
 
 					continue
 				}
@@ -204,7 +204,7 @@ func main() {
 						Id:uuid.NewV4().String(),
 						Type: "remove",
 						Time:time.Now().Format(time.RFC3339Nano),
-					})
+					}, state_store)
 					continue
 				}
 			}
