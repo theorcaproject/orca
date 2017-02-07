@@ -32,6 +32,8 @@ import (
 )
 
 const MAX_ELAPSED_TIME_FOR_APP_CHANGE = 120
+const MAX_ELAPSED_TIME_FOR_SERVER_CHANGE = 300
+const MAX_ELAPSED_TIME_FOR_HOST_CHECKIN = 60
 
 func main() {
 	fmt.Println("starting")
@@ -79,8 +81,6 @@ func main() {
 	cloud_provider := cloud.CloudProvider{}
 
 	if (*cloudProvider) == "aws" {
-		fmt.Println("security group is ", awsSecurityGroupId)
-
 		awsEngine := cloud.AwsCloudEngine{}
 		awsEngine.Init((*awsAccessKeyId), (*awsAccessKeySecret), (*awsRegion), (*awsBaseAmi), (*awsSshKey),(*awsSshKeyPath), (*awsSecurityGroupId))
 		cloud_provider.Init(&awsEngine, (*instanceUsername), (*uri))
@@ -91,13 +91,17 @@ func main() {
 	go func () {
 		for {
 			<- ticker.C
-			fmt.Println("Running Planning task")
-
 			/* Check for timeouts */
 			for _, host := range state_store.GetAllHosts() {
 				for _, change := range host.Changes {
 					parsedTime, _ := time.Parse(time.RFC3339Nano, change.Time)
 					if (time.Now().Unix() - parsedTime.Unix()) > MAX_ELAPSED_TIME_FOR_APP_CHANGE {
+						state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
+							"message": fmt.Sprintf("Application change event %s timed out, event type was %s for application %s on host %s", change.Id, change.Type, change.Name, change.HostId),
+							"application": change.Name,
+							"host": change.HostId,
+						}})
+
 						state_store.RemoveChange(host.Id, change.Id)
 					}
 				}
@@ -105,23 +109,48 @@ func main() {
 
 			for _, change := range cloud_provider.GetAllChanges() {
 					parsedTime, _ := time.Parse(time.RFC3339Nano, change.Time)
-					if (time.Now().Unix() - parsedTime.Unix()) > MAX_ELAPSED_TIME_FOR_APP_CHANGE {
+					if (time.Now().Unix() - parsedTime.Unix()) > MAX_ELAPSED_TIME_FOR_SERVER_CHANGE {
+						state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
+							"message": fmt.Sprintf("Server change event %s timed out, event type was %s with hostid %s", change.Id, change.Type, change.NewHostId),
+							"host": change.NewHostId,
+						}})
+
 						cloud_provider.RemoveChange(change.Id)
 					}
+			}
+
+			/* Look for host timeouts */
+			for _, host := range state_store.GetAllHosts() {
+				parsedTime, _ := time.Parse(time.RFC3339Nano, host.LastSeen)
+				if (time.Now().Unix() - parsedTime.Unix()) > MAX_ELAPSED_TIME_FOR_HOST_CHECKIN {
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
+						"message": fmt.Sprintf("Host timed out, we have not heard from host %s since %s", host.Id, host.LastSeen),
+						"host": host.Id,
+					}})
+
+					cloud_provider.ActionChange(&model.ChangeServer{
+						Id:uuid.NewV4().String(),
+						Type: "remove",
+						Time:time.Now().Format(time.RFC3339Nano),
+						NewHostId:host.Id,
+					})
+				}
 			}
 
 			store.ApplySchedules()
 			
 			/* Can we actually run the planner ? */
 			if(state_store.HasChanges() || cloud_provider.HasChanges()){
-				fmt.Println("Still have unresolved changes, waiting")
 				continue;
 			}
 
 			changes := plannerEngine.Plan((*store), (*state_store))
-			fmt.Println("Changes from planner: %+v", changes)
 			for _, change := range changes {
 				if change.Type == "new_server" {
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
+						"message": fmt.Sprintf("Planner requested a new server"),
+					}})
+
 					/* Add new server */
 					cloud_provider.ActionChange(&model.ChangeServer{
 						Id:uuid.NewV4().String(),
@@ -134,6 +163,12 @@ func main() {
 				}
 				if change.Type == "add_application" || change.Type == "remove_application" {
 					/* Add new server */
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
+						"message": fmt.Sprintf("Planner requested application %s be %s to host %s", change.ApplicationName, change.Type, change.HostId),
+						"application": change.ApplicationName,
+						"host": change.HostId,
+					}})
+
 					host, _ := state_store.GetConfiguration(change.HostId)
 					app, _ := store.GetConfiguration(change.ApplicationName)
 					host.Changes = append(host.Changes, model.ChangeApplication{
@@ -148,6 +183,10 @@ func main() {
 					continue
 				}
 				if change.Type == "kill_server" {
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
+						"message": fmt.Sprintf("Planner requested server %s be kulled in a bloodbath", change.HostId),
+					}})
+
 					cloud_provider.ActionChange(&model.ChangeServer{
 						Id:uuid.NewV4().String(),
 						Type: "remove",
@@ -161,6 +200,5 @@ func main() {
 
 	api := api.Api{}
 	api.Init(*apiPort, store, state_store, &cloud_provider)
-
 }
 

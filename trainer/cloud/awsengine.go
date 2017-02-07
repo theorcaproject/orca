@@ -100,8 +100,16 @@ func (aws *AwsCloudEngine) GetInstanceType(HostId) InstanceType {
 
 }
 
-func (aws *AwsCloudEngine) TerminateInstance(HostId) bool {
-	return false
+func (engine *AwsCloudEngine) TerminateInstance(hostId HostId) bool {
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+	_, err := svc.TerminateInstances(&ec2.TerminateInstancesInput{
+		InstanceIds: aws.StringSlice([]string{string(hostId)}),
+	})
+
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func (aws *AwsCloudEngine) GetPem() string {

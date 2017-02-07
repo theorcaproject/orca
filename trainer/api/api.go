@@ -129,7 +129,7 @@ func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.Res
 				application.Config[newVersion] = object
 
 				state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-					"message": "Modified application " + applicationName + ", created new configuration",
+					"message": "API: Modified application " + applicationName + ", created new configuration",
 					"application": applicationName,
 				}})
 
