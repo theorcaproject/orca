@@ -41,13 +41,11 @@ func (*BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, 
 	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
 		currentCount := 0
 		for _, hostEntity := range currentState.GetAllHosts() {
-			if hostEntity.HasApp(name, applicationConfiguration.GetLatestVersion()) {
+			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
 				currentCount += 1
 			}
 		}
 
-		fmt.Println(fmt.Sprintf("Planning: currentCount: %d, minDeployment: %d, desiredDeployment: %d, AllHosts: %+v", currentCount,
-			applicationConfiguration.MinDeployment, applicationConfiguration.DesiredDeployment, currentState.GetAllHosts()))
 		if currentCount < applicationConfiguration.MinDeployment {
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
