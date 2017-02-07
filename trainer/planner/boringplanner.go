@@ -168,7 +168,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 	}
 
 	/* Second stage of planning: Terminate any instances that are left behind */
-	if !currentState.HasChanges() {
+	if len(ret) == 0{
 		for _, hostEntity := range currentState.GetAllHosts() {
 			if len(hostEntity.Apps) == 0{
 				change := PlanningChange{
