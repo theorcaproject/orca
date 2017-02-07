@@ -81,10 +81,12 @@ type Host struct {
 	LastSeen  string
 	FirstSeen string
 	State     string
+	Network     string
 	Apps      []Application
 	Changes   []ChangeApplication
 	Resources HostResources
 	SpotInstance bool
+	SecurityGroups []string
 }
 
 func (host *Host) HasApp(name string, version string) bool {
@@ -148,11 +150,12 @@ type LoadBalancerEntry struct {
 }
 
 type VersionConfig struct {
-	Version string
+	Version 	     string
 	DockerConfig	     DockerConfig
 	Needs 		     AppNeeds
 	LoadBalancer         []LoadBalancerEntry
 	Network              string
+	SecurityGroup        string
 	PortMappings         []PortMapping
 	VolumeMappings       []VolumeMapping
 	EnvironmentVariables []EnvironmentVariable

@@ -23,6 +23,7 @@ import (
 	"orca/trainer/state"
 	"github.com/twinj/uuid"
 	"fmt"
+	"orca/trainer/model"
 )
 
 type BoringPlanner struct {
@@ -30,6 +31,21 @@ type BoringPlanner struct {
 
 func (*BoringPlanner) Init() {
 
+}
+
+func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool {
+	if host.HasAppWithSameVersion(app.Name, app.GetLatestVersion()) {
+		return false
+	}
+	if host.Network != app.GetLatestConfiguration().Network {
+		return false
+	}
+	for _, grp := range host.SecurityGroups {
+		if grp == app.GetLatestConfiguration().SecurityGroup {
+			return true
+		}
+	}
+	return false
 }
 
 func (planner *BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
@@ -49,7 +65,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 		if currentCount < applicationConfiguration.MinDeployment {
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if !hostEntity.HasApp(name, applicationConfiguration.GetLatestVersion()) {
+				if hostIsSuitable(hostEntity, applicationConfiguration) {
 					change := PlanningChange{
 						Type: "add_application",
 						ApplicationName: name,
@@ -72,7 +88,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 		if currentCount >= applicationConfiguration.MinDeployment && currentCount < applicationConfiguration.DesiredDeployment {
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if !hostEntity.HasApp(name, applicationConfiguration.GetLatestVersion()) {
+				if hostIsSuitable(hostEntity, applicationConfiguration) {
 					change := PlanningChange{
 						Type: "add_application",
 						ApplicationName: name,

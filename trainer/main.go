@@ -52,6 +52,7 @@ func main() {
 	var plannerAlg = flag.String("planner", "boringplanner", "Planning Algorithm")
 	var instanceUsername = flag.String("instanceusername", "ubuntu", "User account for the AMI")
 	var uri = flag.String("uri", "http://localhost:5001", "Public Trainer Endpoint")
+	var awsSpotPrice = flag.Float64("spotbid", 0.5, "AWS Spot Instance Bid")
 
 	flag.Parse()
 
@@ -82,7 +83,7 @@ func main() {
 
 	if (*cloudProvider) == "aws" {
 		awsEngine := cloud.AwsCloudEngine{}
-		awsEngine.Init((*awsAccessKeyId), (*awsAccessKeySecret), (*awsRegion), (*awsBaseAmi), (*awsSshKey),(*awsSshKeyPath), (*awsSecurityGroupId))
+		awsEngine.Init((*awsAccessKeyId), (*awsAccessKeySecret), (*awsRegion), (*awsBaseAmi), (*awsSshKey),(*awsSshKeyPath), (*awsSecurityGroupId), (*awsSpotPrice))
 		cloud_provider.Init(&awsEngine, (*instanceUsername), (*uri))
 	}
 

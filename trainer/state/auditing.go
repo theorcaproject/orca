@@ -26,6 +26,7 @@ import (
 )
 
 type OrcaDb struct {
+	enabled bool
 	session *mgo.Session
 	db      *mgo.Database
 }
@@ -38,6 +39,11 @@ type AuditEvent struct {
 var Audit OrcaDb
 
 func (a *OrcaDb) Init(hostname string) {
+	if hostname == "" {
+		a.enabled = false
+		return
+	}
+	a.enabled = true
 	session, err := mgo.Dial(hostname)
 	if err != nil {
 		panic(err)
@@ -52,6 +58,9 @@ func (a *OrcaDb) Close() {
 }
 
 func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
+	if !db.enabled {
+		return
+	}
 	fmt.Printf("AUDIT: %s\n", event.Details["message"])
 
 	if db.session == nil {
@@ -67,6 +76,9 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 }
 
 func (db *OrcaDb) Query__AuditEvents(application string) []AuditEvent {
+	if !db.enabled {
+		return []AuditEvent{}
+	}
 	c := db.db.C("audit")
 	var results []AuditEvent
 	if application != "" {

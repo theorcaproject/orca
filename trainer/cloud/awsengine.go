@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"orca/trainer/model"
 )
 
 type AwsCloudEngine struct {
@@ -21,9 +22,10 @@ type AwsCloudEngine struct {
 	sshKey             string
 	sshKeyPath         string
 	securityGroupId    string
+	spotPrice          float32
 }
 
-func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string, awsRegion string, awsBaseAmi string, sshKey string, sshKeyPath string, securityGroupId string) {
+func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string, awsRegion string, awsBaseAmi string, sshKey string, sshKeyPath string, securityGroupId string, spotPrice float32) {
 	aws.awsAccessKeySecret = awsAccessKeySecret
 	aws.awsAccessKeyId = awsAccessKeyId
 	aws.awsRegion = awsRegion
@@ -31,6 +33,7 @@ func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string
 	aws.sshKey = sshKey
 	aws.sshKeyPath = sshKeyPath
 	aws.securityGroupId = securityGroupId
+	aws.spotPrice = spotPrice
 
 	//TODO: This is amazingly shitty, but because the aws api sucks and I have no patience its the approach for now
 	os.Setenv("AWS_ACCESS_KEY_ID", aws.awsAccessKeyId)
@@ -69,7 +72,7 @@ func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
 }
 
 
-func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType) HostId {
+func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, appConfig *model.VersionConfig) HostId {
 	fmt.Println("AwsCloudEngine SpawnInstanceSync called with ", instanceType)
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 
@@ -79,7 +82,8 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType) HostI
 		MinCount:     aws.Int64(1),
 		MaxCount:     aws.Int64(1),
 		KeyName:      &engine.sshKey,
-		SecurityGroupIds: aws.StringSlice([]string{string(engine.securityGroupId)}),
+		SecurityGroupIds: aws.StringSlice([]string{appConfig.SecurityGroup}),
+		SubnetId: aws.String(appConfig.Network),
 	})
 
 	if err != nil {
@@ -147,8 +151,7 @@ func (engine *AwsCloudEngine) DeRegisterWithLb(hostId string, lbId string) {
 	}
 }
 
-func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType) HostId {
-	price := 0.5
+func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType,  appConfig *model.VersionConfig) HostId {
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 
 	params := ec2.RequestSpotInstancesInput{
@@ -156,12 +159,13 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType) HostId {
 			ImageId:      aws.String(engine.awsBaseAmi),
 			InstanceType: aws.String(string(ty)),
 			KeyName:      &engine.sshKey,
-			SecurityGroupIds: aws.StringSlice([]string{string(engine.securityGroupId)}),
+			SecurityGroupIds: aws.StringSlice([]string{appConfig.SecurityGroup}),
+			SubnetId: aws.String(appConfig.Network),
 		},
 
 		Type: aws.String("one-time"),
 		InstanceCount: aws.Int64(1),
-		SpotPrice: aws.String(strconv.FormatFloat(float64(price), 'f', 4, 32)),
+		SpotPrice: aws.String(strconv.FormatFloat(float64(engine.spotPrice), 'f', 4, 32)),
 	}
 
 	runResult, err := svc.RequestSpotInstances(&params)
