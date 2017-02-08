@@ -105,6 +105,7 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 
 			application.MinDeployment = object.MinDeployment
 			application.DesiredDeployment = object.DesiredDeployment
+			application.Enabled = object.Enabled
 			api.configurationStore.Save()
 		}
 
