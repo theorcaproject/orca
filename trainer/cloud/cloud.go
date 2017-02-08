@@ -141,6 +141,7 @@ func (cloud *CloudProvider) GetAllChanges() []*model.ChangeServer {
 }
 
 func (cloud* CloudProvider) RemoveChange(changeId string){
+	fmt.Println(fmt.Sprintf("CloudProvider RemoveChange: %s", changeId))
 	newChanges := make([]*model.ChangeServer, 0)
 	for _, change := range cloud.Changes {
 		if change.Id != changeId {
@@ -163,6 +164,7 @@ func (cloud* CloudProvider) RemoveChange(changeId string){
 }
 
 func (cloud* CloudProvider) AddChange(change *model.ChangeServer){
+	fmt.Println(fmt.Sprintf("CloudProvider AddChange: %+v", change))
 	cloud.Changes = append(cloud.Changes, change)
 }
 
