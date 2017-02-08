@@ -51,6 +51,9 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 				newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroup)
 			} else {
 				newHost = cloud.Engine.SpawnSpotInstanceSync("", change.Network, change.SecurityGroup)
+				if newHost.Id == "" {
+					newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroup)
+				}
 			}
 			if newHost.Id != "" {
 				stateStore.HostInit(newHost)
