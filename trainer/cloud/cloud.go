@@ -52,6 +52,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 			} else {
 				newHost = cloud.Engine.SpawnSpotInstanceSync("", change.Network, change.SecurityGroup)
 				if newHost.Id == "" {
+					fmt.Println("Spot instance launch failed, starting normal instance instead")
 					newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroup)
 				}
 			}

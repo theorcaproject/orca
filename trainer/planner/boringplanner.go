@@ -192,6 +192,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 	}
 
 	if requiresMinServer {
+		fmt.Println("Planner: missing min server...")
 		change := PlanningChange{
 			Type: "new_server",
 			Id:uuid.NewV4().String(),
@@ -204,6 +205,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 	}
 
 	if requiresSpotServer {
+		fmt.Println("Planner: missing spot server...")
 		change := PlanningChange{
 			Type: "new_server",
 			Id:uuid.NewV4().String(),
