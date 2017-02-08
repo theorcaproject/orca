@@ -84,15 +84,22 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, netwo
 	fmt.Println("AwsCloudEngine SpawnInstanceSync called with ", instanceType)
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 
-	runResult, err := svc.RunInstances(&ec2.RunInstancesInput{
+	conf := &ec2.RunInstancesInput{
 		ImageId:      aws.String(engine.awsBaseAmi),
 		InstanceType: aws.String(string(instanceType)),
 		MinCount:     aws.Int64(1),
 		MaxCount:     aws.Int64(1),
 		KeyName:      &engine.sshKey,
-		SecurityGroupIds: aws.StringSlice([]string{securityGroup}),
-		SubnetId: aws.String(network),
-	})
+	}
+
+	if network != "" {
+		conf.SubnetId = aws.String(network)
+	}
+	if securityGroup != "" {
+		conf.SecurityGroupIds = aws.StringSlice([]string{securityGroup})
+	}
+
+	runResult, err := svc.RunInstances(conf)
 
 	if err != nil {
 		fmt.Println("AwsCloudEngine SpawnInstanceSync encountered an error ", err)
@@ -175,13 +182,18 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network str
 			ImageId:      aws.String(engine.awsBaseAmi),
 			InstanceType: aws.String(string(ty)),
 			KeyName:      &engine.sshKey,
-			SecurityGroupIds: aws.StringSlice([]string{securityGroup}),
-			SubnetId: aws.String(network),
 		},
 
 		Type: aws.String("one-time"),
 		InstanceCount: aws.Int64(1),
 		SpotPrice: aws.String(strconv.FormatFloat(float64(engine.spotPrice), 'f', 4, 32)),
+	}
+
+	if network != "" {
+		params.LaunchSpecification.SubnetId = aws.String(network)
+	}
+	if securityGroup != "" {
+		params.LaunchSpecification.SecurityGroupIds = aws.StringSlice([]string{securityGroup})
 	}
 
 	runResult, err := svc.RequestSpotInstances(&params)
