@@ -105,14 +105,14 @@ func main() {
 							"application": change.Name,
 							"host": change.HostId,
 						}})
-
+	``					fmt.Println(fmt.Sprintf("Application change event %s timed out, event type was %s for application %s on host %s", change.Id, change.Type, change.Name, change.HostId))
 						state_store.RemoveChange(host.Id, change.Id)
 					}
 				}
 			}
 
 			for _, change := range cloud_provider.GetAllChanges() {
-					if host, exists:= state_store.GetAllHosts()["change.NewHostId"]; exists && host.State == "initializing" {
+					if host, exists:= state_store.GetAllHosts()[change.NewHostId]; exists && host.State == "initializing" {
 						fmt.Println(fmt.Sprintf("Host %s is still initializing, skipping timeout check", host.Id))
 						continue
 					}
@@ -122,7 +122,7 @@ func main() {
 							"message": fmt.Sprintf("Server change event %s timed out, event type was %s with hostid %s", change.Id, change.Type, change.NewHostId),
 							"host": change.NewHostId,
 						}})
-
+						fmt.Println(fmt.Sprintf("Server change event %s timed out, event type was %s with hostid %s", change.Id, change.Type, change.NewHostId),)
 						cloud_provider.RemoveChange(change.Id)
 					}
 			}
