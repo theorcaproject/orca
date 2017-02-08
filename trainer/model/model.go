@@ -92,7 +92,7 @@ type Host struct {
 	SecurityGroups []string
 }
 
-func (host *Host) HasApp(name string, version string) bool {
+func (host *Host) HasApp(name string) bool {
 	for _, runningApplicationState := range host.Apps {
 		if (runningApplicationState.Name == name && runningApplicationState.State == "running") {
 			return true

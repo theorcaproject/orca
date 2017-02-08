@@ -43,7 +43,7 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 	the min on older versions during an upgrade. Upgrades should be done on new hosts without impacting
 	the old versions.
 	*/
-	if host.HasApp(app.Name, app.GetLatestVersion()) {
+	if host.HasApp(app.Name) {
 		return false
 	}
 	if host.Network != app.GetLatestConfiguration().Network {
@@ -177,6 +177,22 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 						ret = append(ret, change)
 						break
 					}
+				}
+			}
+		}
+
+		//If we are running older version of the application, we can nuke them if the new versions needs are meet
+		if currentCount >= applicationConfiguration.DesiredDeployment && currentCount >= applicationConfiguration.MinDeployment {
+			for _, hostEntity := range currentState.GetAllHosts() {
+				if hostEntity.HasApp(name) && !hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+					change := PlanningChange{
+						Type: "remove_application",
+						ApplicationName: name,
+						HostId: hostEntity.Id,
+						Id:uuid.NewV4().String(),
+					}
+
+					ret = append(ret, change)
 				}
 			}
 		}
