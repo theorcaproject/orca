@@ -122,6 +122,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 
 func (cloud *CloudProvider) NotifyHostCheckIn(host *model.Host){
 	/* Search for changes related to this instance */
+	fmt.Println(fmt.Sprintf("Host checkin: %+v", host))
 	for _, change := range cloud.Changes {
 		if change.Type == "new_server" {
 			if change.NewHostId == host.Id {

@@ -112,6 +112,10 @@ func main() {
 			}
 
 			for _, change := range cloud_provider.GetAllChanges() {
+					if host, exists:= state_store.GetAllHosts()["change.NewHostId"]; exists && host.State == "initializing" {
+						fmt.Println(fmt.Sprintf("Host %s is still initializing, skipping timeout check", host.Id))
+						continue
+					}
 					parsedTime, _ := time.Parse(time.RFC3339Nano, change.Time)
 					if (time.Now().Unix() - parsedTime.Unix()) > MAX_ELAPSED_TIME_FOR_SERVER_CHANGE {
 						state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
