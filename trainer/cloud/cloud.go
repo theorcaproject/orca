@@ -125,6 +125,7 @@ func (cloud *CloudProvider) NotifyHostCheckIn(host *model.Host){
 	fmt.Println(fmt.Sprintf("Host checkin: %+v", host))
 	for _, change := range cloud.Changes {
 		if change.Type == "new_server" {
+			fmt.Println(fmt.Sprintf("Got new_server change on checkin: %s, event host: %s", host.Id, change.NewHostId))
 			if change.NewHostId == host.Id {
 				host.SpotInstance = !change.RequiresReliableInstance
 				cloud.RemoveChange(change.Id)
