@@ -37,7 +37,13 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 	if host.State != "running" {
 		return false
 	}
-	if host.HasAppWithSameVersion(app.Name, app.GetLatestVersion()) {
+
+	/*
+	We should not take the version into consideration here, if we do then we will break
+	the min on older versions during an upgrade. Upgrades should be done on new hosts without impacting
+	the old versions.
+	*/
+	if host.HasApp(app.Name, app.GetLatestVersion()) {
 		return false
 	}
 	if host.Network != app.GetLatestConfiguration().Network {
