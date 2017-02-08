@@ -111,6 +111,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 				}
 			}
 		} else if change.Type == "remove" {
+			fmt.Println("Got remove change, will terminate instance")
 			cloud.Engine.TerminateInstance(HostId(change.NewHostId))
 			cloud.RemoveChange(change.Id)
 

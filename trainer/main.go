@@ -125,6 +125,9 @@ func main() {
 
 			/* Look for host timeouts */
 			for _, host := range state_store.GetAllHosts() {
+				if host.State == "initializing" {
+					continue
+				}
 				parsedTime, _ := time.Parse(time.RFC3339Nano, host.LastSeen)
 				if (time.Now().Unix() - parsedTime.Unix()) > MAX_ELAPSED_TIME_FOR_HOST_CHECKIN {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
@@ -138,7 +141,7 @@ func main() {
 						Time:time.Now().Format(time.RFC3339Nano),
 						NewHostId:host.Id,
 					}, state_store)
-
+					fmt.Println(fmt.Sprintf("Host %s timed out. Last checkin: %d now: %d", host.Id, parsedTime.Unix(), time.Now().Unix()))
 					state_store.RemoveHost(host.Id)
 				}
 			}

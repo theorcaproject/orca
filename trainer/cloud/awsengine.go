@@ -127,6 +127,7 @@ func (aws *AwsCloudEngine) GetInstanceType(HostId) InstanceType {
 }
 
 func (engine *AwsCloudEngine) TerminateInstance(hostId HostId) bool {
+	fmt.Println(fmt.Sprintf("TERMINATE INSTANCE: %s", hostId))
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 	_, err := svc.TerminateInstances(&ec2.TerminateInstancesInput{
 		InstanceIds: aws.StringSlice([]string{string(hostId)}),
