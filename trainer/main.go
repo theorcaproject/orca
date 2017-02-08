@@ -53,6 +53,8 @@ func main() {
 	var instanceUsername = flag.String("instanceusername", "ubuntu", "User account for the AMI")
 	var uri = flag.String("uri", "http://localhost:5001", "Public Trainer Endpoint")
 	var awsSpotPrice = flag.Float64("spotbid", 0.5, "AWS Spot Instance Bid")
+	var instanceType = flag.String("instancetype", "t2.micro", "Regular instace type")
+	var spotInstanceType = flag.String("spotinstancetype", "c4.large", "Spot instance type")
 
 	flag.Parse()
 
@@ -84,7 +86,8 @@ func main() {
 
 	if (*cloudProvider) == "aws" {
 		awsEngine := cloud.AwsCloudEngine{}
-		awsEngine.Init((*awsAccessKeyId), (*awsAccessKeySecret), (*awsRegion), (*awsBaseAmi), (*awsSshKey),(*awsSshKeyPath), (*awsSecurityGroupId), (*awsSpotPrice))
+		awsEngine.Init((*awsAccessKeyId), (*awsAccessKeySecret), (*awsRegion), (*awsBaseAmi), (*awsSshKey), (*awsSshKeyPath),
+			(*awsSecurityGroupId), (*awsSpotPrice), (*instanceType), (*spotInstanceType))
 		cloud_provider.Init(&awsEngine, (*instanceUsername), (*uri))
 	}
 
@@ -160,6 +163,8 @@ func main() {
 						Type: "new_server",
 						Time:time.Now().Format(time.RFC3339Nano),
 						RequiresReliableInstance: change.RequiresReliableInstance,
+						Network: change.Network,
+						SecurityGroup: change.SecurityGroup,
 					}, state_store)
 
 					continue

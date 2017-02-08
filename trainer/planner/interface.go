@@ -35,7 +35,8 @@ type PlanningChange struct {
 	InstanceId string
 	InstanceNeeds string
 	RequiresReliableInstance bool
-
+	Network string
+	SecurityGroup string
 }
 
 type Planner interface {

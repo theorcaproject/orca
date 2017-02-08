@@ -60,7 +60,7 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 	})
 
 	res := planner.Plan(config, stateStore)
-	if len(res) != 1 || res[0].Type != "new_server" {
+	if len(res) != 1 || res[0].Type != "new_server"  || res[0].Network == "" {
 		t.Errorf("%+v", res);
 	}
 
@@ -134,7 +134,7 @@ func TestPlan_spawnDesiredHosts(t *testing.T) {
 	})
 
 	res := planner.Plan(config, stateStore)
-	if len(res) != 1 || res[0].Type != "new_server" {
+	if len(res) != 1 || res[0].Type != "new_server" || res[0].Network != "network1"  {
 		t.Errorf("%+v", res);
 	}
 
@@ -152,7 +152,7 @@ func TestPlan_spawnDesiredHosts(t *testing.T) {
 		ChangesApplied: applied,
 	})
 	res2 := planner.Plan(config, stateStore)
-	if len(res2) != 1 || res2[0].Type != "new_server" || res2[0].RequiresReliableInstance {
+	if len(res2) != 1 || res2[0].Type != "new_server" || res2[0].RequiresReliableInstance || res2[0].Network != "network1"  {
 		t.Errorf("%+v", stateStore);
 		t.Errorf("%+v", res2);
 	}
@@ -165,7 +165,7 @@ func TestPlan_spawnDesiredHosts(t *testing.T) {
 		ChangesApplied: applied2,
 	})
 	res3 := planner.Plan(config, stateStore)
-	if len(res3) != 1 || res3[0].Type != "new_server" || res3[0].RequiresReliableInstance {
+	if len(res3) != 1 || res3[0].Type != "new_server" || res3[0].RequiresReliableInstance || res3[0].Network != "network1" {
 		t.Errorf("%+v", stateStore);
 		t.Errorf("%+v", res3);
 	}

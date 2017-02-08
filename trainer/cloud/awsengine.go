@@ -22,10 +22,13 @@ type AwsCloudEngine struct {
 	sshKey             string
 	sshKeyPath         string
 	securityGroupId    string
-	spotPrice          float32
+	spotPrice          float64
+	instanceType       string
+	spotInstanceType   string
 }
 
-func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string, awsRegion string, awsBaseAmi string, sshKey string, sshKeyPath string, securityGroupId string, spotPrice float32) {
+func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string, awsRegion string, awsBaseAmi string,
+sshKey string, sshKeyPath string, securityGroupId string, spotPrice float64, instanceType string, spotInstanceType string) {
 	aws.awsAccessKeySecret = awsAccessKeySecret
 	aws.awsAccessKeyId = awsAccessKeyId
 	aws.awsRegion = awsRegion
@@ -34,6 +37,8 @@ func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string
 	aws.sshKeyPath = sshKeyPath
 	aws.securityGroupId = securityGroupId
 	aws.spotPrice = spotPrice
+	aws.instanceType = instanceType
+	aws.spotInstanceType = spotInstanceType
 
 	//TODO: This is amazingly shitty, but because the aws api sucks and I have no patience its the approach for now
 	os.Setenv("AWS_ACCESS_KEY_ID", aws.awsAccessKeyId)
@@ -52,8 +57,8 @@ func (a *AwsCloudEngine) getInstanceInfo(hostId HostId) (*ec2.Instance, error) {
 	return res.Reservations[0].Instances[0], nil
 }
 
-func (a *AwsCloudEngine) GetIp(hostId HostId) string {
-	info, err := a.getInstanceInfo(hostId)
+func (a *AwsCloudEngine) GetIp(hostId string) string {
+	info, err := a.getInstanceInfo(HostId(hostId))
 	if err != nil || info == nil || info.PublicIpAddress == nil {
 		return ""
 	}
@@ -72,7 +77,10 @@ func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
 }
 
 
-func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, appConfig *model.VersionConfig) *model.Host {
+func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, network string, securityGroup string) *model.Host {
+	if instanceType == "" {
+		instanceType = InstanceType(engine.instanceType)
+	}
 	fmt.Println("AwsCloudEngine SpawnInstanceSync called with ", instanceType)
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 
@@ -82,8 +90,8 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, appCo
 		MinCount:     aws.Int64(1),
 		MaxCount:     aws.Int64(1),
 		KeyName:      &engine.sshKey,
-		SecurityGroupIds: aws.StringSlice([]string{appConfig.SecurityGroup}),
-		SubnetId: aws.String(appConfig.Network),
+		SecurityGroupIds: aws.StringSlice([]string{securityGroup}),
+		SubnetId: aws.String(network),
 	})
 
 	if err != nil {
@@ -98,10 +106,10 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, appCo
 	}
 
 	fmt.Println("AwsCloudEngine SpawnInstanceSync finished")
-	host := model.Host{
-		Id: id,
-		SecurityGroups: []string{appConfig.SecurityGroup},
-		Network: appConfig.Network,
+	host := &model.Host{
+		Id: string(id),
+		SecurityGroups: []string{securityGroup},
+		Network: network,
 	}
 	return host
 }
@@ -156,7 +164,10 @@ func (engine *AwsCloudEngine) DeRegisterWithLb(hostId string, lbId string) {
 	}
 }
 
-func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType,  appConfig *model.VersionConfig) HostId {
+func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network string, securityGroup string) *model.Host {
+	if ty == "" {
+		ty = InstanceType(engine.spotInstanceType)
+	}
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 
 	params := ec2.RequestSpotInstancesInput{
@@ -164,8 +175,8 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType,  appConfig 
 			ImageId:      aws.String(engine.awsBaseAmi),
 			InstanceType: aws.String(string(ty)),
 			KeyName:      &engine.sshKey,
-			SecurityGroupIds: aws.StringSlice([]string{appConfig.SecurityGroup}),
-			SubnetId: aws.String(appConfig.Network),
+			SecurityGroupIds: aws.StringSlice([]string{securityGroup}),
+			SubnetId: aws.String(network),
 		},
 
 		Type: aws.String("one-time"),
@@ -176,7 +187,7 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType,  appConfig 
 	runResult, err := svc.RequestSpotInstances(&params)
 	if err != nil {
 		fmt.Println("AwsCloudEngine SpawnSpotInstance encountered an error ", err)
-		return ""
+		return &model.Host{}
 	}
 	if len(runResult.SpotInstanceRequests) == 1 {
 		spotId := runResult.SpotInstanceRequests[0].SpotInstanceRequestId
@@ -192,16 +203,24 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType,  appConfig 
 				time.Sleep(2 * time.Second)
 				continue
 			}
-			return hostId
+			return  &model.Host{
+				Id: string(hostId),
+				SecurityGroups: []string{securityGroup},
+				Network: network,
+			}
 		}
 
 		if err != nil {
 			fmt.Println("Could not get instance id of spot request")
-			return ""
+			return &model.Host{}
 		}
-		return hostId
+		return  &model.Host{
+			Id: string(hostId),
+			SecurityGroups: []string{securityGroup},
+			Network: network,
+		}
 	}
-	return ""
+	return &model.Host{}
 }
 
 func (engine *AwsCloudEngine) GetSpotInstanceHostId(spotId string) (HostId, error) {

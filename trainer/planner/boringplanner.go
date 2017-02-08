@@ -56,6 +56,9 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 
 	requiresMinServer := false
 	requiresSpotServer := false
+	serverNetwork := ""
+	serverSecurityGroup := ""
+
 
 	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
 		currentCount := 0
@@ -84,6 +87,8 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 
 			if !foundServer {
 				requiresMinServer = true
+				serverNetwork = applicationConfiguration.GetLatestConfiguration().Network
+				serverSecurityGroup = applicationConfiguration.GetLatestConfiguration().SecurityGroup
 			}
 		}
 
@@ -106,6 +111,8 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 			}
 			if !foundServer {
 				requiresSpotServer = true
+				serverNetwork = applicationConfiguration.GetLatestConfiguration().Network
+				serverSecurityGroup = applicationConfiguration.GetLatestConfiguration().SecurityGroup
 			}
 		}
 
@@ -189,6 +196,8 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 			Type: "new_server",
 			Id:uuid.NewV4().String(),
 			RequiresReliableInstance: true,
+			Network: serverNetwork,
+			SecurityGroup: serverSecurityGroup,
 		}
 
 		ret = append(ret, change)
@@ -199,6 +208,8 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 			Type: "new_server",
 			Id:uuid.NewV4().String(),
 			RequiresReliableInstance: false,
+			Network: serverNetwork,
+			SecurityGroup: serverSecurityGroup,
 		}
 
 		ret = append(ret, change)

@@ -46,11 +46,11 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 	go func() {
 		/* Here we can spawn a new server */
 		if change.Type == "new_server" {
-			var newHost model.Host
+			var newHost *model.Host
 			if change.RequiresReliableInstance {
-				newHost = cloud.Engine.SpawnInstanceSync("t2.micro")
+				newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroup)
 			} else {
-				newHost = cloud.Engine.SpawnSpotInstanceSync("m4.large")
+				newHost = cloud.Engine.SpawnSpotInstanceSync("", change.Network, change.SecurityGroup)
 			}
 			if newHost.Id != "" {
 				stateStore.HostInit(newHost)

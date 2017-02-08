@@ -1,15 +1,17 @@
 package cloud
 
+import "orca/trainer/model"
+
 type InstanceType string
 type HostId string
 
 type CloudEngine interface {
-	SpawnInstanceSync(InstanceType) HostId
-	SpawnSpotInstanceSync(InstanceType) HostId
+	SpawnInstanceSync(InstanceType, string, string) *model.Host
+	SpawnSpotInstanceSync(InstanceType, string, string) *model.Host
 	GetInstanceType(HostId) InstanceType
 	TerminateInstance(HostId) bool
 
-	GetIp(hostId HostId) string
+	GetIp(hostId string) string
 
 	GetPem() string
 	RegisterWithLb(hostId string, elb string)

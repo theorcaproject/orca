@@ -40,6 +40,8 @@ type ChangeServer struct {
 	Time string
 	NewHostId string
 	RequiresReliableInstance bool
+	Network string
+	SecurityGroup string
 
 	// Internal Status Information
 	InstanceLaunched bool
