@@ -71,7 +71,8 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 		if currentCount < applicationConfiguration.MinDeployment {
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+				if hostIsSuitable(hostEntity, applicationConfiguration) {
+					fmt.Println(fmt.Sprintf("Found host for min deployment of app %s", applicationConfiguration.Name))
 					change := PlanningChange{
 						Type: "add_application",
 						ApplicationName: name,
@@ -97,6 +98,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
 				if hostIsSuitable(hostEntity, applicationConfiguration) {
+					fmt.Println(fmt.Sprintf("Found host for desired deployment of app %s", applicationConfiguration.Name))
 					change := PlanningChange{
 						Type: "add_application",
 						ApplicationName: name,

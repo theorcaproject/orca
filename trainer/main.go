@@ -112,7 +112,7 @@ func main() {
 			}
 
 			for _, change := range cloud_provider.GetAllChanges() {
-					if host, exists:= state_store.GetAllHosts()[change.NewHostId]; exists && host.State == "initializing" {
+					if host, exists := state_store.GetAllHosts()[change.NewHostId]; exists && host.State == "initializing" {
 						fmt.Println(fmt.Sprintf("Host %s is still initializing, skipping timeout check", host.Id))
 						continue
 					}
