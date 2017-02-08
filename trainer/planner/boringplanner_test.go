@@ -78,8 +78,8 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 		ChangesApplied: applied,
 	})
 	res2 := planner.Plan(config, stateStore)
-	if len(res2) != 1 || res2[0].Type != "new_server" || !res2[0].RequiresReliableInstance {
-		t.Errorf("%+v", stateStore);
+	if len(res2) != 2 || res2[0].Type != "add_application" || res2[0].RequiresReliableInstance {
+		t.Errorf("%+v", stateStore.GetAllHosts()["host1"]);
 		t.Errorf("%+v", res2);
 	}
 

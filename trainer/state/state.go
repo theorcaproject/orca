@@ -22,6 +22,7 @@ import (
 	"errors"
 	"time"
 	"orca/trainer/model"
+	"fmt"
 )
 
 type StateStore struct {
@@ -89,6 +90,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 func (store *StateStore) HasChanges() bool {
 	for _, host := range store.hosts {
 		if len(host.Changes) > 0 {
+			fmt.Println(fmt.Sprintf("State has changes: %+v", host.Changes))
 			return true;
 		}
 	}

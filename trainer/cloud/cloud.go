@@ -125,6 +125,7 @@ func (cloud *CloudProvider) NotifyHostCheckIn(host *model.Host){
 	fmt.Println(fmt.Sprintf("Host checkin: %+v", host))
 	for _, change := range cloud.Changes {
 		if change.Type == "new_server" {
+			fmt.Println(fmt.Sprintf("Got new_server change on checkin: %s, change: %+v", host.Id, change))
 			if change.NewHostId == host.Id {
 				host.SpotInstance = !change.RequiresReliableInstance
 				cloud.RemoveChange(change.Id)
@@ -147,18 +148,6 @@ func (cloud* CloudProvider) RemoveChange(changeId string){
 	for _, change := range cloud.Changes {
 		if change.Id != changeId {
 			newChanges = append(newChanges, change)
-		}else{
-			// Found the change:
-			if !change.RequiresReliableInstance {
-				change.RequiresReliableInstance = false
-
-				state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-					"message": fmt.Sprintf("Failed to launch spot instance, removing spot requirement and attempting to launch again"),
-					"host": change.NewHostId,
-				}})
-
-				newChanges = append(newChanges, change)
-			}
 		}
 	}
 	cloud.Changes = newChanges
