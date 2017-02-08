@@ -79,10 +79,10 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 	}
 	host.LastSeen = time.Now().Format(time.RFC3339Nano)
 	host.Apps = make([]model.Application, 0)
+	host.State = "running"
 	for _, appStateFromHost := range checkin.State {
 		host.Apps = append(host.Apps, appStateFromHost.Application)
 	}
-
 	return store.GetConfiguration(hostId)
 }
 
