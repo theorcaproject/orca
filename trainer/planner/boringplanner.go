@@ -52,6 +52,7 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 }
 
 func (planner *BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+	fmt.Println("Starting BoringPlanner")
 	ret := make([]PlanningChange, 0)
 
 	requiresMinServer := false
