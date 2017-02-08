@@ -112,6 +112,10 @@ func (host *Host) HasAppWithSameVersion(name string, version string) bool {
 
 
 type DockerConfig struct {
+	Username   string
+	Password   string
+	Email      string
+	Server     string
 	Tag        string
 	Repository string
 	Reference  string
