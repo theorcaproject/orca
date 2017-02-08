@@ -218,8 +218,9 @@ func main() {
 					}})
 
 					cloud_provider.ActionChange(&model.ChangeServer{
-						Id:uuid.NewV4().String(),
+						Id: change.Id,
 						Type: "remove",
+						NewHostId:change.HostId,
 						Time:time.Now().Format(time.RFC3339Nano),
 					}, state_store)
 					continue
