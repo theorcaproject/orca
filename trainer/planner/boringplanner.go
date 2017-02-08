@@ -68,6 +68,10 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 
 
 	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
+		if !applicationConfiguration.Enabled {
+			continue
+		}
+
 		currentCount := 0
 		for _, hostEntity := range currentState.GetAllHosts() {
 			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
@@ -196,24 +200,6 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 				}
 			}
 		}
-
-		//If currentCount is greater than the Min, but desired is fine, then kill some nodes
-		//if currentCount > applicationConfiguration.MinDeployment && currentCount <= applicationConfiguration.DesiredDeployment {
-		//
-		//	for _, hostEntity := range currentState.GetAllHosts() {
-		//		if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
-		//			change := PlanningChange{
-		//				Type: "remove_application",
-		//				ApplicationName: name,
-		//				HostId: hostEntity.Id,
-		//				Id:uuid.NewV4().String(),
-		//			}
-		//
-		//			ret = append(ret, change)
-		//			break
-		//		}
-		//	}
-		//}
 	}
 
 	if requiresMinServer {

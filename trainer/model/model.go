@@ -175,6 +175,8 @@ type ApplicationConfiguration struct {
 	DesiredDeployment int
 	DeploymentSchedule schedule.DeploymentSchedule
 	Config map[string]VersionConfig
+
+	Enabled bool
 }
 
 func (app *ApplicationConfiguration) GetLatestVersion() string {
