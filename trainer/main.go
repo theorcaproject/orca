@@ -105,7 +105,7 @@ func main() {
 							"application": change.Name,
 							"host": change.HostId,
 						}})
-	``					fmt.Println(fmt.Sprintf("Application change event %s timed out, event type was %s for application %s on host %s", change.Id, change.Type, change.Name, change.HostId))
+						fmt.Println(fmt.Sprintf("Application change event %s timed out, event type was %s for application %s on host %s", change.Id, change.Type, change.Name, change.HostId))
 						state_store.RemoveChange(host.Id, change.Id)
 					}
 				}
