@@ -154,7 +154,7 @@ func main() {
 			
 			/* Can we actually run the planner ? */
 			if(state_store.HasChanges() || cloud_provider.HasChanges()){
-				fmt.Println("Have Changes, wont plan... State: %+v, Cloud: %+v")
+				fmt.Println("Have Changes, wont plan...")
 				for _, change := range cloud_provider.Changes {
 					fmt.Println(fmt.Sprintf("%+v", change))
 					fmt.Println(fmt.Sprintf("%s", change.Id))
