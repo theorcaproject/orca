@@ -96,7 +96,6 @@ func main() {
 		for {
 			<- plannerAndTimeoutsTicker.C
 			if (startTime.Unix() + 2 * MAX_ELAPSED_TIME_FOR_HOST_CHECKIN > time.Now().Unix()) {
-				fmt.Println("Waiting for hosts to check in...")
 				continue
 			}
 			/* Check for timeouts */

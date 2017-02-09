@@ -64,6 +64,22 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 	return false
 }
 
+func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, currentState *state.StateStore) bool {
+	instanceCount := 0;
+	for _, hostEntity := range currentState.GetAllHosts() {
+		if hostEntity.SpotInstance {
+			continue
+		}
+
+		/* Only use reserved instances when working with the min count */
+		if hostEntity.HasAppWithSameVersion(applicationConfiguration.Name, applicationConfiguration.GetLatestVersion()) {
+			instanceCount += 1
+		}
+	}
+
+	return instanceCount >= applicationConfiguration.MinDeployment
+}
+
 func (planner *BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	fmt.Println("Starting BoringPlanner")
 	ret := make([]PlanningChange, 0)
@@ -86,10 +102,11 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 			}
 		}
 
-		if currentCount < applicationConfiguration.MinDeployment {
+		if !isMinSatisfied(applicationConfiguration, &currentState) {
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if hostIsSuitable(hostEntity, applicationConfiguration) {
+				/* Only use reserved instances when working with the min count */
+				if hostIsSuitable(hostEntity, applicationConfiguration) && !hostEntity.SpotInstance {
 					fmt.Println(fmt.Sprintf("Found host for min deployment of app %s", applicationConfiguration.Name))
 					change := PlanningChange{
 						Type: "add_application",
