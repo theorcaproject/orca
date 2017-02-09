@@ -48,7 +48,6 @@ func main() {
 	var awsBaseAmi = flag.String("awsbaseami", "", "Amazon Base AMI")
 	var awsSshKey = flag.String("awssshkey", "", "Amazon SSH Key")
 	var awsSshKeyPath = flag.String("awssshkeypath", "", "Amazon SSH Key Absolute Path")
-	var awsSecurityGroupId = flag.String("awssgroup", "", "Amazon Security Group")
 	var plannerAlg = flag.String("planner", "boringplanner", "Planning Algorithm")
 	var instanceUsername = flag.String("instanceusername", "ubuntu", "User account for the AMI")
 	var uri = flag.String("uri", "http://localhost:5001", "Public Trainer Endpoint")
@@ -87,7 +86,7 @@ func main() {
 	if (*cloudProvider) == "aws" {
 		awsEngine := cloud.AwsCloudEngine{}
 		awsEngine.Init((*awsAccessKeyId), (*awsAccessKeySecret), (*awsRegion), (*awsBaseAmi), (*awsSshKey), (*awsSshKeyPath),
-			(*awsSecurityGroupId), (*awsSpotPrice), (*instanceType), (*spotInstanceType))
+			(*awsSpotPrice), (*instanceType), (*spotInstanceType))
 		cloud_provider.Init(&awsEngine, (*instanceUsername), (*uri))
 	}
 
@@ -175,7 +174,7 @@ func main() {
 						Time:time.Now().Format(time.RFC3339Nano),
 						RequiresReliableInstance: change.RequiresReliableInstance,
 						Network: change.Network,
-						SecurityGroup: change.SecurityGroup,
+						SecurityGroups: change.SecurityGroups,
 					}, state_store)
 
 					continue

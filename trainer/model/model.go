@@ -41,7 +41,7 @@ type ChangeServer struct {
 	NewHostId string
 	RequiresReliableInstance bool
 	Network string
-	SecurityGroup string
+	SecurityGroups []SecurityGroup
 
 	// Internal Status Information
 	InstanceLaunched bool
@@ -89,7 +89,7 @@ type Host struct {
 	Changes   []ChangeApplication
 	Resources HostResources
 	SpotInstance bool
-	SecurityGroups []string
+	SecurityGroups []SecurityGroup
 }
 
 func (host *Host) HasApp(name string) bool {
@@ -156,13 +156,17 @@ type LoadBalancerEntry struct {
 	Domain string
 }
 
+type SecurityGroup struct {
+	Group string
+}
+
 type VersionConfig struct {
 	Version 	     string
 	DockerConfig	     DockerConfig
 	Needs 		     AppNeeds
 	LoadBalancer         []LoadBalancerEntry
 	Network              string
-	SecurityGroup        string
+	SecurityGroups       []SecurityGroup
 	PortMappings         []PortMapping
 	VolumeMappings       []VolumeMapping
 	EnvironmentVariables []EnvironmentVariable
@@ -173,6 +177,7 @@ type ApplicationConfiguration struct {
 	Name string
 	MinDeployment int
 	DesiredDeployment int
+	DisableSchedule bool
 	DeploymentSchedule schedule.DeploymentSchedule
 	Config map[string]VersionConfig
 

@@ -21,6 +21,7 @@ package planner
 import (
 	"orca/trainer/configuration"
 	"orca/trainer/state"
+	"orca/trainer/model"
 )
 
 type PlanningChange struct {
@@ -36,7 +37,7 @@ type PlanningChange struct {
 	InstanceNeeds string
 	RequiresReliableInstance bool
 	Network string
-	SecurityGroup string
+	SecurityGroups []model.SecurityGroup
 }
 
 type Planner interface {
