@@ -119,6 +119,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 				cloud.Engine.TerminateInstance(HostId(change.NewHostId))
 			}
 			cloud.RemoveChange(change.Id)
+			stateStore.RemoveHost(change.NewHostId)
 		}
 	}()
 }
