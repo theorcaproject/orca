@@ -33,6 +33,10 @@ func (store *StateStore) Init() {
 	store.hosts = make(map[string]*model.Host);
 }
 
+func (store *StateStore) Add(hostId string, host *model.Host) {
+	store.hosts[hostId] = host
+}
+
 func (store *StateStore) GetConfiguration(hostId string) (*model.Host, error) {
 	if app, ok := store.hosts[hostId]; ok {
 		return app, nil;
@@ -60,18 +64,7 @@ func (store *StateStore) HostInit(host *model.Host) {
 }
 
 func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDataPackage) (*model.Host, error) {
-	host, err := store.GetConfiguration(hostId)
-	if err != nil {
-		host = &model.Host{
-			Id: hostId, LastSeen: "", FirstSeen: time.Now().Format(time.RFC3339Nano), State: "running", Apps: []model.Application{}, Changes: []model.ChangeApplication{}, Resources: model.HostResources{},
-		}
-		store.hosts[hostId] = host
-
-		Audit.Insert__AuditEvent(AuditEvent{Details:map[string]string{
-			"message": "Discovered new host " + hostId,
-			"host": hostId,
-		}})
-	}
+	host, _ := store.GetConfiguration(hostId)
 
 	for change, contains := range checkin.ChangesApplied {
 		if contains {

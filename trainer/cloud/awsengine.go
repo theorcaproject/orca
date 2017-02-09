@@ -65,6 +65,17 @@ func (a *AwsCloudEngine) GetIp(hostId string) string {
 	return string(*info.PublicIpAddress)
 }
 
+func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.SecurityGroup) {
+	info, err := a.getInstanceInfo(hostId)
+	if err != nil || info == nil || info.PublicIpAddress == nil {
+		return "", "", []model.SecurityGroup{}
+	}
+	secGrps := make([]model.SecurityGroup, 0)
+	for _, grp := range info.SecurityGroups {
+		secGrps = append(secGrps, model.SecurityGroup{Group: string(*grp.GroupId)})
+	}
+	return string(*info.PublicIpAddress), string(*info.SubnetId), secGrps
+}
 
 func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.awsRegion)}))
