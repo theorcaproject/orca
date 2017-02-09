@@ -54,6 +54,7 @@ func (a *AwsCloudEngine) getInstanceInfo(hostId HostId) (*ec2.Instance, error) {
 	if len(res.Reservations) != 1 || len(res.Reservations[0].Instances) != 1 {
 		return &ec2.Instance{}, errors.New("Wrong instance count")
 	}
+	fmt.Println(fmt.Sprintf("Got Host info: %+v", res.Reservations[0].Instances[0]))
 	return res.Reservations[0].Instances[0], nil
 }
 

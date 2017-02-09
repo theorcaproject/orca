@@ -173,6 +173,7 @@ type ApplicationConfiguration struct {
 	Name string
 	MinDeployment int
 	DesiredDeployment int
+	DisableSchedule bool
 	DeploymentSchedule schedule.DeploymentSchedule
 	Config map[string]VersionConfig
 

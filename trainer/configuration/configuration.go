@@ -34,7 +34,6 @@ import (
 type ConfigurationStore struct {
 	Configurations map[string]*model.ApplicationConfiguration;
 	AuditDatabaseUri string;
-
 	trainerConfigurationFilePath string;
 }
 
@@ -116,6 +115,9 @@ func (store *ConfigurationStore) GetAllConfiguration() (map[string]*model.Applic
 
 func (store *ConfigurationStore) ApplySchedules() {
 	for _, config := range store.Configurations {
+		if config.DisableSchedule {
+			continue
+		}
 		if config.DeploymentSchedule.Get(time.Now()) > config.MinDeployment {
 			config.DesiredDeployment = config.DeploymentSchedule.Get(time.Now())
 		} else {
