@@ -90,9 +90,14 @@ func main() {
 		cloud_provider.Init(&awsEngine, (*instanceUsername), (*uri))
 	}
 
+	startTime := time.Now()
 	plannerAndTimeoutsTicker := time.NewTicker(time.Second * 10)
 	go func () {
 		for {
+			if (startTime.Unix() + 2 * MAX_ELAPSED_TIME_FOR_HOST_CHECKIN > time.Now().Unix()) {
+				fmt.Println("Waiting for hosts to check in...")
+				continue
+			}
 			<- plannerAndTimeoutsTicker.C
 			/* Check for timeouts */
 			for _, host := range state_store.GetAllHosts() {
