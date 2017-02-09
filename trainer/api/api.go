@@ -28,6 +28,7 @@ import (
 	"orca/trainer/state"
 	log "orca/util/log"
 	"orca/trainer/cloud"
+	"time"
 )
 
 type Api struct {
@@ -159,6 +160,24 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&apps); err != nil {
 		ApiLogger.Infof("An error occurred while reading the application information")
+	}
+
+	_, err := api.state.GetConfiguration(hostId)
+
+	if err != nil {
+		host := &model.Host{
+			Id: hostId, LastSeen: "", FirstSeen: time.Now().Format(time.RFC3339Nano), State: "running", Apps: []model.Application{}, Changes: []model.ChangeApplication{}, Resources: model.HostResources{},
+		}
+		ip, subnet, secGrps := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
+		host.Ip = ip
+		host.Network = subnet
+		host.SecurityGroups = secGrps
+		api.state.Add(hostId, host)
+
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
+			"message": "Discovered new host " + hostId,
+			"host": hostId,
+		}})
 	}
 
 	result, err := api.state.HostCheckin(hostId, apps)
