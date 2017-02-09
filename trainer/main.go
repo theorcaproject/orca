@@ -146,7 +146,6 @@ func main() {
 						NewHostId:host.Id,
 					}, state_store)
 					fmt.Println(fmt.Sprintf("Host %s timed out. Last checkin: %d now: %d", host.Id, parsedTime.Unix(), time.Now().Unix()))
-					state_store.RemoveHost(host.Id)
 				}
 			}
 
