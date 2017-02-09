@@ -49,11 +49,14 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 	if host.Network != app.GetLatestConfiguration().Network {
 		return false
 	}
-	for _, grp := range host.SecurityGroups {
-		if grp == app.GetLatestConfiguration().SecurityGroup {
-			return true
-		}
-	}
+	//for _, grp := range host.SecurityGroups {
+		//for _, appGrps := range app.GetLatestConfiguration().SecurityGroups {
+		//	if app
+		//}
+		//if grp ==  {
+		//	return true
+		//}
+	//}
 	return false
 }
 
@@ -64,7 +67,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 	requiresMinServer := false
 	requiresSpotServer := false
 	serverNetwork := ""
-	serverSecurityGroup := ""
+	var serverSecurityGroups []model.SecurityGroup
 
 
 	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
@@ -100,7 +103,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 			if !foundServer {
 				requiresMinServer = true
 				serverNetwork = applicationConfiguration.GetLatestConfiguration().Network
-				serverSecurityGroup = applicationConfiguration.GetLatestConfiguration().SecurityGroup
+				serverSecurityGroups = applicationConfiguration.GetLatestConfiguration().SecurityGroups
 			}
 		}
 
@@ -125,7 +128,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 			if !foundServer {
 				requiresSpotServer = true
 				serverNetwork = applicationConfiguration.GetLatestConfiguration().Network
-				serverSecurityGroup = applicationConfiguration.GetLatestConfiguration().SecurityGroup
+				serverSecurityGroups = applicationConfiguration.GetLatestConfiguration().SecurityGroups
 			}
 		}
 
@@ -209,7 +212,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 			Id:uuid.NewV4().String(),
 			RequiresReliableInstance: true,
 			Network: serverNetwork,
-			SecurityGroup: serverSecurityGroup,
+			SecurityGroups: serverSecurityGroups,
 		}
 
 		ret = append(ret, change)
@@ -222,7 +225,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 			Id:uuid.NewV4().String(),
 			RequiresReliableInstance: false,
 			Network: serverNetwork,
-			SecurityGroup: serverSecurityGroup,
+			SecurityGroups: serverSecurityGroups,
 		}
 
 		ret = append(ret, change)

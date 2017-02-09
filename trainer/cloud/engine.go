@@ -6,8 +6,8 @@ type InstanceType string
 type HostId string
 
 type CloudEngine interface {
-	SpawnInstanceSync(InstanceType, string, string) *model.Host
-	SpawnSpotInstanceSync(InstanceType, string, string) *model.Host
+	SpawnInstanceSync(InstanceType, string, []model.SecurityGroup) *model.Host
+	SpawnSpotInstanceSync(InstanceType, string, []model.SecurityGroup) *model.Host
 	GetInstanceType(HostId) InstanceType
 	TerminateInstance(HostId) bool
 

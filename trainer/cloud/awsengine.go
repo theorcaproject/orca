@@ -21,21 +21,19 @@ type AwsCloudEngine struct {
 	awsBaseAmi         string
 	sshKey             string
 	sshKeyPath         string
-	securityGroupId    string
 	spotPrice          float64
 	instanceType       string
 	spotInstanceType   string
 }
 
 func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string, awsRegion string, awsBaseAmi string,
-sshKey string, sshKeyPath string, securityGroupId string, spotPrice float64, instanceType string, spotInstanceType string) {
+sshKey string, sshKeyPath string, spotPrice float64, instanceType string, spotInstanceType string) {
 	aws.awsAccessKeySecret = awsAccessKeySecret
 	aws.awsAccessKeyId = awsAccessKeyId
 	aws.awsRegion = awsRegion
 	aws.awsBaseAmi = awsBaseAmi
 	aws.sshKey = sshKey
 	aws.sshKeyPath = sshKeyPath
-	aws.securityGroupId = securityGroupId
 	aws.spotPrice = spotPrice
 	aws.instanceType = instanceType
 	aws.spotInstanceType = spotInstanceType
@@ -78,7 +76,8 @@ func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
 }
 
 
-func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, network string, securityGroup string) *model.Host {
+func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, network string, securityGroups []model.SecurityGroup) *model.Host {
+	securityGroupsStrings := make([]string, 0)
 	if instanceType == "" {
 		instanceType = InstanceType(engine.instanceType)
 	}
@@ -96,8 +95,11 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, netwo
 	if network != "" {
 		conf.SubnetId = aws.String(network)
 	}
-	if securityGroup != "" {
-		conf.SecurityGroupIds = aws.StringSlice([]string{securityGroup})
+	if len(securityGroups) > 0 {
+		for _, grp := range securityGroups {
+			securityGroupsStrings = append(securityGroupsStrings, grp.Group)
+		}
+		conf.SecurityGroupIds = aws.StringSlice(securityGroupsStrings)
 	}
 
 	runResult, err := svc.RunInstances(conf)
@@ -116,7 +118,7 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, netwo
 	fmt.Println("AwsCloudEngine SpawnInstanceSync finished")
 	host := &model.Host{
 		Id: string(id),
-		SecurityGroups: []string{securityGroup},
+		SecurityGroups: securityGroups,
 		Network: network,
 	}
 	return host
@@ -173,7 +175,8 @@ func (engine *AwsCloudEngine) DeRegisterWithLb(hostId string, lbId string) {
 	}
 }
 
-func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network string, securityGroup string) *model.Host {
+func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network string, securityGroups []model.SecurityGroup) *model.Host {
+	securityGroupsStrings := make([]string, 0)
 	if ty == "" {
 		ty = InstanceType(engine.spotInstanceType)
 	}
@@ -194,8 +197,11 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network str
 	if network != "" {
 		params.LaunchSpecification.SubnetId = aws.String(network)
 	}
-	if securityGroup != "" {
-		params.LaunchSpecification.SecurityGroupIds = aws.StringSlice([]string{securityGroup})
+	if len(securityGroups) >0 {
+		for _, grp := range securityGroups {
+			securityGroupsStrings = append(securityGroupsStrings, grp.Group)
+		}
+		params.LaunchSpecification.SecurityGroupIds = aws.StringSlice(securityGroupsStrings)
 	}
 
 	runResult, err := svc.RequestSpotInstances(&params)
@@ -219,7 +225,7 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network str
 			}
 			return  &model.Host{
 				Id: string(hostId),
-				SecurityGroups: []string{securityGroup},
+				SecurityGroups: securityGroups,
 				Network: network,
 			}
 		}
@@ -230,7 +236,7 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network str
 		}
 		return  &model.Host{
 			Id: string(hostId),
-			SecurityGroups: []string{securityGroup},
+			SecurityGroups: securityGroups,
 			Network: network,
 		}
 	}

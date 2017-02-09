@@ -48,12 +48,12 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 		if change.Type == "new_server" {
 			var newHost *model.Host
 			if change.RequiresReliableInstance {
-				newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroup)
+				newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroups)
 			} else {
-				newHost = cloud.Engine.SpawnSpotInstanceSync("", change.Network, change.SecurityGroup)
+				newHost = cloud.Engine.SpawnSpotInstanceSync("", change.Network, change.SecurityGroups)
 				if newHost.Id == "" {
 					fmt.Println("Spot instance launch failed, starting normal instance instead")
-					newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroup)
+					newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroups)
 				}
 			}
 			if newHost.Id != "" {
