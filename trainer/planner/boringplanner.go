@@ -53,7 +53,7 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 	count := 0
 	for _, appGrp := range app.GetLatestConfiguration().SecurityGroups {
 		for _, hostGrp := range host.SecurityGroups {
-			if appGrp.Group == hostGrp {
+			if appGrp.Group == hostGrp.Group {
 				count += 1
 			}
 		}
