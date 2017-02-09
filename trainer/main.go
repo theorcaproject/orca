@@ -31,9 +31,9 @@ import (
 	"orca/trainer/model"
 )
 
-const MAX_ELAPSED_TIME_FOR_APP_CHANGE = 120
+const MAX_ELAPSED_TIME_FOR_APP_CHANGE = 300
 const MAX_ELAPSED_TIME_FOR_SERVER_CHANGE = 300
-const MAX_ELAPSED_TIME_FOR_HOST_CHECKIN = 60
+const MAX_ELAPSED_TIME_FOR_HOST_CHECKIN = 300
 
 func main() {
 	fmt.Println("starting")
