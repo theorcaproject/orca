@@ -168,10 +168,11 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 		host := &model.Host{
 			Id: hostId, LastSeen: "", FirstSeen: time.Now().Format(time.RFC3339Nano), State: "running", Apps: []model.Application{}, Changes: []model.ChangeApplication{}, Resources: model.HostResources{},
 		}
-		ip, subnet, secGrps := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
+		ip, subnet, secGrps, isSpot := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
 		host.Ip = ip
 		host.Network = subnet
 		host.SecurityGroups = secGrps
+		host.SpotInstance = isSpot
 		api.state.Add(hostId, host)
 
 		state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{

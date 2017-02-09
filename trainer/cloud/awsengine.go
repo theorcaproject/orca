@@ -65,16 +65,17 @@ func (a *AwsCloudEngine) GetIp(hostId string) string {
 	return string(*info.PublicIpAddress)
 }
 
-func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.SecurityGroup) {
+func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.SecurityGroup, bool) {
 	info, err := a.getInstanceInfo(hostId)
 	if err != nil || info == nil || info.PublicIpAddress == nil {
-		return "", "", []model.SecurityGroup{}
+		return "", "", []model.SecurityGroup{}, false
 	}
 	secGrps := make([]model.SecurityGroup, 0)
 	for _, grp := range info.SecurityGroups {
 		secGrps = append(secGrps, model.SecurityGroup{Group: string(*grp.GroupId)})
 	}
-	return string(*info.PublicIpAddress), string(*info.SubnetId), secGrps
+	isSpot := string(*info.InstanceLifecycle) == "spot"
+	return string(*info.PublicIpAddress), string(*info.SubnetId), secGrps, isSpot
 }
 
 func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
@@ -274,4 +275,42 @@ func (engine *AwsCloudEngine) GetSpotInstanceHostId(spotId string) (HostId, erro
 		}
 	}
 	return "", nil
+}
+
+func (engine *AwsCloudEngine) SanityCheckHosts(hosts map[string]*model.Host) {
+	fmt.Println("Starting host sanity check")
+	for _, host := range hosts {
+		engine.doSanityCheck(host)
+	}
+}
+
+func (engine *AwsCloudEngine) doSanityCheck(host *model.Host) {
+	ip, network, securityGroups, isSpot := engine.GetHostInfo(HostId(host.Id))
+	if ip == "" || network == "" || len(securityGroups) == 0 {
+		fmt.Println(fmt.Sprintf("Host Sanity check for %s failed, could not retrive info from AWS", host))
+		return
+	}
+	if host.Ip != ip || host.Network != network || host.SpotInstance != isSpot || !securityGroupsEqual(host.SecurityGroups, securityGroups){
+		fmt.Println(fmt.Sprintf("Got different info for host %s from AWS. Host was: %s, AWS Ip: %s, Subnet: %s, SpotInstance: %t, securityGroups: %v", host.Id, host, ip, network, isSpot, securityGroups))
+		host.Ip = ip
+		host.Network = network
+		host.SpotInstance = isSpot
+		host.SecurityGroups = securityGroups
+	}
+}
+
+func securityGroupsEqual(groups []model.SecurityGroup, other []model.SecurityGroup) bool {
+	if len(groups) != len(other) {
+		return false
+	}
+
+	count := 0
+	for _, group := range groups {
+		for _, otherGroup := range other {
+			if group.Group == otherGroup.Group {
+				count += 1
+			}
+		}
+	}
+	return count == len(groups)
 }

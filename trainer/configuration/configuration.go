@@ -114,6 +114,7 @@ func (store *ConfigurationStore) GetAllConfiguration() (map[string]*model.Applic
 }
 
 func (store *ConfigurationStore) ApplySchedules() {
+	fmt.Println("Starting apply schedules")
 	for _, config := range store.Configurations {
 		if config.DisableSchedule {
 			continue
