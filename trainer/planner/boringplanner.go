@@ -58,8 +58,8 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 			}
 		}
 	}
-	if count < len(app.GetLatestConfiguration().SecurityGroups) {
-		return false
+	if count == len(app.GetLatestConfiguration().SecurityGroups) {
+		return true
 	}
 	return false
 }
