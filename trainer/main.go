@@ -94,11 +94,11 @@ func main() {
 	plannerAndTimeoutsTicker := time.NewTicker(time.Second * 10)
 	go func () {
 		for {
+			<- plannerAndTimeoutsTicker.C
 			if (startTime.Unix() + 2 * MAX_ELAPSED_TIME_FOR_HOST_CHECKIN > time.Now().Unix()) {
 				fmt.Println("Waiting for hosts to check in...")
 				continue
 			}
-			<- plannerAndTimeoutsTicker.C
 			/* Check for timeouts */
 			for _, host := range state_store.GetAllHosts() {
 				for _, change := range host.Changes {
