@@ -49,14 +49,18 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 	if host.Network != app.GetLatestConfiguration().Network {
 		return false
 	}
-	//for _, grp := range host.SecurityGroups {
-		//for _, appGrps := range app.GetLatestConfiguration().SecurityGroups {
-		//	if app
-		//}
-		//if grp ==  {
-		//	return true
-		//}
-	//}
+
+	count := 0
+	for _, appGrp := range app.GetLatestConfiguration().SecurityGroups {
+		for _, hostGrp := range host.SecurityGroups {
+			if appGrp.Group == hostGrp {
+				count += 1
+			}
+		}
+	}
+	if count < len(app.GetLatestConfiguration().SecurityGroups) {
+		return false
+	}
 	return false
 }
 
