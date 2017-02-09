@@ -85,6 +85,7 @@ type Host struct {
 	FirstSeen string
 	State     string
 	Network     string
+	Ip        string
 	Apps      []Application
 	Changes   []ChangeApplication
 	Resources HostResources

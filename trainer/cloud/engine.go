@@ -10,6 +10,7 @@ type CloudEngine interface {
 	SpawnSpotInstanceSync(InstanceType, string, []model.SecurityGroup) *model.Host
 	GetInstanceType(HostId) InstanceType
 	TerminateInstance(HostId) bool
+	GetHostInfo(HostId) (string, string, []model.SecurityGroup)
 
 	GetIp(hostId string) string
 
