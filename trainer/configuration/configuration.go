@@ -81,8 +81,9 @@ func (store* ConfigurationStore) loadFromFile(filename string) {
 }
 
 func (store* ConfigurationStore) Add(name string, config *model.ApplicationConfiguration) *model.ApplicationConfiguration{
-	state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-		"message": "Adding application " + name + " to orca",
+	state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+		Message: fmt.Sprintf("Adding application %s to orca", name),
+		Details:map[string]string{
 	}})
 
 	store.Configurations[name] = config;

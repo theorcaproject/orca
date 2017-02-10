@@ -22,7 +22,7 @@ import (
 	"time"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"fmt"
+	"bluewhale/orcahostd/logs"
 )
 
 type OrcaDb struct {
@@ -34,7 +34,18 @@ type OrcaDb struct {
 type AuditEvent struct {
 	Timestamp time.Time
 	Details   map[string]string
+	Severity  AuditSeverity
+	Message   string
 }
+
+type AuditSeverity string
+type AuditMessage string
+
+const (
+	AUDIT__ERROR=AuditSeverity("error")
+	AUDIT__INFO=AuditSeverity("info")
+	AUDIT__DEBUG=AuditSeverity("debug")
+)
 
 var Audit OrcaDb
 
@@ -61,7 +72,14 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 	if !db.enabled {
 		return
 	}
-	fmt.Printf("AUDIT: %s\n", event.Details["message"])
+
+	if (event.Severity == AUDIT__ERROR) {
+		logs.AuditLogger.Errorln(event.Message)
+	}else if event.Severity == AUDIT__INFO {
+		logs.AuditLogger.Infoln(event.Message)
+	}else if event.Severity == AUDIT__DEBUG {
+		logs.AuditLogger.Debugln(event.Message)
+	}
 
 	if db.session == nil {
 		return

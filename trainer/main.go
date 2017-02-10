@@ -31,34 +31,34 @@ import (
 	"orca/trainer/model"
 )
 
-const MAX_ELAPSED_TIME_FOR_APP_CHANGE = 300
-const MAX_ELAPSED_TIME_FOR_SERVER_CHANGE = 300
-const MAX_ELAPSED_TIME_FOR_HOST_CHECKIN = 300
-
 func main() {
 	fmt.Println("starting")
-	var configurationRoot = flag.String("configroot", "/orca/config", "Configuration Root Directory")
-	var apiPort = flag.Int("port", 5001, "API Port")
 
-	//AWS Properties
-	var cloudProvider = flag.String("cloudprovider", "aws", "Cloud Provider")
-	var awsAccessKeyId = flag.String("awsaccesskeyid", "", "Amazon AWS Access Key")
-	var awsAccessKeySecret = flag.String("awsaccesskeysecret", "", "Amazon AWS Access Key Secret")
-	var awsRegion = flag.String("awsregion", "", "Amazon Region")
-	var awsBaseAmi = flag.String("awsbaseami", "", "Amazon Base AMI")
-	var awsSshKey = flag.String("awssshkey", "", "Amazon SSH Key")
-	var awsSshKeyPath = flag.String("awssshkeypath", "", "Amazon SSH Key Absolute Path")
-	var plannerAlg = flag.String("planner", "boringplanner", "Planning Algorithm")
-	var instanceUsername = flag.String("instanceusername", "ubuntu", "User account for the AMI")
-	var uri = flag.String("uri", "http://localhost:5001", "Public Trainer Endpoint")
-	var awsSpotPrice = flag.Float64("spotbid", 0.5, "AWS Spot Instance Bid")
-	var instanceType = flag.String("instancetype", "t2.micro", "Regular instace type")
-	var spotInstanceType = flag.String("spotinstancetype", "c4.large", "Spot instance type")
+	/* TODO: Probably move this guy to a configuration file of its own? */
+	globalSettings := configuration.GlobalSettings{}
+	globalSettings.CloudProvider = (*flag.String("cloudprovider", "aws", "Cloud Provider"))
+	globalSettings.AWSAccessKeyId = (*flag.String("awsaccesskeyid", "", "Amazon AWS Access Key"))
+	globalSettings.AWSAccessKeySecret = (*flag.String("awsaccesskeysecret", "", "Amazon AWS Access Key Secret"))
+	globalSettings.AWSRegion = (*flag.String("awsregion", "", "Amazon Region"))
+	globalSettings.AWSBaseAmi = (*flag.String("awsbaseami", "", "Amazon Base AMI"))
+	globalSettings.AWSSSHKey = (*flag.String("awssshkey", "", "Amazon SSH Key"))
+	globalSettings.AWSSSHKeyPath = (*flag.String("awssshkeypath", "", "Amazon SSH Key Absolute Path"))
+	globalSettings.PlanningAlg = (*flag.String("planner", "boringplanner", "Planning Algorithm"))
+	globalSettings.InstanceUsername = (*flag.String("instanceusername", "ubuntu", "User account for the AMI"))
+	globalSettings.Uri =  (*flag.String("uri", "http://localhost:5001", "Public Trainer Endpoint"))
+	globalSettings.AWSSpotPrice = (*flag.Float64("spotbid", 0.5, "AWS Spot Instance Bid"))
+	globalSettings.InstanceType = (*flag.String("instancetype", "t2.micro", "Regular instace type"))
+	globalSettings.SpotInstanceType = (*flag.String("spotinstancetype", "c4.large", "Spot instance type"))
+	globalSettings.ApiPort = 5001
+
+	globalSettings.ServerChangeTimeout= (*flag.Int64("serverchangetimeout", 300, "Server Change Timeout"))
+	globalSettings.AppChangeTimeout= (*flag.Int64("appchangetimeout", 300, "Application Change Timeout"))
+	globalSettings.ServerTimeout= (*flag.Int64("servertimeout", 300, "Server Timeout"))
 
 	flag.Parse()
 
 	store := &configuration.ConfigurationStore{};
-	store.Init(*configurationRoot + "/trainer.conf")
+	store.Init(globalSettings.ConfigurationRoot + "/trainer.conf")
 
 	state_store := &state.StateStore{};
 	state_store.Init()
@@ -70,24 +70,20 @@ func main() {
 	state.Stats.Init(store.AuditDatabaseUri)
 
 	var plannerEngine planner.Planner;
-	if (*plannerAlg) == "boringplanner"{
-		//WARNING: This planner is verrrry dumb, it will cost you moneyzzzzz
-		//Mostly implemented to prove the system actually works, and the interface has been
-		//defined well enough to support a more complicated planner
+	if globalSettings.PlanningAlg == "boringplanner"{
 		plannerEngine = &planner.BoringPlanner{}
 
-	}else if (*plannerAlg) == "diffplan" {
-		//TODO: @Alex implement this guy
+	}else if globalSettings.PlanningAlg == "diffplan" {
 		plannerEngine = &planner.DiffPlan{}
 	}
 
 	cloud_provider := cloud.CloudProvider{}
 
-	if (*cloudProvider) == "aws" {
+	if globalSettings.CloudProvider == "aws" {
 		awsEngine := cloud.AwsCloudEngine{}
-		awsEngine.Init((*awsAccessKeyId), (*awsAccessKeySecret), (*awsRegion), (*awsBaseAmi), (*awsSshKey), (*awsSshKeyPath),
-			(*awsSpotPrice), (*instanceType), (*spotInstanceType))
-		cloud_provider.Init(&awsEngine, (*instanceUsername), (*uri))
+		awsEngine.Init(globalSettings.AWSAccessKeyId, globalSettings.AWSAccessKeySecret, globalSettings.AWSRegion, globalSettings.AWSBaseAmi, globalSettings.AWSSSHKey, globalSettings.AWSSSHKeyPath,
+			globalSettings.AWSSpotPrice, globalSettings.InstanceType, globalSettings.SpotInstanceType)
+		cloud_provider.Init(&awsEngine, globalSettings.InstanceUsername, globalSettings.Uri)
 	}
 
 	startTime := time.Now()
@@ -95,20 +91,20 @@ func main() {
 	go func () {
 		for {
 			<- plannerAndTimeoutsTicker.C
-			if (startTime.Unix() + 2 * MAX_ELAPSED_TIME_FOR_HOST_CHECKIN > time.Now().Unix()) {
+			if (startTime.Unix() + 2 * globalSettings.ServerTimeout > time.Now().Unix()) {
 				continue
 			}
 			/* Check for timeouts */
 			for _, host := range state_store.GetAllHosts() {
 				for _, change := range host.Changes {
 					parsedTime, _ := time.Parse(time.RFC3339Nano, change.Time)
-					if (time.Now().Unix() - parsedTime.Unix()) > MAX_ELAPSED_TIME_FOR_APP_CHANGE {
-						state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-							"message": fmt.Sprintf("Application change event %s timed out, event type was %s for application %s on host %s", change.Id, change.Type, change.Name, change.HostId),
+					if (time.Now().Unix() - parsedTime.Unix()) > globalSettings.AppChangeTimeout {
+						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+							Message: fmt.Sprintf("Application change event %s timed out, event type was %s for application %s on host %s", change.Id, change.Type, change.Name, change.HostId),
+							Details:map[string]string{
 							"application": change.Name,
 							"host": change.HostId,
 						}})
-						fmt.Println(fmt.Sprintf("Application change event %s timed out, event type was %s for application %s on host %s", change.Id, change.Type, change.Name, change.HostId))
 						state_store.RemoveChange(host.Id, change.Id)
 					}
 				}
@@ -116,16 +112,16 @@ func main() {
 
 			for _, change := range cloud_provider.GetAllChanges() {
 					if host, exists := state_store.GetAllHosts()[change.NewHostId]; exists && host.State == "initializing" {
-						fmt.Println(fmt.Sprintf("Host %s is still initializing, skipping timeout check", host.Id))
 						continue
 					}
 					parsedTime, _ := time.Parse(time.RFC3339Nano, change.Time)
-					if (time.Now().Unix() - parsedTime.Unix()) > MAX_ELAPSED_TIME_FOR_SERVER_CHANGE {
-						state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-							"message": fmt.Sprintf("Server change event %s timed out, event type was %s with hostid %s", change.Id, change.Type, change.NewHostId),
+					if (time.Now().Unix() - parsedTime.Unix()) > globalSettings.ServerChangeTimeout {
+						state.Audit.Insert__AuditEvent(state.AuditEvent{
+							Severity: state.AUDIT__ERROR,
+							Message: fmt.Sprintf("Server change event %s timed out, event type was %s with hostid %s", change.Id, change.Type, change.NewHostId),
+							Details:map[string]string{
 							"host": change.NewHostId,
 						}})
-						fmt.Println(fmt.Sprintf("Server change event %s timed out, event type was %s with hostid %s", change.Id, change.Type, change.NewHostId),)
 						cloud_provider.RemoveChange(change.Id)
 					}
 			}
@@ -136,9 +132,10 @@ func main() {
 					continue
 				}
 				parsedTime, _ := time.Parse(time.RFC3339Nano, host.LastSeen)
-				if (time.Now().Unix() - parsedTime.Unix()) > MAX_ELAPSED_TIME_FOR_HOST_CHECKIN {
-					state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-						"message": fmt.Sprintf("Host timed out, we have not heard from host %s since %s", host.Id, host.LastSeen),
+				if (time.Now().Unix() - parsedTime.Unix()) > globalSettings.ServerTimeout {
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+						Message:fmt.Sprintf("Host timed out, we have not heard from host %s since %s", host.Id, host.LastSeen),
+						Details:map[string]string{
 						"host": host.Id,
 					}})
 
@@ -148,7 +145,6 @@ func main() {
 						Time:time.Now().Format(time.RFC3339Nano),
 						NewHostId:host.Id,
 					}, state_store)
-					fmt.Println(fmt.Sprintf("Host %s timed out. Last checkin: %d now: %d", host.Id, parsedTime.Unix(), time.Now().Unix()))
 				}
 			}
 
@@ -167,8 +163,9 @@ func main() {
 			changes := plannerEngine.Plan((*store), (*state_store))
 			for _, change := range changes {
 				if change.Type == "new_server" {
-					state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-						"message": fmt.Sprintf("Planner requested a new server"),
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+						Message: fmt.Sprintf("Planner requested a new server"),
+						Details:map[string]string{
 					}})
 
 					/* Add new server */
@@ -185,8 +182,9 @@ func main() {
 				}
 				if change.Type == "add_application" || change.Type == "remove_application" {
 					/* Add new server */
-					state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-						"message": fmt.Sprintf("Planner requested application %s be %s to host %s", change.ApplicationName, change.Type, change.HostId),
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+						Message: fmt.Sprintf("Planner requested application %s be %s to host %s", change.ApplicationName, change.Type, change.HostId),
+						Details:map[string]string{
 						"application": change.ApplicationName,
 						"host": change.HostId,
 					}})
@@ -215,8 +213,9 @@ func main() {
 					continue
 				}
 				if change.Type == "kill_server" {
-					state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-						"message": fmt.Sprintf("Planner requested server %s be kulled in a bloodbath", change.HostId),
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+						Message:fmt.Sprintf("Planner requested server %s be kulled in a bloodbath", change.HostId),
+						Details:map[string]string{
 					}})
 
 					cloud_provider.ActionChange(&model.ChangeServer{
@@ -256,6 +255,6 @@ func main() {
 	}()
 
 	api := api.Api{}
-	api.Init(*apiPort, store, state_store, &cloud_provider)
+	api.Init(globalSettings.ApiPort, store, state_store, &cloud_provider, &globalSettings)
 }
 
