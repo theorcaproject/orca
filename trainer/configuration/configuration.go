@@ -37,12 +37,10 @@ type ConfigurationStore struct {
 	AuditDatabaseUri             	string
 
 	trainerConfigurationFilePath 	string
-	generalConfigurationFilePath 	string
 }
 
-func (store *ConfigurationStore) Init(trainerConfigurationFilePath string, generalConfigurationFilePath string){
+func (store *ConfigurationStore) Init(trainerConfigurationFilePath string){
 	store.trainerConfigurationFilePath = trainerConfigurationFilePath
-	store.generalConfigurationFilePath = generalConfigurationFilePath
 
 	store.ApplicationConfigurations = make(map[string]*model.ApplicationConfiguration);
 	store.GlobalSettings = GlobalSettings{
@@ -58,7 +56,6 @@ func (store *ConfigurationStore) DumpConfig(){
 }
 
 func (store* ConfigurationStore) Load(){
-	store.loadGlobalConfigurationsFromFile(store.generalConfigurationFilePath)
 	store.loadApplicationConfigurationsFromFile(store.trainerConfigurationFilePath)
 }
 
@@ -66,31 +63,6 @@ func (store* ConfigurationStore) Save(){
 	store.saveConfigToFile(store.trainerConfigurationFilePath)
 }
 
-func (store* ConfigurationStore) loadGlobalConfigurationsFromFile(filename string) {
-	Logger.InitLogger.Infof("Loading config file from %s", filename)
-	file, err := os.Open(filename)
-	if err != nil {
-		Logger.InitLogger.Fatalf("Could not open config file %s - %s", filename, err)
-		return
-	}
-
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(store); err != nil {
-		extra := ""
-		if serr, ok := err.(*json.SyntaxError); ok {
-			line, col, highlight := util.HighlightBytePosition(file, serr.Offset)
-			extra = fmt.Sprintf(":\nError at line %d, column %d (file offset %d):\n%s",
-				line, col, serr.Offset, highlight)
-		}
-		Logger.InitLogger.Fatalf("error parsing JSON object in config file %s%s\n%v",
-			file.Name(), extra, err)
-	} else {
-		fmt.Sprintf("error: %v", err)
-	}
-
-	Logger.InitLogger.Infof("Load done")
-	file.Close()
-}
 func (store* ConfigurationStore) loadApplicationConfigurationsFromFile(filename string) {
 	Logger.InitLogger.Infof("Loading config file from %s", filename)
 	file, err := os.Open(filename)
@@ -112,6 +84,8 @@ func (store* ConfigurationStore) loadApplicationConfigurationsFromFile(filename 
 	} else {
 		fmt.Sprintf("error: %v", err)
 	}
+
+	fmt.Printf("Loading done, config is %+v", store)
 
 	Logger.InitLogger.Infof("Load done")
 	file.Close()

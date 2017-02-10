@@ -39,7 +39,7 @@ func main() {
 	flag.Parse()
 
 	store := &configuration.ConfigurationStore{};
-	store.Init((*configurationPath) + "/trainer.conf", (*configurationPath) + "/settings.conf")
+	store.Init((*configurationPath) + "/trainer.conf")
 
 	state_store := &state.StateStore{};
 	state_store.Init()
@@ -73,7 +73,7 @@ func main() {
 	go func () {
 		for {
 			<- plannerAndTimeoutsTicker.C
-			if (startTime.Unix() + 2 * store.GlobalSettings.ServerTimeout > time.Now().Unix()) {
+			if (startTime.Unix() + 2 * 120 > time.Now().Unix()) {
 				continue
 			}
 			/* Check for timeouts */
