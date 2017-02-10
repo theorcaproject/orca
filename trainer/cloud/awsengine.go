@@ -46,6 +46,8 @@ type AwsCloudEngine struct {
 
 func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string, awsRegion string, awsBaseAmi string,
 sshKey string, sshKeyPath string, spotPrice float64, instanceType string, spotInstanceType string) {
+
+
 	aws.awsAccessKeySecret = awsAccessKeySecret
 	aws.awsAccessKeyId = awsAccessKeyId
 	aws.awsRegion = awsRegion
@@ -85,14 +87,18 @@ func (a *AwsCloudEngine) GetIp(hostId string) string {
 
 func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.SecurityGroup, bool) {
 	info, err := a.getInstanceInfo(hostId)
-	if err != nil || info == nil || info.PublicIpAddress == nil || info.SubnetId == nil || info.InstanceLifecycle == nil {
+	if err != nil || info == nil || info.PublicIpAddress == nil || info.SubnetId == nil {
 		return "", "", []model.SecurityGroup{}, false
 	}
 	secGrps := make([]model.SecurityGroup, 0)
 	for _, grp := range info.SecurityGroups {
 		secGrps = append(secGrps, model.SecurityGroup{Group: string(*grp.GroupId)})
 	}
-	isSpot := string(*info.InstanceLifecycle) == "spot"
+
+	isSpot := false
+	if (info.InstanceLifecycle != nil){
+		isSpot = string(*info.InstanceLifecycle) == "spot"
+	}
 	return string(*info.PublicIpAddress), string(*info.SubnetId), secGrps, isSpot
 }
 
