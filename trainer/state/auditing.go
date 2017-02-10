@@ -22,7 +22,7 @@ import (
 	"time"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"bluewhale/orcahostd/logs"
+	"orca/trainer/logs"
 )
 
 type OrcaDb struct {
