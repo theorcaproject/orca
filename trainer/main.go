@@ -149,6 +149,7 @@ func main() {
 			}
 
 			store.ApplySchedules()
+			cloud_provider.Engine.SanityCheckHosts(state_store.GetAllHosts())
 			
 			/* Can we actually run the planner ? */
 			if(state_store.HasChanges() || cloud_provider.HasChanges()){
