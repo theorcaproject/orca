@@ -50,7 +50,7 @@ func main() {
 	globalSettings.InstanceType = (*flag.String("instancetype", "t2.micro", "Regular instace type"))
 	globalSettings.SpotInstanceType = (*flag.String("spotinstancetype", "c4.large", "Spot instance type"))
 	globalSettings.ConfigurationRoot = (*flag.String("configroot", "/orca/conf", "Orca Configuration Root"))
-	globalSettings.ApiPort = 5001
+	globalSettings.ApiPort = (*flag.Int("port", 5001, "API Port"))
 
 	globalSettings.ServerChangeTimeout= (*flag.Int64("serverchangetimeout", 300, "Server Change Timeout"))
 	globalSettings.AppChangeTimeout= (*flag.Int64("appchangetimeout", 300, "Application Change Timeout"))
