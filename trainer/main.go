@@ -49,6 +49,7 @@ func main() {
 	globalSettings.AWSSpotPrice = (*flag.Float64("spotbid", 0.5, "AWS Spot Instance Bid"))
 	globalSettings.InstanceType = (*flag.String("instancetype", "t2.micro", "Regular instace type"))
 	globalSettings.SpotInstanceType = (*flag.String("spotinstancetype", "c4.large", "Spot instance type"))
+	globalSettings.ConfigurationRoot = (*flag.String("configroot", "/orca/conf", "Orca Configuration Root"))
 	globalSettings.ApiPort = 5001
 
 	globalSettings.ServerChangeTimeout= (*flag.Int64("serverchangetimeout", 300, "Server Change Timeout"))
