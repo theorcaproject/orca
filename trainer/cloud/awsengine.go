@@ -85,7 +85,7 @@ func (a *AwsCloudEngine) GetIp(hostId string) string {
 
 func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.SecurityGroup, bool) {
 	info, err := a.getInstanceInfo(hostId)
-	if err != nil || info == nil || info.PublicIpAddress == nil {
+	if err != nil || info == nil || info.PublicIpAddress == nil || info.SubnetId == nil || info.InstanceLifecycle == nil {
 		return "", "", []model.SecurityGroup{}, false
 	}
 	secGrps := make([]model.SecurityGroup, 0)
