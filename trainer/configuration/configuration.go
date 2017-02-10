@@ -32,29 +32,66 @@ import (
 )
 
 type ConfigurationStore struct {
-	Configurations map[string]*model.ApplicationConfiguration;
-	AuditDatabaseUri string;
-	trainerConfigurationFilePath string;
+	ApplicationConfigurations    	map[string]*model.ApplicationConfiguration;
+	GlobalSettings			GlobalSettings
+	AuditDatabaseUri             	string
+
+	trainerConfigurationFilePath 	string
+	generalConfigurationFilePath 	string
 }
 
-func (store *ConfigurationStore) Init(trainerConfigurationFilePath string){
+func (store *ConfigurationStore) Init(trainerConfigurationFilePath string, generalConfigurationFilePath string){
 	store.trainerConfigurationFilePath = trainerConfigurationFilePath
-	store.Configurations = make(map[string]*model.ApplicationConfiguration);
+	store.generalConfigurationFilePath = generalConfigurationFilePath
+
+	store.ApplicationConfigurations = make(map[string]*model.ApplicationConfiguration);
+	store.GlobalSettings = GlobalSettings{
+		ApiPort:5001,
+		AppChangeTimeout:300,
+		ServerChangeTimeout:300,
+		ServerTimeout:300,
+	}
 }
 
 func (store *ConfigurationStore) DumpConfig(){
-	fmt.Printf("Loading config file from %+v", store.Configurations)
+	fmt.Printf("Loading config file from %+v", store.ApplicationConfigurations)
 }
 
 func (store* ConfigurationStore) Load(){
-	store.loadFromFile(store.trainerConfigurationFilePath)
+	store.loadGlobalConfigurationsFromFile(store.generalConfigurationFilePath)
+	store.loadApplicationConfigurationsFromFile(store.trainerConfigurationFilePath)
 }
 
 func (store* ConfigurationStore) Save(){
 	store.saveConfigToFile(store.trainerConfigurationFilePath)
 }
 
-func (store* ConfigurationStore) loadFromFile(filename string) {
+func (store* ConfigurationStore) loadGlobalConfigurationsFromFile(filename string) {
+	Logger.InitLogger.Infof("Loading config file from %s", filename)
+	file, err := os.Open(filename)
+	if err != nil {
+		Logger.InitLogger.Fatalf("Could not open config file %s - %s", filename, err)
+		return
+	}
+
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(store); err != nil {
+		extra := ""
+		if serr, ok := err.(*json.SyntaxError); ok {
+			line, col, highlight := util.HighlightBytePosition(file, serr.Offset)
+			extra = fmt.Sprintf(":\nError at line %d, column %d (file offset %d):\n%s",
+				line, col, serr.Offset, highlight)
+		}
+		Logger.InitLogger.Fatalf("error parsing JSON object in config file %s%s\n%v",
+			file.Name(), extra, err)
+	} else {
+		fmt.Sprintf("error: %v", err)
+	}
+
+	Logger.InitLogger.Infof("Load done")
+	file.Close()
+}
+func (store* ConfigurationStore) loadApplicationConfigurationsFromFile(filename string) {
 	Logger.InitLogger.Infof("Loading config file from %s", filename)
 	file, err := os.Open(filename)
 	if err != nil {
@@ -86,7 +123,7 @@ func (store* ConfigurationStore) Add(name string, config *model.ApplicationConfi
 		Details:map[string]string{
 	}})
 
-	store.Configurations[name] = config;
+	store.ApplicationConfigurations[name] = config;
 	return config
 }
 
@@ -103,7 +140,7 @@ func (store* ConfigurationStore) saveConfigToFile(filename string) {
 }
 
 func (store *ConfigurationStore) GetConfiguration(application string) (*model.ApplicationConfiguration, error) {
-	if app, ok := store.Configurations[application]; ok {
+	if app, ok := store.ApplicationConfigurations[application]; ok {
 		return app, nil;
 	}
 
@@ -111,12 +148,12 @@ func (store *ConfigurationStore) GetConfiguration(application string) (*model.Ap
 }
 
 func (store *ConfigurationStore) GetAllConfiguration() (map[string]*model.ApplicationConfiguration) {
-	return store.Configurations
+	return store.ApplicationConfigurations
 }
 
 func (store *ConfigurationStore) ApplySchedules() {
 	fmt.Println("Starting apply schedules")
-	for _, config := range store.Configurations {
+	for _, config := range store.ApplicationConfigurations {
 		if config.DisableSchedule {
 			continue
 		}

@@ -35,16 +35,14 @@ type Api struct {
 	configurationStore *configuration.ConfigurationStore
 	state              *state.StateStore
 	cloudProvider  		*cloud.CloudProvider
-	globalSettings		*configuration.GlobalSettings
 }
 
 var ApiLogger = log.LoggerWithField(log.Logger, "module", "api")
 
-func (api *Api) Init(port int, configurationStore *configuration.ConfigurationStore, state *state.StateStore, cloudProvider *cloud.CloudProvider, globalSettings *configuration.GlobalSettings) {
+func (api *Api) Init(port int, configurationStore *configuration.ConfigurationStore, state *state.StateStore, cloudProvider *cloud.CloudProvider) {
 	api.configurationStore = configurationStore
 	api.state = state
 	api.cloudProvider = cloudProvider
-	api.globalSettings = globalSettings
 
 	ApiLogger.Infof("Initializing Api on Port %d", port)
 	r := mux.NewRouter()
@@ -168,7 +166,13 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		host := &model.Host{
-			Id: hostId, LastSeen: "", FirstSeen: time.Now().Format(time.RFC3339Nano), State: "running", Apps: []model.Application{}, Changes: []model.ChangeApplication{}, Resources: model.HostResources{},
+			Id: hostId,
+			LastSeen: "",
+			FirstSeen: time.Now().Format(time.RFC3339Nano),
+			State: "running",
+			Apps: []model.Application{},
+			Changes: []model.ChangeApplication{},
+			Resources: model.HostResources{},
 		}
 		ip, subnet, secGrps, isSpot := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
 		host.Ip = ip
@@ -212,5 +216,5 @@ func (api *Api) getAppPerformance(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
 	ApiLogger.Infof("Query to getSettings")
-	returnJson(w, api.globalSettings)
+	returnJson(w, api.configurationStore.GlobalSettings)
 }

@@ -22,8 +22,8 @@ import (
 	"orca/trainer/configuration"
 	"orca/trainer/state"
 	"github.com/twinj/uuid"
-	"fmt"
 	"orca/trainer/model"
+	"sort"
 )
 
 type BoringPlanner struct {
@@ -80,26 +80,17 @@ func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, cu
 	return instanceCount >= applicationConfiguration.MinDeployment
 }
 
-func (planner *BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
-	fmt.Println("Starting BoringPlanner")
+
+func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
 
 	requiresMinServer := false
-	requiresSpotServer := false
 	serverNetwork := ""
 	var serverSecurityGroups []model.SecurityGroup
-
 
 	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
 		if !applicationConfiguration.Enabled {
 			continue
-		}
-
-		currentCount := 0
-		for _, hostEntity := range currentState.GetAllHosts() {
-			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
-				currentCount += 1
-			}
 		}
 
 		if !isMinSatisfied(applicationConfiguration, &currentState) {
@@ -107,7 +98,6 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 			for _, hostEntity := range currentState.GetAllHosts() {
 				/* Only use reserved instances when working with the min count */
 				if hostIsSuitable(hostEntity, applicationConfiguration) && !hostEntity.SpotInstance {
-					fmt.Println(fmt.Sprintf("Found host for min deployment of app %s", applicationConfiguration.Name))
 					change := PlanningChange{
 						Type: "add_application",
 						ApplicationName: name,
@@ -127,13 +117,48 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 				serverSecurityGroups = applicationConfiguration.GetLatestConfiguration().SecurityGroups
 			}
 		}
+	}
+
+	if requiresMinServer {
+		change := PlanningChange{
+			Type: "new_server",
+			Id:uuid.NewV4().String(),
+			RequiresReliableInstance: true,
+			Network: serverNetwork,
+			SecurityGroups: serverSecurityGroups,
+		}
+
+		ret = append(ret, change)
+	}
+
+	return ret
+}
+
+
+func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+	ret := make([]PlanningChange, 0)
+
+	requiresSpotServer := false
+	serverNetwork := ""
+	var serverSecurityGroups []model.SecurityGroup
+
+	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
+		if !applicationConfiguration.Enabled {
+			continue
+		}
+
+		currentCount := 0
+		for _, hostEntity := range currentState.GetAllHosts() {
+			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+				currentCount += 1
+			}
+		}
 
 		//spawn to desired
 		if currentCount >= applicationConfiguration.MinDeployment && currentCount < applicationConfiguration.DesiredDeployment {
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
 				if hostIsSuitable(hostEntity, applicationConfiguration) {
-					fmt.Println(fmt.Sprintf("Found host for desired deployment of app %s", applicationConfiguration.Name))
 					change := PlanningChange{
 						Type: "add_application",
 						ApplicationName: name,
@@ -146,21 +171,95 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 					break
 				}
 			}
+
 			if !foundServer {
 				requiresSpotServer = true
 				serverNetwork = applicationConfiguration.GetLatestConfiguration().Network
 				serverSecurityGroups = applicationConfiguration.GetLatestConfiguration().SecurityGroups
 			}
 		}
+	}
 
-		//If the needs are greater than required, then scale them back
+	if requiresSpotServer {
+		change := PlanningChange{
+			Type: "new_server",
+			Id:uuid.NewV4().String(),
+			RequiresReliableInstance: false,
+			Network: serverNetwork,
+			SecurityGroups: serverSecurityGroups,
+		}
+
+		ret = append(ret, change)
+	}
+
+	return ret
+}
+
+
+func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+	ret := make([]PlanningChange, 0)
+	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
+		if !applicationConfiguration.Enabled {
+			continue
+		}
+
+		currentCount := 0
+		for _, hostEntity := range currentState.GetAllHosts() {
+			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+				currentCount += 1
+			}
+		}
+
+		if currentCount >= applicationConfiguration.DesiredDeployment && currentCount >= applicationConfiguration.MinDeployment {
+			for _, hostEntity := range currentState.GetAllHosts() {
+				if hostEntity.HasApp(name) && !hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+					change := PlanningChange{
+						Type: "remove_application",
+						ApplicationName: name,
+						HostId: hostEntity.Id,
+						Id:uuid.NewV4().String(),
+					}
+
+					ret = append(ret, change)
+				}
+			}
+		}
+	}
+	return ret
+}
+
+
+type Hosts []*model.Host
+type ByApplicationCount struct{ Hosts }
+func (s Hosts) Len() int      { return len(s) }
+func (s Hosts) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+
+func (s ByApplicationCount) Less(i, j int) bool { return len(s.Hosts[i].Apps) < len(s.Hosts[j].Apps) }
+
+func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+	ret := make([]PlanningChange, 0)
+
+	sortedHosts := currentState.ListOfHosts()
+	sort.Sort(ByApplicationCount{sortedHosts})
+
+	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
+		if !applicationConfiguration.Enabled {
+			continue
+		}
+
+		currentCount := 0
+		for _, hostEntity := range sortedHosts {
+			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+				currentCount += 1
+			}
+		}
+
+		/* Can we kill of some extra desired machines? */
 		if currentCount > applicationConfiguration.DesiredDeployment && currentCount > applicationConfiguration.MinDeployment{
-
-			/* Can we kill of some extra desired machines? */
 			if (applicationConfiguration.DesiredDeployment - applicationConfiguration.MinDeployment) > 0 {
 				/* Find potential spot instances */
 				terminateCandidateFound := false
-				for _, hostEntity := range currentState.GetAllHosts() {
+				for _, hostEntity := range sortedHosts {
 					if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
 						if hostEntity.SpotInstance {
 							change := PlanningChange{
@@ -193,7 +292,7 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 					}
 				}
 			} else {
-				for _, hostEntity := range currentState.GetAllHosts() {
+				for _, hostEntity := range sortedHosts {
 					if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
 						change := PlanningChange{
 							Type: "remove_application",
@@ -208,65 +307,108 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 				}
 			}
 		}
+	}
+	return ret
+}
 
-		//If we are running older version of the application, we can nuke them if the new versions needs are meet
-		if currentCount >= applicationConfiguration.DesiredDeployment && currentCount >= applicationConfiguration.MinDeployment {
-			for _, hostEntity := range currentState.GetAllHosts() {
-				if hostEntity.HasApp(name) && !hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
-					change := PlanningChange{
-						Type: "remove_application",
-						ApplicationName: name,
-						HostId: hostEntity.Id,
-						Id:uuid.NewV4().String(),
+func (planner *BoringPlanner) Plan_KullUnusedServers(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+	ret := make([]PlanningChange, 0)
+
+	for _, hostEntity := range currentState.GetAllHosts() {
+		if len(hostEntity.Apps) == 0 && hostEntity.State == "running" {
+			change := PlanningChange{
+				Type: "kill_server",
+				HostId: hostEntity.Id,
+				Id:uuid.NewV4().String(),
+			}
+
+			ret = append(ret, change)
+		}
+	}
+	return ret
+}
+
+
+func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+	ret := make([]PlanningChange, 0)
+
+	sortedHosts := currentState.ListOfHosts()
+	sort.Sort(ByApplicationCount{sortedHosts})
+
+	for _, hostEntity := range sortedHosts {
+		for _, app := range hostEntity.Apps {
+			appConfiguration, err := configurationStore.GetConfiguration(app.Name)
+			if err != nil {
+				continue
+			}
+
+			/* Now search, can we move this application to any other machine ?*/
+			for _, potentialHost :=  range currentState.ListOfHosts() {
+				if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersion(app.Name, app.Version) {
+					if hostIsSuitable(potentialHost, appConfiguration) {
+						change := PlanningChange{
+							Type: "add_application",
+							ApplicationName: app.Name,
+							HostId: potentialHost.Id,
+							Id:uuid.NewV4().String(),
+						}
+
+						ret = append(ret, change)
+						return ret
 					}
-
-					ret = append(ret, change)
 				}
 			}
 		}
 	}
+	return ret
+}
 
-	if requiresMinServer {
-		fmt.Println("Planner: missing min server...")
-		change := PlanningChange{
-			Type: "new_server",
-			Id:uuid.NewV4().String(),
-			RequiresReliableInstance: true,
-			Network: serverNetwork,
-			SecurityGroups: serverSecurityGroups,
-		}
-
+func extend(existing []PlanningChange, changes []PlanningChange) []PlanningChange {
+	ret := make([]PlanningChange, 0)
+	for _, change := range existing {
 		ret = append(ret, change)
 	}
 
-	if requiresSpotServer {
-		fmt.Println("Planner: missing spot server...")
-		change := PlanningChange{
-			Type: "new_server",
-			Id:uuid.NewV4().String(),
-			RequiresReliableInstance: false,
-			Network: serverNetwork,
-			SecurityGroups: serverSecurityGroups,
-		}
-
+	for _, change := range changes {
 		ret = append(ret, change)
+	}
+	return ret
+}
+
+func (planner *BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+	ret := make([]PlanningChange, 0)
+
+	/* First step, lets check that our min needs are satisfied? */
+	ret = extend(ret, planner.Plan_SatisfyMinNeeds(configurationStore, currentState))
+	if len(ret) > 0 {
+		return ret
+	}
+
+	/* Ok, now that the mins are running, lets kull of old version of the app */
+	ret = extend(ret, planner.Plan_RemoveOldVersions(configurationStore, currentState))
+	if len(ret) > 0 {
+		return ret
+	}
+
+	/* Ok, now that the min is sorted, lets scale down desired instances */
+	ret = extend(ret, planner.Plan_RemoveOldDesired(configurationStore, currentState))
+	if len(ret) > 0 {
+		return ret
+	}
+
+	/* Grand, lets scale up the desired */
+	ret = extend(ret, planner.Plan_SatisfyDesiredNeeds(configurationStore, currentState))
+	if len(ret) > 0 {
+		return ret
 	}
 
 	/* Second stage of planning: Terminate any instances that are left behind */
-	if len(ret) == 0 {
-		for _, hostEntity := range currentState.GetAllHosts() {
-			if len(hostEntity.Apps) == 0 && hostEntity.State == "running" {
-				change := PlanningChange{
-					Type: "kill_server",
-					HostId: hostEntity.Id,
-					Id:uuid.NewV4().String(),
-				}
-
-				ret = append(ret, change)
-			}
-		}
+	ret = extend(ret, planner.Plan_KullUnusedServers(configurationStore, currentState))
+	if len(ret) > 0 {
+		return ret
 	}
 
-	fmt.Println(fmt.Sprintf("Planning changes: %+v", ret))
+	/* Third stage of planning: Move applications around to see if we can optimise it to be cheaper */
+	ret = extend(ret, planner.Plan_OptimiseLayout(configurationStore, currentState))
 	return ret
 }

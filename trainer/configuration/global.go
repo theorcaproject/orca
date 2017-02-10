@@ -19,7 +19,6 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package configuration
 
 type GlobalSettings struct {
-	ConfigurationRoot string
 	ApiPort	int
 	CloudProvider string
 	AWSAccessKeyId string

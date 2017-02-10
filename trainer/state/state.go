@@ -105,3 +105,12 @@ func (store *StateStore) RemoveChange(hostId string, changeId string) {
 func (store *StateStore) RemoveHost(hostId string) {
 	delete(store.hosts, hostId)
 }
+
+func (store *StateStore) ListOfHosts() []*model.Host {
+	hosts := make([]*model.Host, 0)
+	for _, host := range store.GetAllHosts() {
+		hosts = append(hosts, host)
+	}
+
+	return hosts
+}

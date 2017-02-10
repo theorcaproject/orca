@@ -34,36 +34,17 @@ import (
 func main() {
 	fmt.Println("starting")
 
-	/* TODO: Probably move this guy to a configuration file of its own? */
-	globalSettings := configuration.GlobalSettings{}
-	globalSettings.CloudProvider = (*flag.String("cloudprovider", "aws", "Cloud Provider"))
-	globalSettings.AWSAccessKeyId = (*flag.String("awsaccesskeyid", "", "Amazon AWS Access Key"))
-	globalSettings.AWSAccessKeySecret = (*flag.String("awsaccesskeysecret", "", "Amazon AWS Access Key Secret"))
-	globalSettings.AWSRegion = (*flag.String("awsregion", "", "Amazon Region"))
-	globalSettings.AWSBaseAmi = (*flag.String("awsbaseami", "", "Amazon Base AMI"))
-	globalSettings.AWSSSHKey = (*flag.String("awssshkey", "", "Amazon SSH Key"))
-	globalSettings.AWSSSHKeyPath = (*flag.String("awssshkeypath", "", "Amazon SSH Key Absolute Path"))
-	globalSettings.PlanningAlg = (*flag.String("planner", "boringplanner", "Planning Algorithm"))
-	globalSettings.InstanceUsername = (*flag.String("instanceusername", "ubuntu", "User account for the AMI"))
-	globalSettings.Uri =  (*flag.String("uri", "http://localhost:5001", "Public Trainer Endpoint"))
-	globalSettings.AWSSpotPrice = (*flag.Float64("spotbid", 0.5, "AWS Spot Instance Bid"))
-	globalSettings.InstanceType = (*flag.String("instancetype", "t2.micro", "Regular instace type"))
-	globalSettings.SpotInstanceType = (*flag.String("spotinstancetype", "c4.large", "Spot instance type"))
-	globalSettings.ConfigurationRoot = (*flag.String("configroot", "/orca/conf", "Orca Configuration Root"))
-	globalSettings.ApiPort = (*flag.Int("port", 5001, "API Port"))
-
-	globalSettings.ServerChangeTimeout= (*flag.Int64("serverchangetimeout", 300, "Server Change Timeout"))
-	globalSettings.AppChangeTimeout= (*flag.Int64("appchangetimeout", 300, "Application Change Timeout"))
-	globalSettings.ServerTimeout= (*flag.Int64("servertimeout", 300, "Server Timeout"))
+	configurationPath := flag.String("configroot", "/orca/configuration", "Orca Configuration Root")
 
 	flag.Parse()
 
 	store := &configuration.ConfigurationStore{};
-	store.Init(globalSettings.ConfigurationRoot + "/trainer.conf")
+	store.Init((*configurationPath) + "/trainer.conf", (*configurationPath) + "/settings.conf")
 
 	state_store := &state.StateStore{};
 	state_store.Init()
 
+	/* Load configuration */
 	store.Load()
 
 	/* Init connection to the database for auditing */
@@ -71,20 +52,20 @@ func main() {
 	state.Stats.Init(store.AuditDatabaseUri)
 
 	var plannerEngine planner.Planner;
-	if globalSettings.PlanningAlg == "boringplanner"{
+	if store.GlobalSettings.PlanningAlg == "boringplanner"{
 		plannerEngine = &planner.BoringPlanner{}
 
-	}else if globalSettings.PlanningAlg == "diffplan" {
+	}else if store.GlobalSettings.PlanningAlg == "diffplan" {
 		plannerEngine = &planner.DiffPlan{}
 	}
 
 	cloud_provider := cloud.CloudProvider{}
 
-	if globalSettings.CloudProvider == "aws" {
+	if store.GlobalSettings.CloudProvider == "aws" {
 		awsEngine := cloud.AwsCloudEngine{}
-		awsEngine.Init(globalSettings.AWSAccessKeyId, globalSettings.AWSAccessKeySecret, globalSettings.AWSRegion, globalSettings.AWSBaseAmi, globalSettings.AWSSSHKey, globalSettings.AWSSSHKeyPath,
-			globalSettings.AWSSpotPrice, globalSettings.InstanceType, globalSettings.SpotInstanceType)
-		cloud_provider.Init(&awsEngine, globalSettings.InstanceUsername, globalSettings.Uri)
+		awsEngine.Init(store.GlobalSettings.AWSAccessKeyId, store.GlobalSettings.AWSAccessKeySecret, store.GlobalSettings.AWSRegion, store.GlobalSettings.AWSBaseAmi, store.GlobalSettings.AWSSSHKey, store.GlobalSettings.AWSSSHKeyPath,
+			store.GlobalSettings.AWSSpotPrice, store.GlobalSettings.InstanceType, store.GlobalSettings.SpotInstanceType)
+		cloud_provider.Init(&awsEngine, store.GlobalSettings.InstanceUsername, store.GlobalSettings.Uri)
 	}
 
 	startTime := time.Now()
@@ -92,14 +73,14 @@ func main() {
 	go func () {
 		for {
 			<- plannerAndTimeoutsTicker.C
-			if (startTime.Unix() + 2 * globalSettings.ServerTimeout > time.Now().Unix()) {
+			if (startTime.Unix() + 2 * store.GlobalSettings.ServerTimeout > time.Now().Unix()) {
 				continue
 			}
 			/* Check for timeouts */
 			for _, host := range state_store.GetAllHosts() {
 				for _, change := range host.Changes {
 					parsedTime, _ := time.Parse(time.RFC3339Nano, change.Time)
-					if (time.Now().Unix() - parsedTime.Unix()) > globalSettings.AppChangeTimeout {
+					if (time.Now().Unix() - parsedTime.Unix()) > store.GlobalSettings.AppChangeTimeout {
 						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 							Message: fmt.Sprintf("Application change event %s timed out, event type was %s for application %s on host %s", change.Id, change.Type, change.Name, change.HostId),
 							Details:map[string]string{
@@ -116,7 +97,7 @@ func main() {
 						continue
 					}
 					parsedTime, _ := time.Parse(time.RFC3339Nano, change.Time)
-					if (time.Now().Unix() - parsedTime.Unix()) > globalSettings.ServerChangeTimeout {
+					if (time.Now().Unix() - parsedTime.Unix()) > store.GlobalSettings.ServerChangeTimeout {
 						state.Audit.Insert__AuditEvent(state.AuditEvent{
 							Severity: state.AUDIT__ERROR,
 							Message: fmt.Sprintf("Server change event %s timed out, event type was %s with hostid %s", change.Id, change.Type, change.NewHostId),
@@ -133,7 +114,7 @@ func main() {
 					continue
 				}
 				parsedTime, _ := time.Parse(time.RFC3339Nano, host.LastSeen)
-				if (time.Now().Unix() - parsedTime.Unix()) > globalSettings.ServerTimeout {
+				if (time.Now().Unix() - parsedTime.Unix()) > store.GlobalSettings.ServerTimeout {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 						Message:fmt.Sprintf("Host timed out, we have not heard from host %s since %s", host.Id, host.LastSeen),
 						Details:map[string]string{
@@ -257,6 +238,6 @@ func main() {
 	}()
 
 	api := api.Api{}
-	api.Init(globalSettings.ApiPort, store, state_store, &cloud_provider, &globalSettings)
+	api.Init(store.GlobalSettings.ApiPort, store, state_store, &cloud_provider)
 }
 
