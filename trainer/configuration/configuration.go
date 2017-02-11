@@ -61,7 +61,7 @@ func (store* ConfigurationStore) Load(){
 	/* If the schedule has not been defined, we should set it to defaults */
 	for _, app := range store.ApplicationConfigurations {
 		if app.DeploymentSchedule.IsEmpty() {
-			app.DeploymentSchedule.SetAll(-1)
+			app.DeploymentSchedule.SetAll(0)
 		}
 	}
 }
@@ -136,7 +136,7 @@ func (store *ConfigurationStore) ApplySchedules() {
 			continue
 		}
 
-		if config.DeploymentSchedule.Get(time.Now()) == -1 {
+		if config.DeploymentSchedule.Get(time.Now()) == 0 {
 			continue
 		}
 
