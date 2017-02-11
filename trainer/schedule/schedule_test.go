@@ -21,6 +21,8 @@ package schedule
 import (
 	"testing"
 	"time"
+	"encoding/json"
+	"fmt"
 )
 
 func TestWeekdayBasedDeploymentCount(t *testing.T) {
@@ -59,4 +61,14 @@ func TestWeekdayBasedDeploymentCount(t *testing.T) {
 	if schedule.Get(t5) != 100 {
 		t.Error(schedule.Get(t5))
 	}
+}
+
+func TestGenerateSchedule (t *testing.T){
+	schedule := DeploymentSchedule{}
+	schedule.SetAll(100)
+
+	res, _ := json.MarshalIndent(schedule, "", "  ")
+	var result = string(res)
+	fmt.Printf("%s", result)
+
 }

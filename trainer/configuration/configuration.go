@@ -57,6 +57,13 @@ func (store *ConfigurationStore) DumpConfig(){
 
 func (store* ConfigurationStore) Load(){
 	store.loadApplicationConfigurationsFromFile(store.trainerConfigurationFilePath)
+
+	/* If the schedule has not been defined, we should set it to defaults */
+	for _, app := range store.ApplicationConfigurations {
+		if app.DeploymentSchedule.IsEmpty() {
+			app.DeploymentSchedule.SetAll(-1)
+		}
+	}
 }
 
 func (store* ConfigurationStore) Save(){
@@ -128,6 +135,11 @@ func (store *ConfigurationStore) ApplySchedules() {
 		if config.DisableSchedule {
 			continue
 		}
+
+		if config.DeploymentSchedule.Get(time.Now()) == -1 {
+			continue
+		}
+
 		if config.DeploymentSchedule.Get(time.Now()) > config.MinDeployment {
 			config.DesiredDeployment = config.DeploymentSchedule.Get(time.Now())
 		} else {

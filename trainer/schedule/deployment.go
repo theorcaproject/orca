@@ -23,7 +23,7 @@ import "time"
 type DeploymentSchedule WeekdaySchedule
 
 
-func (w DeploymentSchedule) isEmpty() bool {
+func (w DeploymentSchedule) IsEmpty() bool {
 	return w.Schedule.isEmpty()
 }
 
@@ -42,5 +42,5 @@ func (w *DeploymentSchedule) SetAll(ns int) {
 	if len(w.Schedule) == 0 {
 		w.Schedule = make(map[time.Weekday]map[Minutes]int)
 	}
-	w.Schedule.setAll(ns)
+	w.Schedule.setAll(1)
 }
