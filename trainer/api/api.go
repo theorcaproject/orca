@@ -107,6 +107,7 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 			application.DesiredDeployment = object.DesiredDeployment
 			application.Enabled = object.Enabled
 			application.DisableSchedule = object.DisableSchedule
+			application.DeploymentSchedule = object.DeploymentSchedule
 			api.configurationStore.Save()
 		}
 
