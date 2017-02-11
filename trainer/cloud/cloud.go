@@ -96,7 +96,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 					instance := []string{
 						"echo orca | sudo -S addgroup --system supervisor",
 						"echo orca | sudo -S apt-get update",
-						"echo orca | sudo -S apt-get install -y git supervisor docker.io",
+						"echo orca | sudo -S apt-get install -y git supervisor docker.io gcc",
 						"echo orca | sudo -S sh -c \"echo " + SUPERVISOR_CONFIG + "\"",
 						"echo orca | sudo -S sh -c \"echo " + ORCA_SUPERVISOR_CONFIG + "\"",
 						"echo orca | sudo -S rm -rf /orca",
@@ -112,7 +112,8 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 						"sudo -S mv go /usr/local",
 
 						"rm -rf /orca/src && mkdir -p /orca/src && cd /orca/src && git clone https://github.com/theorcaproject/orcahostd.git",
-						"GOROOT=/usr/local/go PATH=$GOPATH/bin:$GOROOT/bin:$PATH GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/fsouza/go-dockerclient && go get github.com/gorilla/mux'",
+						"GOROOT=/usr/local/go PATH=$GOPATH/bin:$GOROOT/bin:$PATH GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go " +
+							"get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/fsouza/go-dockerclient && go get github.com/gorilla/mux'",
 						"GOROOT=/usr/local/go PATH=$GOPATH/bin:$GOROOT/bin:$PATH GOPATH=/orca -c 'cd /orca/src/orcahostd && go build && go install'",
 						"echo orca | sudo -S service supervisor restart",
 					}
