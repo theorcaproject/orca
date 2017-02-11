@@ -329,6 +329,26 @@ func (planner *BoringPlanner) Plan_KullUnusedServers(configurationStore configur
 	return ret
 }
 
+func (planner *BoringPlanner) Plan_KullBrokenServers(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+	ret := make([]PlanningChange, 0)
+
+	for _, hostEntity := range currentState.GetAllHosts() {
+		if hostEntity.State == "running" {
+			/* This server is messing up, changes are failing for some reason */
+			if hostEntity.NumberOfChangeFailuresInRow >= configurationStore.GlobalSettings.HostChangeFailureLimit {
+				change := PlanningChange{
+					Type: "kill_server",
+					HostId: hostEntity.Id,
+					Id:uuid.NewV4().String(),
+				}
+
+				ret = append(ret, change)
+			}
+		}
+	}
+	return ret
+}
+
 
 func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
@@ -394,6 +414,12 @@ func extend(existing []PlanningChange, changes []PlanningChange) []PlanningChang
 
 func (planner *BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
+
+	/* First step, deal with servers that are broken ? */
+	ret = extend(ret, planner.Plan_KullBrokenServers(configurationStore, currentState))
+	if len(ret) > 0 {
+		return ret
+	}
 
 	/* First step, lets check that our min needs are satisfied? */
 	ret = extend(ret, planner.Plan_SatisfyMinNeeds(configurationStore, currentState))

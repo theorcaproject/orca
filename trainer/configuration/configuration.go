@@ -48,6 +48,7 @@ func (store *ConfigurationStore) Init(trainerConfigurationFilePath string){
 		AppChangeTimeout:300,
 		ServerChangeTimeout:300,
 		ServerTimeout:300,
+		HostChangeFailureLimit:10,
 	}
 }
 

@@ -88,6 +88,7 @@ func main() {
 							"host": change.HostId,
 						}})
 						state_store.RemoveChange(host.Id, change.Id)
+						host.NumberOfChangeFailuresInRow += 1
 					}
 				}
 			}

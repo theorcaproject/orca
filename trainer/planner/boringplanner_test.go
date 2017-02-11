@@ -659,3 +659,31 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T){
 	}
 
 }
+
+func TestPlan__Plan_HostWithFailedAppsAndErrors_Terminated(t *testing.T){
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init()
+
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		State: "running",
+		SpotInstance:true,
+		NumberOfChangeFailuresInRow: 5,
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		Apps: []model.Application {{Name:"surfwizeweb", Version:"1", State:"failed"}, {Name:"surfwizeauth", Version:"1", State:"failed"}},
+	}
+	stateStore.Add("host1", host1)
+
+	changes := planner.Plan_OptimiseLayout(config, stateStore)
+	fmt.Printf("changes: %+v", changes)
+	if len(changes) != 0{
+		t.Errorf("%+v", changes);
+	}
+
+}

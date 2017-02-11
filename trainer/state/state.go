@@ -86,6 +86,8 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 							"application": changeObject.Name,
 						}})
 				}
+
+				host.NumberOfChangeFailuresInRow = 0
 			}
 
 			store.RemoveChange(host.Id, change)

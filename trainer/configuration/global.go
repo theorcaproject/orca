@@ -37,5 +37,6 @@ type GlobalSettings struct {
 	AppChangeTimeout int64
 	ServerChangeTimeout int64
 	ServerTimeout int64
+	HostChangeFailureLimit int64
 
 }
