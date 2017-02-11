@@ -354,6 +354,16 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 						}
 
 						ret = append(ret, change)
+
+						change2 := PlanningChange{
+							Type: "remove_application",
+							ApplicationName: app.Name,
+							HostId: hostEntity.Id,
+							Id:uuid.NewV4().String(),
+						}
+
+						ret = append(ret, change2)
+
 						return ret
 					}
 				}
