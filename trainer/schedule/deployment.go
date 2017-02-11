@@ -42,5 +42,5 @@ func (w *DeploymentSchedule) SetAll(ns int) {
 	if len(w.Schedule) == 0 {
 		w.Schedule = make(map[time.Weekday]map[Minutes]int)
 	}
-	w.Schedule.setAll(1)
+	w.Schedule.setAll(ns)
 }
