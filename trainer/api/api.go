@@ -182,7 +182,7 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 		api.state.Add(hostId, host)
 
 		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-			Message: "Discovered new host " + hostId,
+			Message: fmt.Sprintf("Discovered new server %s, ip: %s, subnet: %s spot: %s", hostId, subnet, isSpot),
 			Details:map[string]string{
 			"host": hostId,
 		}})

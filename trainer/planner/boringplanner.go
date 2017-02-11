@@ -24,6 +24,7 @@ import (
 	"github.com/twinj/uuid"
 	"orca/trainer/model"
 	"sort"
+	"fmt"
 )
 
 type BoringPlanner struct {
@@ -336,6 +337,8 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 	sort.Sort(ByApplicationCount{sortedHosts})
 
 	for _, hostEntity := range sortedHosts {
+		fmt.Printf("Looking at host %s\n", hostEntity.Id)
+
 		for _, app := range hostEntity.Apps {
 			appConfiguration, err := configurationStore.GetConfiguration(app.Name)
 			if err != nil {
@@ -344,7 +347,11 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 
 			/* Now search, can we move this application to any other machine ?*/
 			for _, potentialHost :=  range currentState.ListOfHosts() {
-				if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersion(app.Name, app.Version) {
+				if hostEntity.SpotInstance != potentialHost.SpotInstance {
+					continue
+				}
+
+				if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersion(app.Name, app.Version) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
 					if hostIsSuitable(potentialHost, appConfiguration) {
 						change := PlanningChange{
 							Type: "add_application",

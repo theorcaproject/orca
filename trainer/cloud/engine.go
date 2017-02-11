@@ -36,7 +36,5 @@ type CloudEngine interface {
 	RegisterWithLb(hostId string, elb string)
 	DeRegisterWithLb(hostId string, elb string)
 	SanityCheckHosts(map[string]*model.Host)
-	//GetIp(HostId) base.IpAddr
-	//UpdateLoadBalancers(hostId HostId, app base.AppName, version base.Version, event string)
 }
 

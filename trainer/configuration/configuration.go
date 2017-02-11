@@ -52,7 +52,7 @@ func (store *ConfigurationStore) Init(trainerConfigurationFilePath string){
 }
 
 func (store *ConfigurationStore) DumpConfig(){
-	fmt.Printf("Loading config file from %+v", store.ApplicationConfigurations)
+	Logger.InitLogger.Infof("Loading config file from %+v", store.ApplicationConfigurations)
 }
 
 func (store* ConfigurationStore) Load(){
@@ -84,8 +84,6 @@ func (store* ConfigurationStore) loadApplicationConfigurationsFromFile(filename 
 	} else {
 		fmt.Sprintf("error: %v", err)
 	}
-
-	fmt.Printf("Loading done, config is %+v", store)
 
 	Logger.InitLogger.Infof("Load done")
 	file.Close()
@@ -126,7 +124,6 @@ func (store *ConfigurationStore) GetAllConfiguration() (map[string]*model.Applic
 }
 
 func (store *ConfigurationStore) ApplySchedules() {
-	fmt.Println("Starting apply schedules")
 	for _, config := range store.ApplicationConfigurations {
 		if config.DisableSchedule {
 			continue

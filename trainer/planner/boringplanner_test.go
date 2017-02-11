@@ -34,7 +34,7 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 
 
 	config := configuration.ConfigurationStore{}
-	config.Init("", "")
+	config.Init("")
 	stateStore := state.StateStore{}
 	stateStore.Init()
 	state.Audit.Init("")
@@ -139,7 +139,7 @@ func TestPlan_spawnDesiredHosts(t *testing.T) {
 
 
 	config := configuration.ConfigurationStore{}
-	config.Init("" ,"")
+	config.Init("")
 	stateStore := state.StateStore{}
 	stateStore.Init()
 	state.Audit.Init("")
@@ -201,7 +201,7 @@ func TestPlan_scaleDown(t *testing.T) {
 	planner.Init()
 
 	config := configuration.ConfigurationStore{}
-	config.Init("", "")
+	config.Init("")
 	stateStore := state.StateStore{}
 	stateStore.Init()
 	versionConfigApp1 := make(map[string]model.VersionConfig)
@@ -259,7 +259,7 @@ func TestPlan_scaleUp(t *testing.T) {
 	planner.Init()
 
 	config := configuration.ConfigurationStore{}
-	config.Init("", "")
+	config.Init("")
 	stateStore := state.StateStore{}
 	stateStore.Init()
 	versionConfigApp1 := make(map[string]model.VersionConfig)
@@ -316,7 +316,7 @@ func TestPlan__Plan_RemoveOldDesired(t *testing.T){
 	planner.Init()
 
 	config := configuration.ConfigurationStore{}
-	config.Init("", "")
+	config.Init("")
 	stateStore := state.StateStore{}
 	stateStore.Init()
 
@@ -375,7 +375,7 @@ func TestPlan__Plan_KullUnusedServers(t *testing.T){
 	planner.Init()
 
 	config := configuration.ConfigurationStore{}
-	config.Init("", "")
+	config.Init("")
 	stateStore := state.StateStore{}
 	stateStore.Init()
 
@@ -427,7 +427,7 @@ func TestPlan__Plan_BasicOptimise(t *testing.T){
 	planner.Init()
 
 	config := configuration.ConfigurationStore{}
-	config.Init("", "")
+	config.Init("")
 	stateStore := state.StateStore{}
 	stateStore.Init()
 
@@ -476,7 +476,185 @@ func TestPlan__Plan_BasicOptimise(t *testing.T){
 
 	changes := planner.Plan_OptimiseLayout(config, stateStore)
 	fmt.Printf("changes: %+v", changes)
-	if len(changes) != 1 || changes[0].Type != "add_application" && changes[0].HostId != "host1" {
+	if len(changes) != 2 || changes[0].Type != "add_application" && changes[0].HostId != "host1" {
+		t.Errorf("%+v", changes);
+	}
+	if len(changes) != 2 || changes[1].Type != "remove_application" && changes[1].HostId != "host1" {
+		t.Errorf("%+v", changes);
+	}
+}
+
+func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T){
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init()
+
+	versionConfigApp1 := make(map[string]model.VersionConfig)
+	versionConfigApp1["1"] = model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		SecurityGroups: make([]model.SecurityGroup, 0),
+	}
+
+	config.Add("surfwizeweb", &model.ApplicationConfiguration{
+		Name: "surfwizeweb",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp1,
+		Enabled:true,
+	})
+	config.Add("surfwizeauth", &model.ApplicationConfiguration{
+		Name: "surfwizeauth",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp1,
+		Enabled:true,
+	})
+	config.Add("classwize", &model.ApplicationConfiguration{
+		Name: "classwize",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp1,
+		Enabled:true,
+	})
+	config.Add("mylinewize", &model.ApplicationConfiguration{
+		Name: "mylinewize",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp1,
+		Enabled:true,
+	})
+
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		State: "running",
+		SpotInstance:true,
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		Apps: []model.Application {{Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}, {Name:"classwize", Version:"1", State:"running"}},
+	}
+	stateStore.Add("host1", host1)
+
+	host2 := &model.Host{
+		Id: "host2",
+		Network: "network1",
+		State: "running",
+		SpotInstance:true,
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		Apps: []model.Application {{Name:"mylinewize", Version:"1", State:"running"}, {Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}},
+	}
+	stateStore.Add("host2", host2)
+
+	host3 := &model.Host{
+		Id: "host4",
+		Network: "network1",
+		State: "running",
+		SpotInstance:false,
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		Apps: []model.Application {{Name:"mylinewize", Version:"1", State:"running"}, {Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}, {Name:"classwize", Version:"1", State:"running"}},
+	}
+	stateStore.Add("host3", host3)
+
+	changes := planner.Plan_OptimiseLayout(config, stateStore)
+	fmt.Printf("changes: %+v", changes)
+	if len(changes) != 2 || changes[0].Type != "add_application" && changes[0].ApplicationName == "classwize" && changes[0].HostId != "host2" {
+		t.Errorf("%+v", changes);
+	}
+	if len(changes) != 2 || changes[1].Type != "remove_application" && changes[0].ApplicationName == "classwize" && changes[1].HostId != "host1" {
+		t.Errorf("%+v", changes);
+	}
+}
+
+func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T){
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init()
+
+	versionConfigApp1 := make(map[string]model.VersionConfig)
+	versionConfigApp1["1"] = model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		SecurityGroups: make([]model.SecurityGroup, 0),
+	}
+
+	config.Add("surfwizeweb", &model.ApplicationConfiguration{
+		Name: "surfwizeweb",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp1,
+		Enabled:true,
+	})
+	config.Add("surfwizeauth", &model.ApplicationConfiguration{
+		Name: "surfwizeauth",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp1,
+		Enabled:true,
+	})
+	config.Add("classwize", &model.ApplicationConfiguration{
+		Name: "classwize",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp1,
+		Enabled:true,
+	})
+	config.Add("mylinewize", &model.ApplicationConfiguration{
+		Name: "mylinewize",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp1,
+		Enabled:true,
+	})
+
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		State: "running",
+		SpotInstance:true,
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		Apps: []model.Application {{Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}},
+	}
+	stateStore.Add("host1", host1)
+
+	host2 := &model.Host{
+		Id: "host2",
+		Network: "network1",
+		State: "running",
+		SpotInstance:true,
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		Apps: []model.Application {{Name:"mylinewize", Version:"1", State:"running"}, {Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"},  {Name:"classwize", Version:"1", State:"running"}},
+	}
+	stateStore.Add("host2", host2)
+
+	host3 := &model.Host{
+		Id: "host3",
+		Network: "network1",
+		State: "running",
+		SpotInstance:false,
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		Apps: []model.Application {{Name:"mylinewize", Version:"1", State:"running"}, {Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}, {Name:"classwize", Version:"1", State:"running"}},
+	}
+	stateStore.Add("host3", host3)
+
+	changes := planner.Plan_OptimiseLayout(config, stateStore)
+	fmt.Printf("changes: %+v", changes)
+	if len(changes) != 0{
 		t.Errorf("%+v", changes);
 	}
 

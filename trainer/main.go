@@ -135,11 +135,6 @@ func main() {
 			
 			/* Can we actually run the planner ? */
 			if(state_store.HasChanges() || cloud_provider.HasChanges()){
-				fmt.Println("Have Changes, wont plan...")
-				for _, change := range cloud_provider.Changes {
-					fmt.Println(fmt.Sprintf("%+v", change))
-					fmt.Println(fmt.Sprintf("%s", change.Id))
-				}
 				continue;
 			}
 
@@ -147,7 +142,7 @@ func main() {
 			for _, change := range changes {
 				if change.Type == "new_server" {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-						Message: fmt.Sprintf("Planner requested a new server"),
+						Message: fmt.Sprintf("Planner requested a new server, spot: %s subnet: %s", change.RequiresReliableInstance, change.Network),
 						Details:map[string]string{
 					}})
 
@@ -185,10 +180,24 @@ func main() {
 
 					if change.Type == "add_application" {
 						for _, elb := range app.GetLatestConfiguration().LoadBalancer {
+							state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+								Message: fmt.Sprintf("Registering host %s with load balancer %s for application %s", change.HostId, elb.Domain, change.ApplicationName),
+								Details:map[string]string{
+									"application": change.ApplicationName,
+									"host": change.HostId,
+								}})
+
 							cloud_provider.RegisterWithLb(host.Id, elb.Domain)
 						}
 					}else if change.Type == "remove_application" {
 						for _, elb := range app.GetLatestConfiguration().LoadBalancer {
+							state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+								Message: fmt.Sprintf("Deregistering host %s with load balancer %s for application %s", change.HostId, elb.Domain, change.ApplicationName),
+								Details:map[string]string{
+									"application": change.ApplicationName,
+									"host": change.HostId,
+								}})
+
 							cloud_provider.RegisterWithLb(host.Id, elb.Domain)
 						}
 					}

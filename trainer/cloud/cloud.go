@@ -52,11 +52,21 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 			} else {
 				newHost = cloud.Engine.SpawnSpotInstanceSync("", change.Network, change.SecurityGroups)
 				if newHost.Id == "" {
-					fmt.Println("Spot instance launch failed, starting normal instance instead")
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+						Message: fmt.Sprintf("Spot instance launch failed, starting normal instance instead"),
+						Details:map[string]string{
+						}})
+
 					newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroups)
 				}
 			}
 			if newHost.Id != "" {
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+					Message: fmt.Sprintf("Beginning installation of orcahostd to server %s", newHost.Id),
+					Details:map[string]string{
+						"host": newHost.Id,
+					}})
+
 				stateStore.HostInit(newHost)
 				/* If the change times out we need to nuke it */
 				change.NewHostId = string(newHost.Id)
@@ -67,7 +77,11 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 				ipAddr := cloud.Engine.GetIp(newHost.Id)
 				sshKeyPath := cloud.Engine.GetPem()
 				if ipAddr == "" {
-					fmt.Println(fmt.Sprintf("Missing IP address for host %s", newHost.Id))
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+						Message: fmt.Sprintf("Missing IP address for host %s, cannot deploy package to instance", newHost.Id),
+						Details:map[string]string{
+						}})
+
 					return
 				}
 				for {
@@ -108,11 +122,16 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 					}
 
 					change.InstalledPackages = true
+
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+						Message: fmt.Sprintf("Finished installation of orcahostd to server %s", newHost.Id),
+						Details:map[string]string{
+							"host": newHost.Id,
+						}})
 					break
 				}
 			}
 		} else if change.Type == "remove" {
-			fmt.Println("Got remove change, will terminate instance")
 			hostToRemove, err := stateStore.GetConfiguration(change.NewHostId)
 			if err == nil {
 				hostToRemove.State = "terminating"
@@ -126,10 +145,8 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 
 func (cloud *CloudProvider) NotifyHostCheckIn(host *model.Host){
 	/* Search for changes related to this instance */
-	fmt.Println(fmt.Sprintf("Host checkin: %+v", host))
 	for _, change := range cloud.Changes {
 		if change.Type == "new_server" {
-			fmt.Println(fmt.Sprintf("Got new_server change on checkin: %s, change: %+v", host.Id, change))
 			if change.NewHostId == host.Id {
 				host.SpotInstance = !change.RequiresReliableInstance
 				cloud.RemoveChange(change.Id)
@@ -147,7 +164,6 @@ func (cloud *CloudProvider) GetAllChanges() []*model.ChangeServer {
 }
 
 func (cloud* CloudProvider) RemoveChange(changeId string){
-	fmt.Println(fmt.Sprintf("CloudProvider RemoveChange: %s", changeId))
 	newChanges := make([]*model.ChangeServer, 0)
 	for _, change := range cloud.Changes {
 		if change.Id != changeId {
@@ -158,7 +174,6 @@ func (cloud* CloudProvider) RemoveChange(changeId string){
 }
 
 func (cloud* CloudProvider) AddChange(change *model.ChangeServer){
-	fmt.Println(fmt.Sprintf("CloudProvider AddChange: %+v", change))
 	cloud.Changes = append(cloud.Changes, change)
 }
 
