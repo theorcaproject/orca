@@ -142,7 +142,7 @@ func main() {
 			for _, change := range changes {
 				if change.Type == "new_server" {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-						Message: fmt.Sprintf("Planner requested a new server, spot: %s subnet: %s", change.RequiresReliableInstance, change.Network),
+						Message: fmt.Sprintf("Planner requested a new server, spot: %t subnet: %s", change.RequiresReliableInstance, change.Network),
 						Details:map[string]string{
 					}})
 

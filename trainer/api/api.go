@@ -156,7 +156,6 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 	var apps model.HostCheckinDataPackage
 	hostId := r.URL.Query().Get("host")
 
-
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&apps); err != nil {
 		ApiLogger.Infof("An error occurred while reading the application information")
@@ -209,12 +208,10 @@ func (api *Api) getAuditApplication(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) getAppPerformance(w http.ResponseWriter, r *http.Request) {
-	ApiLogger.Infof("Query to getAppPerformance")
 	application := r.URL.Query().Get("application")
 	returnJson(w, state.Stats.Query__ApplicationUtilisationStatistic(application))
 }
 
 func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
-	ApiLogger.Infof("Query to getSettings")
 	returnJson(w, api.configurationStore.GlobalSettings)
 }
