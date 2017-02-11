@@ -107,7 +107,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 						"echo orca | sudo -S mkdir -p /orca/client/data",
 						"echo orca | sudo -S mkdir -p /orca/client/config",
 						"echo orca | sudo -S chmod -R 777 /orca",
-						"bash -c 'sudo -S wget https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz'",
+						"bash -c 'sudo -S curl -O https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz'",
 						"sudo -S tar -xvf go1.7.4.linux-amd64.tar.gz",
 						"sudo -S mv go /usr/local",
 
