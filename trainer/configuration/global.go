@@ -16,31 +16,27 @@ You should have received a copy of the GNU General Public License
 along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package schedule
+package configuration
 
-import "time"
+type GlobalSettings struct {
+	ApiPort	int
+	CloudProvider string
+	AWSAccessKeyId string
+	AWSAccessKeySecret string
+	AWSRegion	string
+	AWSBaseAmi	string
+	AWSSSHKey	string
+	AWSSSHKeyPath	string
+	PlanningAlg	string
+	InstanceUsername	string
+	Uri string
+	AWSSpotPrice	float64
+	InstanceType    string
+	SpotInstanceType string
 
-type DeploymentSchedule WeekdaySchedule
+	AppChangeTimeout int64
+	ServerChangeTimeout int64
+	ServerTimeout int64
+	HostChangeFailureLimit int64
 
-
-func (w DeploymentSchedule) IsEmpty() bool {
-	return w.Schedule.isEmpty()
-}
-
-func (w DeploymentSchedule) Get(time time.Time) int {
-	return w.Schedule.get(time)
-}
-
-func (w *DeploymentSchedule) Set(day time.Weekday, minutes Minutes, ns int) {
-	if len(w.Schedule) == 0 {
-		w.Schedule = make(map[time.Weekday]map[Minutes]int)
-	}
-	w.Schedule.set(day, minutes, ns)
-}
-
-func (w *DeploymentSchedule) SetAll(ns int) {
-	if len(w.Schedule) == 0 {
-		w.Schedule = make(map[time.Weekday]map[Minutes]int)
-	}
-	w.Schedule.setAll(ns)
 }

@@ -51,12 +51,15 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 				newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroups)
 			} else {
 				newHost = cloud.Engine.SpawnSpotInstanceSync("", change.Network, change.SecurityGroups)
-				if newHost.Id == "" {
-					fmt.Println("Spot instance launch failed, starting normal instance instead")
-					newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroups)
-				}
 			}
+
 			if newHost.Id != "" {
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+					Message: fmt.Sprintf("Beginning installation of orcahostd to server %s", newHost.Id),
+					Details:map[string]string{
+						"host": newHost.Id,
+					}})
+
 				stateStore.HostInit(newHost)
 				/* If the change times out we need to nuke it */
 				change.NewHostId = string(newHost.Id)
@@ -67,13 +70,22 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 				ipAddr := cloud.Engine.GetIp(newHost.Id)
 				sshKeyPath := cloud.Engine.GetPem()
 				if ipAddr == "" {
-					fmt.Println(fmt.Sprintf("Missing IP address for host %s", newHost.Id))
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+						Message: fmt.Sprintf("Missing IP address for host %s, cannot deploy package to instance", newHost.Id),
+						Details:map[string]string{
+						}})
+
 					return
 				}
 				for {
 					session, addr := orcaSSh.Connect(cloud.sshUser, string(ipAddr) + ":22", sshKeyPath)
 					if session == nil {
-						//fail
+						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+							Message: fmt.Sprintf("Could not connect to host %s to deploy orcahostd. Giving up!", newHost.Id),
+							Details:map[string]string{
+							}})
+
+						return
 					}
 
 					SUPERVISOR_CONFIG := "'[unix_http_server]\\nfile=/var/run/supervisor.sock\\nchmod=0770\\nchown=root:supervisor\\n[supervisord]\\nlogfile=/var/log/supervisor/supervisord.log\\npidfile=/var/run/supervisord.pid\\nchildlogdir=/var/log/supervisor\\n[rpcinterface:supervisor]\\nsupervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\\n[supervisorctl]\\nserverurl=unix:///var/run/supervisor.sock\\n[include]\\nfiles = /etc/supervisor/conf.d/*.conf' > /etc/supervisor/supervisord.conf"
@@ -97,30 +109,38 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 						"echo orca | sudo -S chmod -R 777 /orca",
 
 						"rm -rf /orca/src && mkdir -p /orca/src && cd /orca/src && git clone https://github.com/theorcaproject/orcahostd.git",
-						"GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/fsouza/go-dockerclient && go get github.com/gorilla/mux'",
-						"GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go build && go install'",
+						"GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/gorilla/mux'",
+						"GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go get orcahostd && go build && go install'",
 						"echo orca | sudo -S service supervisor restart",
 					}
 
 					for _, cmd := range instance {
 						res := orcaSSh.ExecuteSshCommand(session, addr, cmd)
 						if !res {
-							//fail
+							state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+								Message: fmt.Sprintf("Could not execute command '%s' on host '%s'. Giving up now!", cmd, newHost.Id),
+								Details:map[string]string{
+								}})
 						}
 					}
 
 					change.InstalledPackages = true
+
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+						Message: fmt.Sprintf("Finished installation of orcahostd to server %s", newHost.Id),
+						Details:map[string]string{
+							"host": newHost.Id,
+						}})
 					break
 				}
 			}
 		} else if change.Type == "remove" {
-			fmt.Println("Got remove change, will terminate instance")
 			hostToRemove, err := stateStore.GetConfiguration(change.NewHostId)
 			if err == nil {
 				hostToRemove.State = "terminating"
 				cloud.Engine.TerminateInstance(HostId(change.NewHostId))
 			}
-			cloud.RemoveChange(change.Id)
+			cloud.RemoveChange(change.Id, true)
 			stateStore.RemoveHost(change.NewHostId)
 		}
 	}()
@@ -128,13 +148,11 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 
 func (cloud *CloudProvider) NotifyHostCheckIn(host *model.Host){
 	/* Search for changes related to this instance */
-	fmt.Println(fmt.Sprintf("Host checkin: %+v", host))
 	for _, change := range cloud.Changes {
 		if change.Type == "new_server" {
-			fmt.Println(fmt.Sprintf("Got new_server change on checkin: %s, change: %+v", host.Id, change))
 			if change.NewHostId == host.Id {
 				host.SpotInstance = !change.RequiresReliableInstance
-				cloud.RemoveChange(change.Id)
+				cloud.RemoveChange(change.Id, true)
 			}
 		}
 	}
@@ -145,11 +163,10 @@ func (cloud *CloudProvider) HasChanges() bool {
 }
 
 func (cloud *CloudProvider) GetAllChanges() []*model.ChangeServer {
-	return []*model.ChangeServer{}
+	return cloud.Changes
 }
 
-func (cloud* CloudProvider) RemoveChange(changeId string){
-	fmt.Println(fmt.Sprintf("CloudProvider RemoveChange: %s", changeId))
+func (cloud* CloudProvider) RemoveChange(changeId string, success bool){
 	newChanges := make([]*model.ChangeServer, 0)
 	for _, change := range cloud.Changes {
 		if change.Id != changeId {
@@ -160,7 +177,6 @@ func (cloud* CloudProvider) RemoveChange(changeId string){
 }
 
 func (cloud* CloudProvider) AddChange(change *model.ChangeServer){
-	fmt.Println(fmt.Sprintf("CloudProvider AddChange: %+v", change))
 	cloud.Changes = append(cloud.Changes, change)
 }
 
@@ -170,4 +186,13 @@ func (cloud* CloudProvider) RegisterWithLb(hostId string, lbId string) {
 
 func (cloud* CloudProvider) DeRegisterWithLb(hostId string, lbId string) {
 	cloud.Engine.DeRegisterWithLb(hostId, lbId)
+}
+
+func (cloud* CloudProvider) GetChange(changeId string) *model.ChangeServer {
+	for _, change := range cloud.Changes {
+		if change.Id == changeId {
+			return change
+		}
+	}
+	return nil
 }

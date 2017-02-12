@@ -68,11 +68,43 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 
 	for change, contains := range checkin.ChangesApplied {
 		if contains {
+			changeObject := host.GetChange(change)
+			if changeObject != nil {
+				if changeObject.Type == "add_application" {
+					Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
+						Message: fmt.Sprintf("Application %s was installed on host %s", changeObject.Name, changeObject.HostId),
+						Details:map[string]string{
+							"host": hostId,
+							"application": changeObject.Name,
+						}})
+
+				}else if changeObject.Type == "remove_application" {
+					Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
+						Message: fmt.Sprintf("Application %s was uninstalled from host %s", changeObject.Name, changeObject.HostId),
+						Details:map[string]string{
+							"host": hostId,
+							"application": changeObject.Name,
+						}})
+				}
+
+				host.NumberOfChangeFailuresInRow = 0
+			}
+
 			store.RemoveChange(host.Id, change)
 		}
 	}
 	host.LastSeen = time.Now().Format(time.RFC3339Nano)
 	host.Apps = make([]model.Application, 0)
+
+	if host.State != "running" {
+		Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
+			Message: fmt.Sprintf("Server %s state changed to running", hostId),
+			Details:map[string]string{
+				"host": hostId,
+			}})
+	}
+
+
 	host.State = "running"
 	for _, appStateFromHost := range checkin.State {
 		host.Apps = append(host.Apps, appStateFromHost.Application)
@@ -83,7 +115,6 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 func (store *StateStore) HasChanges() bool {
 	for _, host := range store.hosts {
 		if len(host.Changes) > 0 {
-			fmt.Println(fmt.Sprintf("State has changes: %+v", host.Changes))
 			return true;
 		}
 	}
@@ -104,4 +135,13 @@ func (store *StateStore) RemoveChange(hostId string, changeId string) {
 
 func (store *StateStore) RemoveHost(hostId string) {
 	delete(store.hosts, hostId)
+}
+
+func (store *StateStore) ListOfHosts() []*model.Host {
+	hosts := make([]*model.Host, 0)
+	for _, host := range store.GetAllHosts() {
+		hosts = append(hosts, host)
+	}
+
+	return hosts
 }

@@ -45,16 +45,16 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	api.cloudProvider = cloudProvider
 
 	ApiLogger.Infof("Initializing Api on Port %d", port)
-
 	r := mux.NewRouter()
 
 	/* Routes for the client */
+	r.HandleFunc("/settings", api.getSettings)
 	r.HandleFunc("/config", api.getAllConfiguration)
 	r.HandleFunc("/config/applications", api.getAllConfigurationApplications)
 	r.HandleFunc("/config/applications/configuration/latest", api.getAllConfigurationApplications_Configurations_Latest)
 	r.HandleFunc("/state", api.getAllRunningState)
 	r.HandleFunc("/checkin", api.hostCheckin)
-	r.HandleFunc("/state/cloud/application/performance", getAppPerformance)
+	r.HandleFunc("/state/cloud/application/performance", api.getAppPerformance)
 
 	r.HandleFunc("/audit", api.getAudit)
 	r.HandleFunc("/audit/application", api.getAuditApplication)
@@ -76,8 +76,6 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 }
 
 func returnJson(w http.ResponseWriter, obj interface{}) {
-	fmt.Printf("%+v", obj)
-
 	j, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		ApiLogger.Errorf("Json serialization failed - %s", err)
@@ -105,8 +103,9 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 				application = api.configurationStore.Add(applicationName, &object)
 			}
 
-			state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-				"message": "Modified application " + applicationName + " in pool",
+			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+				Message:"Modified application " + applicationName + " in pool",
+				Details:map[string]string{
 				"application": applicationName,
 			}})
 
@@ -114,6 +113,7 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 			application.DesiredDeployment = object.DesiredDeployment
 			application.Enabled = object.Enabled
 			application.DisableSchedule = object.DisableSchedule
+			application.DeploymentSchedule = object.DeploymentSchedule
 			api.configurationStore.Save()
 		}
 
@@ -138,8 +138,9 @@ func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.Res
 				object.Version = newVersion
 				application.Config[newVersion] = object
 
-				state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-					"message": "API: Modified application " + applicationName + ", created new configuration",
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+					Message:"API: Modified application " + applicationName + ", created new configuration",
+					Details:map[string]string{
 					"application": applicationName,
 				}})
 
@@ -162,7 +163,6 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 	var apps model.HostCheckinDataPackage
 	hostId := r.URL.Query().Get("host")
 
-
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&apps); err != nil {
 		ApiLogger.Infof("An error occurred while reading the application information")
@@ -172,7 +172,13 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		host := &model.Host{
-			Id: hostId, LastSeen: "", FirstSeen: time.Now().Format(time.RFC3339Nano), State: "running", Apps: []model.Application{}, Changes: []model.ChangeApplication{}, Resources: model.HostResources{},
+			Id: hostId,
+			LastSeen: "",
+			FirstSeen: time.Now().Format(time.RFC3339Nano),
+			State: "running",
+			Apps: []model.Application{},
+			Changes: []model.ChangeApplication{},
+			Resources: model.HostResources{},
 		}
 		ip, subnet, secGrps, isSpot := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
 		host.Ip = ip
@@ -181,8 +187,9 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 		host.SpotInstance = isSpot
 		api.state.Add(hostId, host)
 
-		state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-			"message": "Discovered new host " + hostId,
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Discovered new server %s, ip: %s, subnet: %s spot: %t", hostId, ip, subnet, isSpot),
+			Details:map[string]string{
 			"host": hostId,
 		}})
 	}
@@ -207,8 +214,7 @@ func (api *Api) getAuditApplication(w http.ResponseWriter, r *http.Request) {
 	returnJson(w, state.Audit.Query__AuditEvents(applicationName))
 }
 
-func getAppPerformance(w http.ResponseWriter, r *http.Request) {
-	ApiLogger.Infof("Query to getAppPerformance")
+func (api *Api) getAppPerformance(w http.ResponseWriter, r *http.Request) {
 	application := r.URL.Query().Get("application")
 	returnJson(w, state.Stats.Query__ApplicationUtilisationStatistic(application))
 }
@@ -223,4 +229,8 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) pushDaemonLogs(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("got daemon logs")
+}
+
+func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
+	returnJson(w, api.configurationStore.GlobalSettings)
 }

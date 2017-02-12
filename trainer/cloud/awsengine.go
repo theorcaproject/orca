@@ -1,3 +1,21 @@
+/*
+Copyright Alex Mack (al9mack@gmail.com) and Michael Lawson (michael@sphinix.com)
+This file is part of Orca.
+
+Orca is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Orca is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Orca.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package cloud
 
 import (
@@ -12,6 +30,7 @@ import (
 	"time"
 
 	"orca/trainer/model"
+	"orca/trainer/state"
 )
 
 type AwsCloudEngine struct {
@@ -28,6 +47,8 @@ type AwsCloudEngine struct {
 
 func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string, awsRegion string, awsBaseAmi string,
 sshKey string, sshKeyPath string, spotPrice float64, instanceType string, spotInstanceType string) {
+
+
 	aws.awsAccessKeySecret = awsAccessKeySecret
 	aws.awsAccessKeyId = awsAccessKeyId
 	aws.awsRegion = awsRegion
@@ -52,7 +73,6 @@ func (a *AwsCloudEngine) getInstanceInfo(hostId HostId) (*ec2.Instance, error) {
 	if len(res.Reservations) != 1 || len(res.Reservations[0].Instances) != 1 {
 		return &ec2.Instance{}, errors.New("Wrong instance count")
 	}
-	fmt.Println(fmt.Sprintf("Got Host info: %+v", res.Reservations[0].Instances[0]))
 	return res.Reservations[0].Instances[0], nil
 }
 
@@ -67,14 +87,18 @@ func (a *AwsCloudEngine) GetIp(hostId string) string {
 
 func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.SecurityGroup, bool) {
 	info, err := a.getInstanceInfo(hostId)
-	if err != nil || info == nil || info.PublicIpAddress == nil {
+	if err != nil || info == nil || info.PublicIpAddress == nil || info.SubnetId == nil {
 		return "", "", []model.SecurityGroup{}, false
 	}
 	secGrps := make([]model.SecurityGroup, 0)
 	for _, grp := range info.SecurityGroups {
 		secGrps = append(secGrps, model.SecurityGroup{Group: string(*grp.GroupId)})
 	}
-	isSpot := string(*info.InstanceLifecycle) == "spot"
+
+	isSpot := false
+	if (info.InstanceLifecycle != nil){
+		isSpot = string(*info.InstanceLifecycle) == "spot"
+	}
 	return string(*info.PublicIpAddress), string(*info.SubnetId), secGrps, isSpot
 }
 
@@ -93,7 +117,6 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, netwo
 	if instanceType == "" {
 		instanceType = InstanceType(engine.instanceType)
 	}
-	fmt.Println("AwsCloudEngine SpawnInstanceSync called with ", instanceType)
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 
 	conf := &ec2.RunInstancesInput{
@@ -117,17 +140,19 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, netwo
 	runResult, err := svc.RunInstances(conf)
 
 	if err != nil {
-		fmt.Println("AwsCloudEngine SpawnInstanceSync encountered an error ", err)
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+			Message: fmt.Sprintf("AwsCloudEngine SpawnInstanceSync encountered an error '%s'", err),
+			Details:map[string]string{
+			}})
+
 		return &model.Host{}
 	}
 
 	id := HostId(*runResult.Instances[0].InstanceId)
-	fmt.Println("AwsCloudEngine SpawnInstanceSync got a new host, lets wait until its ready. HostID is ", id)
 	if !engine.waitOnInstanceReady(id) {
 		return &model.Host{}
 	}
 
-	fmt.Println("AwsCloudEngine SpawnInstanceSync finished")
 	host := &model.Host{
 		Id: string(id),
 		SecurityGroups: securityGroups,
@@ -142,7 +167,6 @@ func (aws *AwsCloudEngine) GetInstanceType(HostId) InstanceType {
 }
 
 func (engine *AwsCloudEngine) TerminateInstance(hostId HostId) bool {
-	fmt.Println(fmt.Sprintf("TERMINATE INSTANCE: %s", hostId))
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 	_, err := svc.TerminateInstances(&ec2.TerminateInstancesInput{
 		InstanceIds: aws.StringSlice([]string{string(hostId)}),
@@ -218,7 +242,11 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network str
 
 	runResult, err := svc.RequestSpotInstances(&params)
 	if err != nil {
-		fmt.Println("AwsCloudEngine SpawnSpotInstance encountered an error ", err)
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+			Message: fmt.Sprintf("AwsCloudEngine SpawnSpotInstance encountered an error '%s'", err),
+			Details:map[string]string{
+			}})
+
 		return &model.Host{}
 	}
 	if len(runResult.SpotInstanceRequests) == 1 {
@@ -243,7 +271,10 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network str
 		}
 
 		if err != nil {
-			fmt.Println("Could not get instance id of spot request")
+			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+				Message: fmt.Sprintf("Could not get instanceId for spot instance"),
+				Details:map[string]string{
+				}})
 			return &model.Host{}
 		}
 		return  &model.Host{
@@ -278,7 +309,6 @@ func (engine *AwsCloudEngine) GetSpotInstanceHostId(spotId string) (HostId, erro
 }
 
 func (engine *AwsCloudEngine) SanityCheckHosts(hosts map[string]*model.Host) {
-	fmt.Println("Starting host sanity check")
 	for _, host := range hosts {
 		engine.doSanityCheck(host)
 	}
@@ -287,11 +317,15 @@ func (engine *AwsCloudEngine) SanityCheckHosts(hosts map[string]*model.Host) {
 func (engine *AwsCloudEngine) doSanityCheck(host *model.Host) {
 	ip, network, securityGroups, isSpot := engine.GetHostInfo(HostId(host.Id))
 	if ip == "" || network == "" || len(securityGroups) == 0 {
-		fmt.Println(fmt.Sprintf("Host Sanity check for %s failed, could not retrive info from AWS", host))
 		return
 	}
 	if host.Ip != ip || host.Network != network || host.SpotInstance != isSpot || !securityGroupsEqual(host.SecurityGroups, securityGroups){
-		fmt.Println(fmt.Sprintf("Got different info for host %s from AWS. Host was: %s, AWS Ip: %s, Subnet: %s, SpotInstance: %t, securityGroups: %v", host.Id, host, ip, network, isSpot, securityGroups))
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Got different info for host %s from AWS. Host was: %s, AWS Ip: %s, Subnet: %s, SpotInstance: %t, securityGroups: %v",
+				host.Id, host, ip, network, isSpot, securityGroups),
+			Details:map[string]string{
+			}})
+
 		host.Ip = ip
 		host.Network = network
 		host.SpotInstance = isSpot

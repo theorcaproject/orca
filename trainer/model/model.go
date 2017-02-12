@@ -91,6 +91,7 @@ type Host struct {
 	Resources HostResources
 	SpotInstance bool
 	SecurityGroups []SecurityGroup
+	NumberOfChangeFailuresInRow 	int64
 }
 
 func (host *Host) HasApp(name string) bool {
@@ -100,6 +101,16 @@ func (host *Host) HasApp(name string) bool {
 		}
 	}
 	return false;
+}
+
+
+func (host *Host) GetChange(id string) *ChangeApplication {
+	for _, change := range host.Changes {
+		if (change.Id == id) {
+			return &change
+		}
+	}
+	return nil;
 }
 
 func (host *Host) HasAppWithSameVersion(name string, version string) bool {

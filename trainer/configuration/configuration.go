@@ -32,29 +32,46 @@ import (
 )
 
 type ConfigurationStore struct {
-	Configurations map[string]*model.ApplicationConfiguration;
-	AuditDatabaseUri string;
-	trainerConfigurationFilePath string;
+	ApplicationConfigurations    	map[string]*model.ApplicationConfiguration;
+	GlobalSettings			GlobalSettings
+	AuditDatabaseUri             	string
+
+	trainerConfigurationFilePath 	string
 }
 
 func (store *ConfigurationStore) Init(trainerConfigurationFilePath string){
 	store.trainerConfigurationFilePath = trainerConfigurationFilePath
-	store.Configurations = make(map[string]*model.ApplicationConfiguration);
+
+	store.ApplicationConfigurations = make(map[string]*model.ApplicationConfiguration);
+	store.GlobalSettings = GlobalSettings{
+		ApiPort:5001,
+		AppChangeTimeout:300,
+		ServerChangeTimeout:300,
+		ServerTimeout:300,
+		HostChangeFailureLimit:10,
+	}
 }
 
 func (store *ConfigurationStore) DumpConfig(){
-	fmt.Printf("Loading config file from %+v", store.Configurations)
+	Logger.InitLogger.Infof("Loading config file from %+v", store.ApplicationConfigurations)
 }
 
 func (store* ConfigurationStore) Load(){
-	store.loadFromFile(store.trainerConfigurationFilePath)
+	store.loadApplicationConfigurationsFromFile(store.trainerConfigurationFilePath)
+
+	/* If the schedule has not been defined, we should set it to defaults */
+	for _, app := range store.ApplicationConfigurations {
+		if app.DeploymentSchedule.IsEmpty() {
+			app.DeploymentSchedule.SetAll(0)
+		}
+	}
 }
 
 func (store* ConfigurationStore) Save(){
 	store.saveConfigToFile(store.trainerConfigurationFilePath)
 }
 
-func (store* ConfigurationStore) loadFromFile(filename string) {
+func (store* ConfigurationStore) loadApplicationConfigurationsFromFile(filename string) {
 	Logger.InitLogger.Infof("Loading config file from %s", filename)
 	file, err := os.Open(filename)
 	if err != nil {
@@ -81,11 +98,12 @@ func (store* ConfigurationStore) loadFromFile(filename string) {
 }
 
 func (store* ConfigurationStore) Add(name string, config *model.ApplicationConfiguration) *model.ApplicationConfiguration{
-	state.Audit.Insert__AuditEvent(state.AuditEvent{Details:map[string]string{
-		"message": "Adding application " + name + " to orca",
+	state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+		Message: fmt.Sprintf("Adding application %s to orca", name),
+		Details:map[string]string{
 	}})
 
-	store.Configurations[name] = config;
+	store.ApplicationConfigurations[name] = config;
 	return config
 }
 
@@ -102,7 +120,7 @@ func (store* ConfigurationStore) saveConfigToFile(filename string) {
 }
 
 func (store *ConfigurationStore) GetConfiguration(application string) (*model.ApplicationConfiguration, error) {
-	if app, ok := store.Configurations[application]; ok {
+	if app, ok := store.ApplicationConfigurations[application]; ok {
 		return app, nil;
 	}
 
@@ -110,15 +128,19 @@ func (store *ConfigurationStore) GetConfiguration(application string) (*model.Ap
 }
 
 func (store *ConfigurationStore) GetAllConfiguration() (map[string]*model.ApplicationConfiguration) {
-	return store.Configurations
+	return store.ApplicationConfigurations
 }
 
 func (store *ConfigurationStore) ApplySchedules() {
-	fmt.Println("Starting apply schedules")
-	for _, config := range store.Configurations {
+	for _, config := range store.ApplicationConfigurations {
 		if config.DisableSchedule {
 			continue
 		}
+
+		if config.DeploymentSchedule.Get(time.Now()) == 0 {
+			continue
+		}
+
 		if config.DeploymentSchedule.Get(time.Now()) > config.MinDeployment {
 			config.DesiredDeployment = config.DeploymentSchedule.Get(time.Now())
 		} else {
