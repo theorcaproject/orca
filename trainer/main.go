@@ -73,7 +73,7 @@ func main() {
 	go func() {
 		for {
 			<-plannerAndTimeoutsTicker.C
-			if (startTime.Unix() + 2 * 120 > time.Now().Unix()) {
+			if (startTime.Unix() + 120 > time.Now().Unix()) {
 				continue
 			}
 			/* Check for timeouts */
