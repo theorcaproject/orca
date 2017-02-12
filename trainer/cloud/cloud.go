@@ -78,13 +78,15 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 
 					SUPERVISOR_CONFIG := "'[unix_http_server]\\nfile=/var/run/supervisor.sock\\nchmod=0770\\nchown=root:supervisor\\n[supervisord]\\nlogfile=/var/log/supervisor/supervisord.log\\npidfile=/var/run/supervisord.pid\\nchildlogdir=/var/log/supervisor\\n[rpcinterface:supervisor]\\nsupervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\\n[supervisorctl]\\nserverurl=unix:///var/run/supervisor.sock\\n[include]\\nfiles = /etc/supervisor/conf.d/*.conf' > /etc/supervisor/supervisord.conf"
 					ORCA_SUPERVISOR_CONFIG := "'[program:orca_client]\\ncommand=/orca/bin/orcahostd --interval 30 --hostid " + string(newHost.Id) + " --traineruri " + cloud.apiEndpoint + "\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=root\\nredirect_stderr=true\\nstdout_logfile=/orca/log/client.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
+					RSYSLOG_CONFIG := "'module(load=\"imfile\" PollingInterval=\"10\")\\ninput(type=\"imfile\" File=\"/var/log/apache2/error.log\"\\nTag=\"" + newHost.Id + "\"\\nStateFile=\"/var/spool/rsyslog/orcahostd\"\\n)\\nmodule(load=\"imuxsock\")\\n$template TraditionalFormat,\"%timegenerated% SomeHost %syslogtag%%msg:::drop-last-lf%\\n\"\\n$ModLoad imuxsock\\n*.* @@" + fmt.Sprintf("%s:%d", string(ipAddr), 5002) + "' > /etc/rsyslog.d/orca.conf"
 
 					instance := []string{
 						"echo orca | sudo -S addgroup --system supervisor",
 						"echo orca | sudo -S apt-get update",
-						"echo orca | sudo -S apt-get install -y git golang supervisor docker.io",
+						"echo orca | sudo -S apt-get install -y git golang supervisor docker.io rsyslog",
 						"echo orca | sudo -S sh -c \"echo " + SUPERVISOR_CONFIG + "\"",
 						"echo orca | sudo -S sh -c \"echo " + ORCA_SUPERVISOR_CONFIG + "\"",
+						"echo orca | sudo -S sh -c \"echo " + RSYSLOG_CONFIG + "\"",
 						"echo orca | sudo -S rm -rf /orca",
 						"echo orca | sudo -S mkdir -p /orca",
 						"echo orca | sudo -S mkdir -p /orca/apps",

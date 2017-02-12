@@ -59,6 +59,12 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r.HandleFunc("/audit", api.getAudit)
 	r.HandleFunc("/audit/application", api.getAuditApplication)
 
+
+	r.HandleFunc("/log", api.getLogs)
+	r.HandleFunc("/log/host", api.pushLogs)
+	r.HandleFunc("/log/daemon", api.pushDaemonLogs)
+
+
 	http.Handle("/", r)
 
 	func() {
@@ -205,4 +211,16 @@ func getAppPerformance(w http.ResponseWriter, r *http.Request) {
 	ApiLogger.Infof("Query to getAppPerformance")
 	application := r.URL.Query().Get("application")
 	returnJson(w, state.Stats.Query__ApplicationUtilisationStatistic(application))
+}
+
+func (api *Api) getLogs(w http.ResponseWriter, r *http.Request) {
+	returnJson(w, nil)
+}
+
+func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("got logs")
+}
+
+func (api *Api) pushDaemonLogs(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("got daemon logs")
 }
