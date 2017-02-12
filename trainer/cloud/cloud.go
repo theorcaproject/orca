@@ -51,15 +51,8 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 				newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroups)
 			} else {
 				newHost = cloud.Engine.SpawnSpotInstanceSync("", change.Network, change.SecurityGroups)
-				if newHost.Id == "" {
-					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
-						Message: fmt.Sprintf("Spot instance launch failed, starting normal instance instead"),
-						Details:map[string]string{
-						}})
-
-					newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroups)
-				}
 			}
+
 			if newHost.Id != "" {
 				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 					Message: fmt.Sprintf("Beginning installation of orcahostd to server %s", newHost.Id),
@@ -137,7 +130,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 				hostToRemove.State = "terminating"
 				cloud.Engine.TerminateInstance(HostId(change.NewHostId))
 			}
-			cloud.RemoveChange(change.Id)
+			cloud.RemoveChange(change.Id, true)
 			stateStore.RemoveHost(change.NewHostId)
 		}
 	}()
@@ -149,7 +142,7 @@ func (cloud *CloudProvider) NotifyHostCheckIn(host *model.Host){
 		if change.Type == "new_server" {
 			if change.NewHostId == host.Id {
 				host.SpotInstance = !change.RequiresReliableInstance
-				cloud.RemoveChange(change.Id)
+				cloud.RemoveChange(change.Id, true)
 			}
 		}
 	}
@@ -163,7 +156,7 @@ func (cloud *CloudProvider) GetAllChanges() []*model.ChangeServer {
 	return []*model.ChangeServer{}
 }
 
-func (cloud* CloudProvider) RemoveChange(changeId string){
+func (cloud* CloudProvider) RemoveChange(changeId string, success bool){
 	newChanges := make([]*model.ChangeServer, 0)
 	for _, change := range cloud.Changes {
 		if change.Id != changeId {
@@ -183,4 +176,13 @@ func (cloud* CloudProvider) RegisterWithLb(hostId string, lbId string) {
 
 func (cloud* CloudProvider) DeRegisterWithLb(hostId string, lbId string) {
 	cloud.Engine.DeRegisterWithLb(hostId, lbId)
+}
+
+func (cloud* CloudProvider) GetChange(changeId string) *model.ChangeServer {
+	for _, change := range cloud.Changes {
+		if change.Id == changeId {
+			return change
+		}
+	}
+	return nil
 }
