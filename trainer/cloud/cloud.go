@@ -80,7 +80,12 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 				for {
 					session, addr := orcaSSh.Connect(cloud.sshUser, string(ipAddr) + ":22", sshKeyPath)
 					if session == nil {
-						//fail
+						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+							Message: fmt.Sprintf("Could not connect to host %s to deploy orcahostd. Giving up!", newHost.Id),
+							Details:map[string]string{
+							}})
+
+						return
 					}
 
 					SUPERVISOR_CONFIG := "'[unix_http_server]\\nfile=/var/run/supervisor.sock\\nchmod=0770\\nchown=root:supervisor\\n[supervisord]\\nlogfile=/var/log/supervisor/supervisord.log\\npidfile=/var/run/supervisord.pid\\nchildlogdir=/var/log/supervisor\\n[rpcinterface:supervisor]\\nsupervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\\n[supervisorctl]\\nserverurl=unix:///var/run/supervisor.sock\\n[include]\\nfiles = /etc/supervisor/conf.d/*.conf' > /etc/supervisor/supervisord.conf"
@@ -110,7 +115,10 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 					for _, cmd := range instance {
 						res := orcaSSh.ExecuteSshCommand(session, addr, cmd)
 						if !res {
-							//fail
+							state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+								Message: fmt.Sprintf("Could not execute command '%s' on host '%s'. Giving up now!", cmd, newHost.Id),
+								Details:map[string]string{
+								}})
 						}
 					}
 
@@ -153,7 +161,7 @@ func (cloud *CloudProvider) HasChanges() bool {
 }
 
 func (cloud *CloudProvider) GetAllChanges() []*model.ChangeServer {
-	return []*model.ChangeServer{}
+	return cloud.Changes
 }
 
 func (cloud* CloudProvider) RemoveChange(changeId string, success bool){
