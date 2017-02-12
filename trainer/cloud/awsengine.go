@@ -78,11 +78,18 @@ func (a *AwsCloudEngine) getInstanceInfo(hostId HostId) (*ec2.Instance, error) {
 
 func (a *AwsCloudEngine) GetIp(hostId string) string {
 	info, err := a.getInstanceInfo(HostId(hostId))
-	if err != nil || info == nil || info.PublicIpAddress == nil {
+	if err != nil || info == nil || (info.PublicIpAddress == nil && info.PrivateIpAddress == nil ){
 		return ""
 	}
 
-	return string(*info.PublicIpAddress)
+	var ipAddress *string;
+	if info.PublicIpAddress != nil {
+		ipAddress = info.PublicIpAddress
+	}else if info.PrivateIpAddress != nil {
+		ipAddress = info.PrivateIpAddress
+	}
+
+	return string(*ipAddress)
 }
 
 func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.SecurityGroup, bool) {
