@@ -78,16 +78,23 @@ func (a *AwsCloudEngine) getInstanceInfo(hostId HostId) (*ec2.Instance, error) {
 
 func (a *AwsCloudEngine) GetIp(hostId string) string {
 	info, err := a.getInstanceInfo(HostId(hostId))
-	if err != nil || info == nil || info.PublicIpAddress == nil {
+	if err != nil || info == nil || (info.PublicIpAddress == nil && info.PrivateIpAddress == nil ){
 		return ""
 	}
 
-	return string(*info.PublicIpAddress)
+	var ipAddress *string;
+	if info.PublicIpAddress != nil {
+		ipAddress = info.PublicIpAddress
+	}else if info.PrivateIpAddress != nil {
+		ipAddress = info.PrivateIpAddress
+	}
+
+	return string(*ipAddress)
 }
 
 func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.SecurityGroup, bool) {
 	info, err := a.getInstanceInfo(hostId)
-	if err != nil || info == nil || info.PublicIpAddress == nil || info.SubnetId == nil {
+	if err != nil || info == nil || (info.PublicIpAddress == nil && info.PrivateIpAddress == nil) || info.SubnetId == nil {
 		return "", "", []model.SecurityGroup{}, false
 	}
 	secGrps := make([]model.SecurityGroup, 0)
@@ -99,7 +106,15 @@ func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.Sec
 	if (info.InstanceLifecycle != nil){
 		isSpot = string(*info.InstanceLifecycle) == "spot"
 	}
-	return string(*info.PublicIpAddress), string(*info.SubnetId), secGrps, isSpot
+
+	var ipAddress *string;
+	if info.PublicIpAddress != nil {
+		ipAddress = info.PublicIpAddress
+	}else if info.PrivateIpAddress != nil {
+		ipAddress = info.PrivateIpAddress
+	}
+
+	return string(*ipAddress), string(*info.SubnetId), secGrps, isSpot
 }
 
 func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {

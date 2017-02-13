@@ -18,25 +18,31 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 
 package configuration
 
-type GlobalSettings struct {
-	ApiPort	int
-	CloudProvider string
-	AWSAccessKeyId string
-	AWSAccessKeySecret string
-	AWSRegion	string
-	AWSBaseAmi	string
-	AWSSSHKey	string
-	AWSSSHKeyPath	string
-	PlanningAlg	string
-	InstanceUsername	string
-	Uri string
-	AWSSpotPrice	float64
-	InstanceType    string
-	SpotInstanceType string
+type User struct {
+	Password string
+}
 
-	AppChangeTimeout int64
-	ServerChangeTimeout int64
-	ServerTimeout int64
+type GlobalSettings struct {
+	ApiPort                int
+	CloudProvider          string
+	AWSAccessKeyId         string
+	AWSAccessKeySecret     string
+	AWSRegion              string
+	AWSBaseAmi             string
+	AWSSSHKey              string
+	AWSSSHKeyPath          string
+	PlanningAlg            string
+	InstanceUsername       string
+	Uri                    string
+	AWSSpotPrice           float64
+	InstanceType           string
+	SpotInstanceType       string
+
+	AppChangeTimeout       int64
+	ServerChangeTimeout    int64
+	ServerTimeout          int64
 	HostChangeFailureLimit int64
 
+	Users                  map[string]User
+	HostToken              string
 }
