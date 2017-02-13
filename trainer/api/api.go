@@ -46,6 +46,7 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	api.configurationStore = configurationStore
 	api.state = state
 	api.cloudProvider = cloudProvider
+	api.sessions = make(map[string]bool)
 
 	ApiLogger.Infof("Initializing Api on Port %d", port)
 	r := mux.NewRouter()
