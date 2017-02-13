@@ -241,10 +241,10 @@ func (api *Api) authenticate_user(w http.ResponseWriter, r *http.Request) bool {
 	token := r.URL.Query().Get("token")
 	if !api.sessions[token] {
 		http.Error(w, "access denied", 403)
-		return true
+		return false
 	}
 
-	return false
+	return true
 }
 
 func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
