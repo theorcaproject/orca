@@ -1,17 +1,14 @@
 /*
 Copyright Alex Mack (al9mack@gmail.com) and Michael Lawson (michael@sphinix.com)
 This file is part of Orca.
-
 Orca is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-
 Orca is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-
 You should have received a copy of the GNU General Public License
 along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -28,8 +25,11 @@ import (
 	"github.com/twinj/uuid"
 	"orca/trainer/cloud"
 	"flag"
+	"gopkg.in/mcuadros/go-syslog.v2"
 	"orca/trainer/model"
 )
+
+const LOG_PORT = 5002
 
 func main() {
 	fmt.Println("starting")
@@ -274,7 +274,24 @@ func main() {
 		}
 	}()
 
+	//start logging endpoint
+	channel := make(syslog.LogPartsChannel)
+	handler := syslog.NewChannelHandler(channel)
+	server := syslog.NewServer()
+	server.SetFormat(syslog.RFC3164)
+	server.SetHandler(handler)
+	server.ListenTCP(fmt.Sprintf("0.0.0.0:%d", LOG_PORT))
+	server.Boot()
+	go func(channel syslog.LogPartsChannel) {
+		for logParts := range channel {
+			if hostId, ex := logParts["tag"]; ex {
+				if message, exists := logParts["content"]; exists {
+					fmt.Println(fmt.Sprintf("Got remote log from %s: %s", hostId, message))
+				}
+			}
+		}
+	}(channel)
+
 	api := api.Api{}
 	api.Init(store.GlobalSettings.ApiPort, store, state_store, &cloud_provider)
 }
-
