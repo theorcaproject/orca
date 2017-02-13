@@ -1,17 +1,14 @@
 /*
 Copyright Alex Mack (al9mack@gmail.com) and Michael Lawson (michael@sphinix.com)
 This file is part of Orca.
-
 Orca is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-
 Orca is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-
 You should have received a copy of the GNU General Public License
 along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -23,10 +20,13 @@ import (
 	"orca/trainer/configuration"
 	"orca/trainer/state"
 	"orca/trainer/api"
+	"orca/trainer/planner"
+	"time"
+	"github.com/twinj/uuid"
 	"orca/trainer/cloud"
 	"flag"
 	"gopkg.in/mcuadros/go-syslog.v2"
-	//"orca/trainer/model"
+	"orca/trainer/model"
 )
 
 const LOG_PORT = 5002
@@ -136,11 +136,10 @@ func main() {
 				}
 			}
 
-	go func(channel syslog.LogPartsChannel) {
-		for logParts := range channel {
-			if hostId, ex := logParts["tag"]; ex {
-				if message, exists := logParts["content"]; exists {
-					fmt.Println(fmt.Sprintf("Got remote log from %s: %s", hostId, message))
+			/* Look for host timeouts */
+			for _, host := range state_store.GetAllHosts() {
+				if host.State == "initializing" {
+					continue
 				}
 				parsedTime, _ := time.Parse(time.RFC3339Nano, host.LastSeen)
 				if (time.Now().Unix() - parsedTime.Unix()) > store.GlobalSettings.ServerTimeout {
@@ -171,7 +170,7 @@ func main() {
 			for _, change := range changes {
 				if change.Type == "new_server" {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-						Message: fmt.Sprintf("Planner requested a new server, spot: %t subnet: %s", change.RequiresReliableInstance, change.Network),
+						Message: fmt.Sprintf("Planner requested a new server, spot: %t subnet: %s", !change.RequiresReliableInstance, change.Network),
 						Details:map[string]string{
 						}})
 
@@ -249,13 +248,17 @@ func main() {
 				}
 			}
 		}
-	}(channel)
+	}()
 
 	metricsCollectionTicker := time.NewTicker(time.Second * 120)
 	go func() {
 		for {
 			<-metricsCollectionTicker.C
 
+			for appName, _ := range store.GetAllConfiguration() {
+				metric := state.ApplicationUtilisationStatistic{}
+				metric.AppName = appName
+				metric.Timestamp = time.Now()
 
 				for hostId, _ := range state_store.GetAllHosts() {
 					appHostEntry, err := state_store.GetApplication(hostId, appName)
@@ -274,13 +277,11 @@ func main() {
 	//start logging endpoint
 	channel := make(syslog.LogPartsChannel)
 	handler := syslog.NewChannelHandler(channel)
-
 	server := syslog.NewServer()
 	server.SetFormat(syslog.RFC3164)
 	server.SetHandler(handler)
 	server.ListenTCP(fmt.Sprintf("0.0.0.0:%d", LOG_PORT))
 	server.Boot()
-
 	go func(channel syslog.LogPartsChannel) {
 		for logParts := range channel {
 			if hostId, ex := logParts["tag"]; ex {
@@ -294,4 +295,3 @@ func main() {
 	api := api.Api{}
 	api.Init(store.GlobalSettings.ApiPort, store, state_store, &cloud_provider)
 }
-
