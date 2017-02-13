@@ -34,6 +34,7 @@ type GlobalSettings struct {
 	PlanningAlg            string
 	InstanceUsername       string
 	Uri                    string
+	LoggingUri             string
 	AWSSpotPrice           float64
 	InstanceType           string
 	SpotInstanceType       string

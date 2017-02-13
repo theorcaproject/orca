@@ -30,13 +30,15 @@ type CloudProvider struct {
 	Changes []*model.ChangeServer
 
 	apiEndpoint string
+	loggingEndpoint string
 	sshUser string
 }
 
-func (cloud* CloudProvider) Init(engine CloudEngine, sshUser string, apiEndpoint string){
+func (cloud* CloudProvider) Init(engine CloudEngine, sshUser string, apiEndpoint string, loggingEndpoint string){
 	cloud.Engine = engine
 	cloud.apiEndpoint = apiEndpoint
 	cloud.sshUser= sshUser
+	cloud.loggingEndpoint= loggingEndpoint
 }
 
 func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore *state.StateStore){
@@ -90,7 +92,7 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 
 					SUPERVISOR_CONFIG := "'[unix_http_server]\\nfile=/var/run/supervisor.sock\\nchmod=0770\\nchown=root:supervisor\\n[supervisord]\\nlogfile=/var/log/supervisor/supervisord.log\\npidfile=/var/run/supervisord.pid\\nchildlogdir=/var/log/supervisor\\n[rpcinterface:supervisor]\\nsupervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\\n[supervisorctl]\\nserverurl=unix:///var/run/supervisor.sock\\n[include]\\nfiles = /etc/supervisor/conf.d/*.conf' > /etc/supervisor/supervisord.conf"
 					ORCA_SUPERVISOR_CONFIG := "'[program:orca_client]\\ncommand=/orca/bin/orcahostd --interval 30 --hostid " + string(newHost.Id) + " --traineruri " + cloud.apiEndpoint + "\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=root\\nredirect_stderr=true\\nstdout_logfile=/orca/log/client.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
-					RSYSLOG_CONFIG := "'module(load=\"imfile\" PollingInterval=\"10\")\\ninput(type=\"imfile\" File=\"/var/log/apache2/error.log\"\\nTag=\"" + newHost.Id + "\"\\nStateFile=\"/var/spool/rsyslog/orcahostd\"\\n)\\nmodule(load=\"imuxsock\")\\n$template TraditionalFormat,\"%timegenerated% SomeHost %syslogtag%%msg:::drop-last-lf%\\n\"\\n$ModLoad imuxsock\\n*.* @@" + fmt.Sprintf("%s:%d", string(ipAddr), 5002) + "' > /etc/rsyslog.d/orca.conf"
+					RSYSLOG_CONFIG := "'module(load=\"imfile\" PollingInterval=\"10\")\\ninput(type=\"imfile\" File=\"/var/log/syslog\"\\nTag=\"" + newHost.Id + "\"\\nStateFile=\"/var/spool/rsyslog/orcahostd\"\\n)\\nmodule(load=\"imuxsock\")\\n$template TraditionalFormat,\"%timegenerated% " + newHost.Id + " %syslogtag%%msg:::drop-last-lf%\\n\"\\n$ModLoad imuxsock\\n*.* @@" + cloud.loggingEndpoint + "' > /etc/rsyslog.d/orca.conf"
 
 					instance := []string{
 						"echo orca | sudo -S addgroup --system supervisor",
