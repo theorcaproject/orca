@@ -29,12 +29,15 @@ import (
 	log "orca/util/log"
 	"orca/trainer/cloud"
 	"time"
+	"github.com/twinj/uuid"
 )
 
 type Api struct {
 	configurationStore *configuration.ConfigurationStore
 	state              *state.StateStore
-	cloudProvider  		*cloud.CloudProvider
+	cloudProvider      *cloud.CloudProvider
+
+	sessions           map[string]bool
 }
 
 var ApiLogger = log.LoggerWithField(log.Logger, "module", "api")
@@ -48,6 +51,7 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r := mux.NewRouter()
 
 	/* Routes for the client */
+	r.HandleFunc("/authenticate", api.authenticate)
 	r.HandleFunc("/settings", api.getSettings)
 	r.HandleFunc("/config", api.getAllConfiguration)
 	r.HandleFunc("/config/applications", api.getAllConfigurationApplications)
@@ -81,138 +85,193 @@ func returnJson(w http.ResponseWriter, obj interface{}) {
 }
 
 func (api *Api) getAllConfiguration(w http.ResponseWriter, r *http.Request) {
-	returnJson(w, api.configurationStore.GetAllConfiguration())
+	if (api.authenticate_user(w, r)) {
+		returnJson(w, api.configurationStore.GetAllConfiguration())
+	}
 }
 
 func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
-		applicationName := r.URL.Query().Get("application")
+	if (api.authenticate_user(w, r)) {
+		if r.Method == "POST" {
+			applicationName := r.URL.Query().Get("application")
 
-		var object model.ApplicationConfiguration
-		decoder := json.NewDecoder(r.Body)
-		if err := decoder.Decode(&object); err == nil {
-			application, err := api.configurationStore.GetConfiguration(applicationName)
-			if err != nil {
-				object.Config = make(map[string]model.VersionConfig)
-				application = api.configurationStore.Add(applicationName, &object)
+			var object model.ApplicationConfiguration
+			decoder := json.NewDecoder(r.Body)
+			if err := decoder.Decode(&object); err == nil {
+				application, err := api.configurationStore.GetConfiguration(applicationName)
+				if err != nil {
+					object.Config = make(map[string]model.VersionConfig)
+					application = api.configurationStore.Add(applicationName, &object)
+				}
+
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+					Message:"Modified application " + applicationName + " in pool",
+					Details:map[string]string{
+						"application": applicationName,
+					}})
+
+				application.MinDeployment = object.MinDeployment
+				application.DesiredDeployment = object.DesiredDeployment
+				application.Enabled = object.Enabled
+				application.DisableSchedule = object.DisableSchedule
+				application.DeploymentSchedule = object.DeploymentSchedule
+				api.configurationStore.Save()
 			}
 
-			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-				Message:"Modified application " + applicationName + " in pool",
-				Details:map[string]string{
-				"application": applicationName,
-			}})
-
-			application.MinDeployment = object.MinDeployment
-			application.DesiredDeployment = object.DesiredDeployment
-			application.Enabled = object.Enabled
-			application.DisableSchedule = object.DisableSchedule
-			application.DeploymentSchedule = object.DeploymentSchedule
-			api.configurationStore.Save()
 		}
 
+		listOfApplications := []*model.ApplicationConfiguration{}
+		for _, application := range api.configurationStore.GetAllConfiguration() {
+			listOfApplications = append(listOfApplications, application)
+		}
+		returnJson(w, listOfApplications)
 	}
-
-	listOfApplications := []*model.ApplicationConfiguration{}
-	for _, application := range api.configurationStore.GetAllConfiguration() {
-		listOfApplications = append(listOfApplications, application)
-	}
-	returnJson(w, listOfApplications)
 }
 
 func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.ResponseWriter, r *http.Request) {
-	applicationName := r.URL.Query().Get("application")
-	application, err := api.configurationStore.GetConfiguration(applicationName)
-	if err == nil {
-		if r.Method == "POST" {
-			var object model.VersionConfig
-			decoder := json.NewDecoder(r.Body)
-			if err := decoder.Decode(&object); err == nil {
-				newVersion := application.GetNextVersion()
-				object.Version = newVersion
-				application.Config[newVersion] = object
+	if (api.authenticate_user(w, r)) {
+		applicationName := r.URL.Query().Get("application")
+		application, err := api.configurationStore.GetConfiguration(applicationName)
+		if err == nil {
+			if r.Method == "POST" {
+				var object model.VersionConfig
+				decoder := json.NewDecoder(r.Body)
+				if err := decoder.Decode(&object); err == nil {
+					newVersion := application.GetNextVersion()
+					object.Version = newVersion
+					application.Config[newVersion] = object
 
-				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-					Message:"API: Modified application " + applicationName + ", created new configuration",
-					Details:map[string]string{
-					"application": applicationName,
-				}})
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+						Message:"API: Modified application " + applicationName + ", created new configuration",
+						Details:map[string]string{
+							"application": applicationName,
+						}})
 
-				api.configurationStore.Save()
+					api.configurationStore.Save()
+				}
 			}
+
+			returnJson(w, application.GetLatestConfiguration())
+			return
 		}
 
-		returnJson(w, application.GetLatestConfiguration())
-		return
-	}
-
-	returnJson(w, nil)
-}
-
-func (api *Api) getAllRunningState(w http.ResponseWriter, r *http.Request) {
-	returnJson(w, api.state.GetAllHosts())
-}
-
-func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
-	var apps model.HostCheckinDataPackage
-	hostId := r.URL.Query().Get("host")
-
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&apps); err != nil {
-		ApiLogger.Infof("An error occurred while reading the application information")
-	}
-
-	_, err := api.state.GetConfiguration(hostId)
-
-	if err != nil {
-		host := &model.Host{
-			Id: hostId,
-			LastSeen: "",
-			FirstSeen: time.Now().Format(time.RFC3339Nano),
-			State: "running",
-			Apps: []model.Application{},
-			Changes: []model.ChangeApplication{},
-			Resources: model.HostResources{},
-		}
-		ip, subnet, secGrps, isSpot := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
-		host.Ip = ip
-		host.Network = subnet
-		host.SecurityGroups = secGrps
-		host.SpotInstance = isSpot
-		api.state.Add(hostId, host)
-
-		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-			Message: fmt.Sprintf("Discovered new server %s, ip: %s, subnet: %s spot: %t", hostId, ip, subnet, isSpot),
-			Details:map[string]string{
-			"host": hostId,
-		}})
-	}
-
-	result, err := api.state.HostCheckin(hostId, apps)
-	if err == nil {
-		/* Lets tell the cloud provider that this host has checked in */
-		api.cloudProvider.NotifyHostCheckIn(result)
-		returnJson(w, result.Changes)
-		return
-	} else {
 		returnJson(w, nil)
 	}
 }
 
+func (api *Api) getAllRunningState(w http.ResponseWriter, r *http.Request) {
+	if (api.authenticate_user(w, r)) {
+		returnJson(w, api.state.GetAllHosts())
+	}
+}
+
+func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if (api.configurationStore.GlobalSettings.HostToken == token){
+		var apps model.HostCheckinDataPackage
+		hostId := r.URL.Query().Get("host")
+
+		decoder := json.NewDecoder(r.Body)
+		if err := decoder.Decode(&apps); err != nil {
+			ApiLogger.Infof("An error occurred while reading the application information")
+		}
+
+		_, err := api.state.GetConfiguration(hostId)
+
+		if err != nil {
+			host := &model.Host{
+				Id: hostId,
+				LastSeen: "",
+				FirstSeen: time.Now().Format(time.RFC3339Nano),
+				State: "running",
+				Apps: []model.Application{},
+				Changes: []model.ChangeApplication{},
+				Resources: model.HostResources{},
+			}
+			ip, subnet, secGrps, isSpot := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
+			host.Ip = ip
+			host.Network = subnet
+			host.SecurityGroups = secGrps
+			host.SpotInstance = isSpot
+			api.state.Add(hostId, host)
+
+			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+				Message: fmt.Sprintf("Discovered new server %s, ip: %s, subnet: %s spot: %t", hostId, ip, subnet, isSpot),
+				Details:map[string]string{
+					"host": hostId,
+				}})
+		}
+
+		result, err := api.state.HostCheckin(hostId, apps)
+		if err == nil {
+			/* Lets tell the cloud provider that this host has checked in */
+			api.cloudProvider.NotifyHostCheckIn(result)
+			returnJson(w, result.Changes)
+			return
+		} else {
+			returnJson(w, nil)
+		}
+	}else{
+		http.Error(w, "Token invalid", 403)
+	}
+}
+
 func (api *Api) getAudit(w http.ResponseWriter, r *http.Request) {
-	returnJson(w, state.Audit.Query__AuditEvents(""))
+	if (api.authenticate_user(w, r)) {
+		returnJson(w, state.Audit.Query__AuditEvents(""))
+	}
 }
 
 func (api *Api) getAuditApplication(w http.ResponseWriter, r *http.Request) {
-	applicationName := r.URL.Query().Get("application")
-	returnJson(w, state.Audit.Query__AuditEvents(applicationName))
+	if (api.authenticate_user(w, r)) {
+		applicationName := r.URL.Query().Get("application")
+		returnJson(w, state.Audit.Query__AuditEvents(applicationName))
+	}
 }
 
 func (api *Api) getAppPerformance(w http.ResponseWriter, r *http.Request) {
-	application := r.URL.Query().Get("application")
-	returnJson(w, state.Stats.Query__ApplicationUtilisationStatistic(application))
+	if (api.authenticate_user(w, r)) {
+		application := r.URL.Query().Get("application")
+		returnJson(w, state.Stats.Query__ApplicationUtilisationStatistic(application))
+	}
+}
+
+func (api *Api) authenticate_user(w http.ResponseWriter, r *http.Request) bool {
+	token := r.URL.Query().Get("token")
+	if !api.sessions[token] {
+		http.Error(w, "access denied", 403)
+		return true
+	}
+
+	return false
 }
 
 func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
-	returnJson(w, api.configurationStore.GlobalSettings)
+	if (api.authenticate_user(w, r)) {
+		returnJson(w, api.configurationStore.GlobalSettings)
+	}
+}
+
+type AuthenticationResponse struct {
+	Token string
+}
+
+func (api *Api) authenticate(w http.ResponseWriter, r *http.Request) {
+	username := r.URL.Query().Get("username")
+	password := r.URL.Query().Get("password")
+
+	for name, userObject := range api.configurationStore.GlobalSettings.Users {
+		if username == name && password == userObject.Password {
+			token := uuid.NewV4().String()
+			api.sessions[token] = true
+
+			ar := AuthenticationResponse{
+				Token:token,
+			}
+			returnJson(w, ar)
+			return
+		}
+	}
+
+	http.Error(w, "Authentication error", 403)
 }
