@@ -64,7 +64,6 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r.HandleFunc("/audit", api.getAudit)
 	r.HandleFunc("/audit/application", api.getAuditApplication)
 
-
 	r.HandleFunc("/log", api.getLogs)
 	r.HandleFunc("/log/host", api.pushLogs)
 	r.HandleFunc("/log/daemon", api.pushDaemonLogs)
@@ -222,6 +221,7 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Token invalid", 403)
 	}
 }
+
 func (api *Api) getLogs(w http.ResponseWriter, r *http.Request) {
 	returnJson(w, nil)
 }
@@ -257,10 +257,10 @@ func (api *Api) authenticate_user(w http.ResponseWriter, r *http.Request) bool {
 	token := r.URL.Query().Get("token")
 	if !api.sessions[token] {
 		http.Error(w, "access denied", 403)
-		return true
+		return false
 	}
 
-	return false
+	return true
 }
 
 func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
