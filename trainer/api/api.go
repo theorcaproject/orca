@@ -64,14 +64,20 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r.HandleFunc("/config/applications/configuration/latest", api.getAllConfigurationApplications_Configurations_Latest)
 	r.HandleFunc("/state", api.getAllRunningState)
 	r.HandleFunc("/checkin", api.hostCheckin)
+
+	r.HandleFunc("/state/cloud/host/performance", api.getHostPerformance)
 	r.HandleFunc("/state/cloud/application/performance", api.getAppPerformance)
 
-	r.HandleFunc("/audit", api.getAudit)
-	r.HandleFunc("/audit/application", api.getAuditApplication)
+	r.HandleFunc("/state/cloud/audit", api.getAudit)
+	r.HandleFunc("/state/cloud/host/audit", api.getHostAudit)
+	r.HandleFunc("/state/cloud/application/audit", api.getApplicationAudit)
+
+	r.HandleFunc("/state/cloud/logs", api.getAllLogs)
+	r.HandleFunc("/state/cloud/host/logs", api.getHostLogs)
+	r.HandleFunc("/state/cloud/application/logs", api.getApplicationLogs)
 
 	r.HandleFunc("/log", api.getLogs)
 	r.HandleFunc("/log/apps", api.pushLogs)
-
 
 	http.Handle("/", r)
 
@@ -217,6 +223,16 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			/* Lets tell the cloud provider that this host has checked in */
 			api.cloudProvider.NotifyHostCheckIn(result)
+
+			/* Lets save some stats */
+			state.Stats.Insert__HostUtilisationStatistic(state.HostUtilisationStatistic{
+				Cpu: apps.HostMetrics.CpuUsage,
+				Mbytes: apps.HostMetrics.MemoryUsage,
+				Network: apps.HostMetrics.NetworkUsage,
+				HardDiskUsage: apps.HostMetrics.HardDiskUsage,
+				HardDiskUsagePercent: apps.HostMetrics.HardDiskUsagePercent,
+			})
+
 			returnJson(w, result.Changes)
 			return
 		} else {
@@ -252,17 +268,43 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func (api *Api) getAudit(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
-		returnJson(w, state.Audit.Query__AuditEvents(""))
+		//returnJson(w, state.Audit.Query__Log())
 	}
 }
 
-func (api *Api) getAuditApplication(w http.ResponseWriter, r *http.Request) {
+func (api *Api) getHostAudit(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
-		applicationName := r.URL.Query().Get("application")
-		returnJson(w, state.Audit.Query__AuditEvents(applicationName))
+		hostAudit := r.URL.Query().Get("host")
+		returnJson(w, state.Audit.Query__HostLog(hostAudit))
+	}
+}
+
+func (api *Api) getApplicationLogs(w http.ResponseWriter, r *http.Request) {
+	if (api.authenticate_user(w, r)) {
+		application := r.URL.Query().Get("application")
+		returnJson(w, state.Audit.Query__AppLog(application))
+	}
+}
+
+func (api *Api) getAllLogs(w http.ResponseWriter, r *http.Request) {
+	if (api.authenticate_user(w, r)) {
+		returnJson(w, state.Audit.Query__AuditEvents())
+	}
+}
+
+func (api *Api) getHostLogs(w http.ResponseWriter, r *http.Request) {
+	if (api.authenticate_user(w, r)) {
+		hostAudit := r.URL.Query().Get("host")
+		returnJson(w, state.Audit.Query__AuditEventsHost(hostAudit))
+	}
+}
+
+func (api *Api) getApplicationAudit(w http.ResponseWriter, r *http.Request) {
+	if (api.authenticate_user(w, r)) {
+		application := r.URL.Query().Get("application")
+		returnJson(w, state.Audit.Query__AuditEventsApplication(application))
 	}
 }
 
@@ -270,6 +312,13 @@ func (api *Api) getAppPerformance(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
 		application := r.URL.Query().Get("application")
 		returnJson(w, state.Stats.Query__ApplicationUtilisationStatistic(application))
+	}
+}
+
+func (api *Api) getHostPerformance(w http.ResponseWriter, r *http.Request) {
+	if (api.authenticate_user(w, r)) {
+		host := r.URL.Query().Get("host")
+		returnJson(w, state.Stats.Query__HostUtilisationStatistic(host))
 	}
 }
 
