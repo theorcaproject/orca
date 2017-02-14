@@ -17,7 +17,6 @@ package main
 
 import (
 	"fmt"
-	"orca/trainer/configuration"
 	"orca/trainer/state"
 	"orca/trainer/api"
 	"orca/trainer/planner"
@@ -27,9 +26,8 @@ import (
 	"flag"
 	"gopkg.in/mcuadros/go-syslog.v2"
 	"orca/trainer/model"
+	"orca/trainer/configuration"
 )
-
-const LOG_PORT = 5002
 
 func main() {
 	fmt.Println("starting")
@@ -274,21 +272,27 @@ func main() {
 		}
 	}()
 
-	//start logging endpoint
+	/* tart logging endpoint */
 	channel := make(syslog.LogPartsChannel)
 	handler := syslog.NewChannelHandler(channel)
 	server := syslog.NewServer()
 	server.SetFormat(syslog.RFC3164)
 	server.SetHandler(handler)
-	server.ListenTCP(fmt.Sprintf("0.0.0.0:%d", LOG_PORT))
+	server.ListenTCP(fmt.Sprintf("0.0.0.0:%d", store.GlobalSettings.LoggingPort))
 	server.Boot()
 	go func(channel syslog.LogPartsChannel) {
 		for logParts := range channel {
-			if hostId, ex := logParts["tag"]; ex {
+			if hostId, ex := logParts["hostname"]; ex {
 				if message, exists := logParts["content"]; exists {
 					fmt.Println(fmt.Sprintf("Got remote log from %s: %s", hostId, message))
+					fmt.Println(fmt.Sprintf("%+v", logParts))
+				} else {
+					fmt.Println(fmt.Sprintf("Malformed0: %s", logParts["content"]))
 				}
+			} else {
+				fmt.Println(fmt.Sprintf("Malformed: %s", logParts["content"]))
 			}
+
 		}
 	}(channel)
 

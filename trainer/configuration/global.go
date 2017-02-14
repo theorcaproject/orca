@@ -24,6 +24,7 @@ type User struct {
 
 type GlobalSettings struct {
 	ApiPort                int
+	LoggingPort            int
 	CloudProvider          string
 	AWSAccessKeyId         string
 	AWSAccessKeySecret     string
