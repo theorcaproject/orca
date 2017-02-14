@@ -46,6 +46,11 @@ type ChangeServer struct {
 	// Internal Status Information
 	InstanceLaunched bool
 	InstalledPackages bool
+
+	//Load balancer add task
+	LoadBalancerName string
+	LoadBalancerAppTarget string
+	LoadBalancerAppVersion string
 }
 
 type HostResources struct {
@@ -174,6 +179,13 @@ type SecurityGroup struct {
 	Group string
 }
 
+type ApplicationChecks struct {
+	Type string /* Either HTTP or TCP */
+
+	Port int64
+	Uri  string
+}
+
 type VersionConfig struct {
 	Version 	     string
 	DockerConfig	     DockerConfig
@@ -185,6 +197,7 @@ type VersionConfig struct {
 	VolumeMappings       []VolumeMapping
 	EnvironmentVariables []EnvironmentVariable
 	Files                []File
+	Checks               []ApplicationChecks
 }
 
 type ApplicationConfiguration struct {

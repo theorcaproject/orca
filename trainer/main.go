@@ -76,6 +76,7 @@ func main() {
 			if (startTime.Unix() + 120 > time.Now().Unix()) {
 				continue
 			}
+
 			/* Check for timeouts */
 			for _, host := range state_store.GetAllHosts() {
 				for _, change := range host.Changes {
@@ -122,7 +123,7 @@ func main() {
 						}, state_store)
 					}
 
-					/* Incase the system actually launched an instance, nuke it from the system*/
+					/* In-case the system actually launched an instance, nuke it from the system */
 					if change.NewHostId != "" {
 						cloud_provider.ActionChange(&model.ChangeServer{
 							Id:uuid.NewV4().String(),
@@ -158,6 +159,9 @@ func main() {
 				}
 			}
 
+			/* Check load balancer states */
+			/* How can we do this in a scalable way?? */
+
 			store.ApplySchedules()
 			cloud_provider.Engine.SanityCheckHosts(state_store.GetAllHosts())
 
@@ -186,7 +190,7 @@ func main() {
 
 					continue
 				}
-				if change.Type == "add_application" || change.Type == "remove_application" {
+				if change.Type == "add_application" {
 					/* Add new server */
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 						Message: fmt.Sprintf("Planner requested application %s be %s to host %s", change.ApplicationName, change.Type, change.HostId),
@@ -199,38 +203,71 @@ func main() {
 					app, _ := store.GetConfiguration(change.ApplicationName)
 					host.Changes = append(host.Changes, model.ChangeApplication{
 						Id: uuid.NewV4().String(),
-						Type: change.Type,
+						Type: "add_application",
 						HostId: host.Id,
 						AppConfig: app.GetLatestConfiguration(),
 						Name: change.ApplicationName,
 						Time:time.Now().Format(time.RFC3339Nano),
 					})
 
-					if change.Type == "add_application" {
-						for _, elb := range app.GetLatestConfiguration().LoadBalancer {
-							state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-								Message: fmt.Sprintf("Registering host %s with load balancer %s for application %s", change.HostId, elb.Domain, change.ApplicationName),
-								Details:map[string]string{
-									"application": change.ApplicationName,
-									"host": change.HostId,
-								}})
+					for _, elb := range app.GetLatestConfiguration().LoadBalancer {
+						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+							Message: fmt.Sprintf("Registering host %s with load balancer %s for application %s", change.HostId, elb.Domain, change.ApplicationName),
+							Details:map[string]string{
+								"application": change.ApplicationName,
+								"host": change.HostId,
+							}})
 
-							cloud_provider.RegisterWithLb(host.Id, elb.Domain)
-						}
-					} else if change.Type == "remove_application" {
-						for _, elb := range app.GetLatestConfiguration().LoadBalancer {
-							state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-								Message: fmt.Sprintf("Deregistering host %s with load balancer %s for application %s", change.HostId, elb.Domain, change.ApplicationName),
-								Details:map[string]string{
-									"application": change.ApplicationName,
-									"host": change.HostId,
-								}})
-
-							cloud_provider.RegisterWithLb(host.Id, elb.Domain)
-						}
+						cloud_provider.ActionChange(&model.ChangeServer{
+							Id:uuid.NewV4().String(),
+							Type: "loadbalancer_join",
+							Time:time.Now().Format(time.RFC3339Nano),
+							LoadBalancerName: elb.Domain,
+							NewHostId: change.HostId,
+						}, state_store)
 					}
 
 					continue
+				}
+
+				if change.Type == "remove_application" {
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+						Message: fmt.Sprintf("Planner requested application %s be %s to host %s", change.ApplicationName, change.Type, change.HostId),
+						Details:map[string]string{
+							"application": change.ApplicationName,
+							"host": change.HostId,
+						}})
+
+					host, _ := state_store.GetConfiguration(change.HostId)
+					app, _ := store.GetConfiguration(change.ApplicationName)
+					host.Changes = append(host.Changes, model.ChangeApplication{
+						Id: uuid.NewV4().String(),
+						Type: "remove_application",
+						HostId: host.Id,
+						AppConfig: app.GetLatestConfiguration(),
+						Name: change.ApplicationName,
+						Time:time.Now().Format(time.RFC3339Nano),
+					})
+
+					for _, elb := range app.GetLatestConfiguration().LoadBalancer {
+						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+							Message: fmt.Sprintf("Deregistering host %s with load balancer %s for application %s", change.HostId, elb.Domain, change.ApplicationName),
+							Details:map[string]string{
+								"application": change.ApplicationName,
+								"host": change.HostId,
+							}})
+
+						cloud_provider.ActionChange(&model.ChangeServer{
+							Id:uuid.NewV4().String(),
+							Type: "loadbalancer_leave",
+							Time:time.Now().Format(time.RFC3339Nano),
+							LoadBalancerName: elb.Domain,
+							NewHostId: change.HostId,
+						}, state_store)
+					}
+
+					continue
+
 				}
 				if change.Type == "kill_server" {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
