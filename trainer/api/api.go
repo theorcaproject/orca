@@ -228,15 +228,25 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) getLogs(w http.ResponseWriter, r *http.Request) {
-	returnJson(w, nil)
+	if (api.authenticate_user(w, r)) {
+		returnJson(w, state.Audit.Query__HostLog(""))
+	}
 }
 
 
 func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
-	var logs Logs
+	var logs map[string]Logs
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&logs); err == nil {
-		fmt.Println(fmt.Sprintf("Got logs from %s: OUT: %s; ERR: %s", r.URL.Query().Get("host"), logs.Out, logs.Err))
+		host := r.URL.Query().Get("host")
+		for app, appLogs := range logs {
+			state.Audit.Insert__Log(state.LogEvent{
+				HostId: host, AppId: app, Message: appLogs.Out, LogLevel: "stdout",
+			})
+			state.Audit.Insert__Log(state.LogEvent{
+				HostId: host, AppId: app, Message: appLogs.Err, LogLevel: "stderr",
+			})
+		}
 	} else {
 		fmt.Println(fmt.Sprintf("Log parsing error: %s", err))
 	}
