@@ -24,7 +24,6 @@ import (
 	"github.com/twinj/uuid"
 	"orca/trainer/model"
 	"sort"
-	"fmt"
 )
 
 type BoringPlanner struct {
@@ -72,6 +71,10 @@ func hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguratio
 	}
 
 	for _, otherApps := range host.Apps {
+		if otherApps.Name == app.Name {
+			continue
+		}
+
 		otherAppConfiguration, err := configurationStore.GetConfiguration(otherApps.Name)
 		if err == nil {
 			affinity := otherAppConfiguration.Config[otherApps.Version].Affinity
@@ -384,7 +387,6 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 	sort.Sort(ByApplicationCount{sortedHosts})
 
 	for _, hostEntity := range sortedHosts {
-		fmt.Printf("Looking at host %s\n", hostEntity.Id)
 
 		for _, app := range hostEntity.Apps {
 			appConfiguration, err := configurationStore.GetConfiguration(app.Name)
