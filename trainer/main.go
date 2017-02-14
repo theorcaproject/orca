@@ -27,6 +27,7 @@ import (
 	"gopkg.in/mcuadros/go-syslog.v2"
 	"orca/trainer/model"
 	"orca/trainer/configuration"
+	"strings"
 )
 
 func main() {
@@ -321,9 +322,16 @@ func main() {
 		for logParts := range channel {
 			if hostId, ex := logParts["hostname"]; ex {
 				if message, exists := logParts["content"]; exists {
-					state.Audit.Insert__Log(state.LogEvent{
-						LogLevel: "stdout", HostId: hostId.(string), AppId: "", Message: message.(string),
-					})
+					wholeMessage := message.(string)
+
+					if len(wholeMessage) > 0 {
+						entries := strings.Split("\n", wholeMessage)
+						for i := len(entries); i >= 0; i-- {
+							state.Audit.Insert__Log(state.LogEvent{
+								LogLevel: "stdout", HostId: hostId.(string), AppId: "", Message: entries[i],
+							})
+						}
+					}
 				}
 			}
 		}
