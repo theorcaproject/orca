@@ -231,6 +231,8 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 				Network: apps.HostMetrics.NetworkUsage,
 				HardDiskUsage: apps.HostMetrics.HardDiskUsage,
 				HardDiskUsagePercent: apps.HostMetrics.HardDiskUsagePercent,
+				Host: hostId,
+				Timestamp:time.Now(),
 			})
 
 			returnJson(w, result.Changes)
