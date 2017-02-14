@@ -149,7 +149,9 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 	if !db.enabled {
 		return
 	}
-
+	if log.Message == "" {
+		return
+	}
 	if (log.LogLevel == LOG__STDERR) {
 		logs.AuditLogger.Errorln(log.Message)
 	} else if log.LogLevel == LOG__STDOUT {
