@@ -38,6 +38,14 @@ type AuditEvent struct {
 	Message   string
 }
 
+type LogEvent struct {
+	Timestamp time.Time
+	LogLevel string
+	HostId string
+	AppId string
+	Message string
+}
+
 type AuditSeverity string
 type AuditMessage string
 
@@ -45,6 +53,8 @@ const (
 	AUDIT__ERROR=AuditSeverity("error")
 	AUDIT__INFO=AuditSeverity("info")
 	AUDIT__DEBUG=AuditSeverity("debug")
+	LOG__STDOUT="stdout"
+	LOG__STDERR="stderr"
 )
 
 var Audit OrcaDb
@@ -115,3 +125,70 @@ func (db *OrcaDb) Query__AuditEvents(application string) []AuditEvent {
 	return results
 }
 
+
+func (db *OrcaDb) Insert__Log(log LogEvent) {
+	if !db.enabled {
+		return
+	}
+
+	if (log.LogLevel == LOG__STDERR) {
+		logs.AuditLogger.Errorln(log.Message)
+	} else if log.LogLevel == LOG__STDOUT {
+		logs.AuditLogger.Infoln(log.Message)
+	}
+
+	if db.session == nil {
+		return
+	}
+
+	log.Timestamp = time.Now()
+	c := db.db.C("logs")
+	err := c.Insert(&log)
+	if err != nil {
+		return
+	}
+}
+
+func (db *OrcaDb) Query__HostLog(host string) []LogEvent {
+	if !db.enabled {
+		return []LogEvent{}
+	}
+	c := db.db.C("logs")
+	var results []LogEvent
+	if host != "" {
+		err := c.Find(bson.M{"host": host}).Sort("-Timestamp").All(&results)
+		if err != nil {
+			panic("error querying db")
+		}
+
+	} else {
+		err := c.Find(nil).Sort("-Timestamp").All(&results)
+		if err != nil {
+			panic("error querying db")
+		}
+	}
+
+	return results
+}
+
+func (db *OrcaDb) Query__AppLog(app string) []LogEvent {
+	if !db.enabled {
+		return []LogEvent{}
+	}
+	c := db.db.C("logs")
+	var results []LogEvent
+	if app != "" {
+		err := c.Find(bson.M{"app": app}).Sort("-Timestamp").All(&results)
+		if err != nil {
+			panic("error querying db")
+		}
+
+	} else {
+		err := c.Find(nil).Sort("-Timestamp").All(&results)
+		if err != nil {
+			panic("error querying db")
+		}
+	}
+
+	return results
+}

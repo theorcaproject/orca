@@ -321,15 +321,11 @@ func main() {
 		for logParts := range channel {
 			if hostId, ex := logParts["hostname"]; ex {
 				if message, exists := logParts["content"]; exists {
-					fmt.Println(fmt.Sprintf("Got remote log from %s: %s", hostId, message))
-					fmt.Println(fmt.Sprintf("%+v", logParts))
-				} else {
-					fmt.Println(fmt.Sprintf("Malformed0: %s", logParts["content"]))
+					state.Audit.Insert__Log(state.LogEvent{
+						LogLevel: "stdout", HostId: hostId.(string), AppId: "", Message: message.(string),
+					})
 				}
-			} else {
-				fmt.Println(fmt.Sprintf("Malformed: %s", logParts["content"]))
 			}
-
 		}
 	}(channel)
 
