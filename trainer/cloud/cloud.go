@@ -26,22 +26,22 @@ import (
 )
 
 type CloudProvider struct {
-	Engine CloudEngine
-	Changes []*model.ChangeServer
+	Engine      CloudEngine
+	Changes     []*model.ChangeServer
 
 	apiEndpoint string
 	loggingEndpoint string
 	sshUser string
 }
 
-func (cloud* CloudProvider) Init(engine CloudEngine, sshUser string, apiEndpoint string, loggingEndpoint string){
+func (cloud* CloudProvider) Init(engine CloudEngine, sshUser string, apiEndpoint string, loggingEndpoint string) {
 	cloud.Engine = engine
 	cloud.apiEndpoint = apiEndpoint
-	cloud.sshUser= sshUser
+	cloud.sshUser = sshUser
 	cloud.loggingEndpoint= loggingEndpoint
 }
 
-func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore *state.StateStore){
+func (cloud*CloudProvider) ActionChange(change *model.ChangeServer, stateStore *state.StateStore) {
 	/* First push this change onto the change queue for the cloud provider */
 	cloud.AddChange(change)
 
@@ -144,11 +144,19 @@ func (cloud* CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 			}
 			cloud.RemoveChange(change.Id, true)
 			stateStore.RemoveHost(change.NewHostId)
+
+		}else if change.Type == "loadbalancer_join" {
+			cloud.Engine.RegisterWithLb(change.NewHostId, change.LoadBalancerName)
+			cloud.RemoveChange(change.Id, true)
+
+		}else if change.Type == "loadbalancer_leave" {
+			cloud.Engine.DeRegisterWithLb(change.NewHostId, change.LoadBalancerName)
+			cloud.RemoveChange(change.Id, true)
 		}
 	}()
 }
 
-func (cloud *CloudProvider) NotifyHostCheckIn(host *model.Host){
+func (cloud *CloudProvider) NotifyHostCheckIn(host *model.Host) {
 	/* Search for changes related to this instance */
 	for _, change := range cloud.Changes {
 		if change.Type == "new_server" {
@@ -168,7 +176,7 @@ func (cloud *CloudProvider) GetAllChanges() []*model.ChangeServer {
 	return cloud.Changes
 }
 
-func (cloud* CloudProvider) RemoveChange(changeId string, success bool){
+func (cloud*CloudProvider) RemoveChange(changeId string, success bool) {
 	newChanges := make([]*model.ChangeServer, 0)
 	for _, change := range cloud.Changes {
 		if change.Id != changeId {
@@ -178,19 +186,11 @@ func (cloud* CloudProvider) RemoveChange(changeId string, success bool){
 	cloud.Changes = newChanges
 }
 
-func (cloud* CloudProvider) AddChange(change *model.ChangeServer){
+func (cloud*CloudProvider) AddChange(change *model.ChangeServer) {
 	cloud.Changes = append(cloud.Changes, change)
 }
 
-func (cloud* CloudProvider) RegisterWithLb(hostId string, lbId string) {
-	cloud.Engine.RegisterWithLb(hostId, lbId)
-}
-
-func (cloud* CloudProvider) DeRegisterWithLb(hostId string, lbId string) {
-	cloud.Engine.DeRegisterWithLb(hostId, lbId)
-}
-
-func (cloud* CloudProvider) GetChange(changeId string) *model.ChangeServer {
+func (cloud*CloudProvider) GetChange(changeId string) *model.ChangeServer {
 	for _, change := range cloud.Changes {
 		if change.Id == changeId {
 			return change
