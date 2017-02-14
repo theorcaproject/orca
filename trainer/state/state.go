@@ -153,6 +153,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 		}
 	}
 
+	host.Apps = make([]model.Application, 0)
 	for _, appStateFromHost := range checkin.State {
 		host.Apps = append(host.Apps, appStateFromHost.Application)
 	}
