@@ -123,7 +123,7 @@ func (db *OrcaDb) Query__AuditEventsHost(host string) []AuditEvent {
 	}
 	c := db.db.C("audit")
 	var results []AuditEvent
-	err := c.Find(bson.M{"host": host}).Sort("-Timestamp").All(&results)
+	err := c.Find(bson.M{"details.host": host}).Sort("-Timestamp").All(&results)
 	if err != nil {
 		panic("error querying db")
 	}
@@ -137,7 +137,7 @@ func (db *OrcaDb) Query__AuditEventsApplication(application string) []AuditEvent
 	}
 	c := db.db.C("audit")
 	var results []AuditEvent
-	err := c.Find(bson.M{"application": application}).Sort("-Timestamp").All(&results)
+	err := c.Find(bson.M{"details.application": application}).Sort("-Timestamp").All(&results)
 	if err != nil {
 		panic("error querying db")
 	}
