@@ -268,19 +268,6 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (api *Api) getAudit(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
-		//returnJson(w, state.Audit.Query__Log())
-	}
-}
-
-func (api *Api) getHostAudit(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
-		hostAudit := r.URL.Query().Get("host")
-		returnJson(w, state.Audit.Query__HostLog(hostAudit))
-	}
-}
-
 func (api *Api) getApplicationLogs(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
 		application := r.URL.Query().Get("application")
@@ -290,16 +277,30 @@ func (api *Api) getApplicationLogs(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) getAllLogs(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
-		returnJson(w, state.Audit.Query__AuditEvents())
+		//returnJson(w, state.Audit.Query__AuditEvents())
 	}
 }
 
 func (api *Api) getHostLogs(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
 		hostAudit := r.URL.Query().Get("host")
+		returnJson(w, state.Audit.Query__HostLog(hostAudit))
+	}
+}
+
+func (api *Api) getAudit(w http.ResponseWriter, r *http.Request) {
+	if (api.authenticate_user(w, r)) {
+		returnJson(w, state.Audit.Query__AuditEvents())
+	}
+}
+
+func (api *Api) getHostAudit(w http.ResponseWriter, r *http.Request) {
+	if (api.authenticate_user(w, r)) {
+		hostAudit := r.URL.Query().Get("host")
 		returnJson(w, state.Audit.Query__AuditEventsHost(hostAudit))
 	}
 }
+
 
 func (api *Api) getApplicationAudit(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {

@@ -174,17 +174,9 @@ func (db *OrcaDb) Query__HostLog(host string) []LogEvent {
 	}
 	c := db.db.C("logs")
 	var results []LogEvent
-	if host != "" {
-		err := c.Find(bson.M{"host": host}).Sort("-Timestamp").All(&results)
-		if err != nil {
-			panic("error querying db")
-		}
-
-	} else {
-		err := c.Find(nil).Sort("-Timestamp").All(&results)
-		if err != nil {
-			panic("error querying db")
-		}
+	err := c.Find(bson.M{"host": host}).Sort("-Timestamp").All(&results)
+	if err != nil {
+		panic("error querying db")
 	}
 
 	return results
@@ -196,17 +188,9 @@ func (db *OrcaDb) Query__AppLog(app string) []LogEvent {
 	}
 	c := db.db.C("logs")
 	var results []LogEvent
-	if app != "" {
-		err := c.Find(bson.M{"app": app}).Sort("-Timestamp").All(&results)
-		if err != nil {
-			panic("error querying db")
-		}
-
-	} else {
-		err := c.Find(nil).Sort("-Timestamp").All(&results)
-		if err != nil {
-			panic("error querying db")
-		}
+	err := c.Find(bson.M{"appid": app}).Sort("-Timestamp").All(&results)
+	if err != nil {
+		panic("error querying db")
 	}
 
 	return results
