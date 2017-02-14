@@ -40,21 +40,21 @@ type AuditEvent struct {
 
 type LogEvent struct {
 	Timestamp time.Time
-	LogLevel string
-	HostId string
-	AppId string
-	Message string
+	LogLevel  string
+	HostId    string
+	AppId     string
+	Message   string
 }
 
 type AuditSeverity string
 type AuditMessage string
 
 const (
-	AUDIT__ERROR=AuditSeverity("error")
-	AUDIT__INFO=AuditSeverity("info")
-	AUDIT__DEBUG=AuditSeverity("debug")
-	LOG__STDOUT="stdout"
-	LOG__STDERR="stderr"
+	AUDIT__ERROR = AuditSeverity("error")
+	AUDIT__INFO = AuditSeverity("info")
+	AUDIT__DEBUG = AuditSeverity("debug")
+	LOG__STDOUT = "stdout"
+	LOG__STDERR = "stderr"
 )
 
 var Audit OrcaDb
@@ -85,9 +85,9 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 
 	if (event.Severity == AUDIT__ERROR) {
 		logs.AuditLogger.Errorln(event.Message)
-	}else if event.Severity == AUDIT__INFO {
+	} else if event.Severity == AUDIT__INFO {
 		logs.AuditLogger.Infoln(event.Message)
-	}else if event.Severity == AUDIT__DEBUG {
+	} else if event.Severity == AUDIT__DEBUG {
 		logs.AuditLogger.Debugln(event.Message)
 	}
 
@@ -103,28 +103,47 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 	}
 }
 
-func (db *OrcaDb) Query__AuditEvents(application string) []AuditEvent {
+func (db *OrcaDb) Query__AuditEvents() []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
 	c := db.db.C("audit")
 	var results []AuditEvent
-	if application != "" {
-		err := c.Find(bson.M{"details.application": application}).Sort("-Timestamp").All(&results)
-		if err != nil {
-			panic("error querying db")
-		}
-
-	} else {
-		err := c.Find(nil).Sort("-Timestamp").All(&results)
-		if err != nil {
-			panic("error querying db")
-		}
+	err := c.Find(nil).Sort("-Timestamp").All(&results)
+	if err != nil {
+		panic("error querying db")
 	}
 
 	return results
 }
 
+func (db *OrcaDb) Query__AuditEventsHost(host string) []AuditEvent {
+	if !db.enabled {
+		return []AuditEvent{}
+	}
+	c := db.db.C("audit")
+	var results []AuditEvent
+	err := c.Find(bson.M{"host": host}).Sort("-Timestamp").All(&results)
+	if err != nil {
+		panic("error querying db")
+	}
+
+	return results
+}
+
+func (db *OrcaDb) Query__AuditEventsApplication(application string) []AuditEvent {
+	if !db.enabled {
+		return []AuditEvent{}
+	}
+	c := db.db.C("audit")
+	var results []AuditEvent
+	err := c.Find(bson.M{"application": application}).Sort("-Timestamp").All(&results)
+	if err != nil {
+		panic("error querying db")
+	}
+
+	return results
+}
 
 func (db *OrcaDb) Insert__Log(log LogEvent) {
 	if !db.enabled {
