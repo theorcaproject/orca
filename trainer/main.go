@@ -326,7 +326,7 @@ func main() {
 
 					if len(wholeMessage) > 0 {
 						entries := strings.Split("\n", wholeMessage)
-						for i := len(entries); i >= 0; i-- {
+						for i := len(entries)- 1; i >= 0; i-- {
 							state.Audit.Insert__Log(state.LogEvent{
 								LogLevel: "stdout", HostId: hostId.(string), AppId: "", Message: entries[i],
 							})

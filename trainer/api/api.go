@@ -263,7 +263,7 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 			if len(appLogs.StdErr) > 0 {
 				entries := strings.Split("\n", appLogs.StdErr)
 
-				for i := len(entries); i >= 0; i-- {
+				for i := len(entries) - 1; i >= 0; i-- {
 					state.Audit.Insert__Log(state.LogEvent{
 						HostId: host, AppId: app, Message: entries[i], LogLevel: "stderr",
 					})
@@ -272,7 +272,7 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 
 			if len(appLogs.StdOut) > 0 {
 				entries := strings.Split("\n", appLogs.StdOut)
-				for i := len(entries); i >= 0; i-- {
+				for i := len(entries)- 1; i >= 0; i-- {
 					state.Audit.Insert__Log(state.LogEvent{
 						HostId: host, AppId: app, Message: entries[i], LogLevel: "stdout",
 					})
