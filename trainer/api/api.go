@@ -41,8 +41,8 @@ type Api struct {
 }
 
 type Logs struct {
-	Out string
-	Err string
+	StdOut string
+	StdErr string
 }
 
 var ApiLogger = log.LoggerWithField(log.Logger, "module", "api")
@@ -257,12 +257,13 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&logs); err == nil {
 		host := r.URL.Query().Get("host")
+		fmt.Println(fmt.Sprintf("Got logs from %s", host))
 		for app, appLogs := range logs {
 			state.Audit.Insert__Log(state.LogEvent{
-				HostId: host, AppId: app, Message: appLogs.Out, LogLevel: "stdout",
+				HostId: host, AppId: app, Message: appLogs.StdOut, LogLevel: "stdout",
 			})
 			state.Audit.Insert__Log(state.LogEvent{
-				HostId: host, AppId: app, Message: appLogs.Err, LogLevel: "stderr",
+				HostId: host, AppId: app, Message: appLogs.StdErr, LogLevel: "stderr",
 			})
 		}
 	} else {
