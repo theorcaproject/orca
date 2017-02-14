@@ -44,6 +44,7 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
 	}
+
 	versionConfigApp2 := make(map[string]model.VersionConfig)
 	versionConfigApp2["2"] = model.VersionConfig{
 		Version: "2",
@@ -310,6 +311,160 @@ func TestPlan_scaleUp(t *testing.T) {
 		t.Errorf("%+v", res);
 	}
 }
+
+func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init()
+
+	/* App1 has an affinity with any other apps */
+	versionConfigApp1 := make(map[string]model.VersionConfig)
+	versionConfigApp1["1"] = model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		Affinity:[]model.AffinityTag{{Tag:"tag1"}},
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name: "app1",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp1,
+		Enabled: true,
+	})
+
+	/* App2 does not have an affinity with any other apps */
+	versionConfigApp2 := make(map[string]model.VersionConfig)
+	versionConfigApp2["1"] = model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+	config.Add("app2", &model.ApplicationConfiguration{
+		Name: "app2",
+		MinDeployment: 1,
+		DesiredDeployment: 1,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp2,
+		Enabled: true,
+	})
+
+
+	/* App3 has an affinity with any other apps */
+	versionConfigApp3 := make(map[string]model.VersionConfig)
+	versionConfigApp3["1"] = model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		Affinity:[]model.AffinityTag{{Tag:"tag1"}},
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	config.Add("app3", &model.ApplicationConfiguration{
+		Name: "app3",
+		MinDeployment: 1,
+		DesiredDeployment: 1,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp3,
+		Enabled: true,
+	})
+
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		State: "running",
+		SpotInstance:false,
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		Apps: []model.Application {{Name:"app2", Version:"1", State:"running"}},
+	}
+	stateStore.Add("host1", host1)
+
+	host2 := &model.Host{
+		Id: "host2",
+		State: "running",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		Apps: []model.Application {{Name:"app3", Version:"1", State:"running"}},
+	}
+	stateStore.Add("host2", host2)
+
+	res := planner.Plan(config, stateStore)
+	if len(res) != 1 || res[0].Type != "add_application"  || res[0].HostId != "host2"{
+		t.Errorf("%+v", res);
+	}
+}
+
+func TestPlan_scaleUp_UsingAffinityChooseEmptyHost(t *testing.T) {
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init()
+
+	/* App1 has an affinity with any other apps */
+	versionConfigApp1 := make(map[string]model.VersionConfig)
+	versionConfigApp1["1"] = model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		Affinity:[]model.AffinityTag{{Tag:"tag1"}},
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name: "app1",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp1,
+		Enabled: true,
+	})
+
+	/* App2 does not have an affinity with any other apps */
+	versionConfigApp2 := make(map[string]model.VersionConfig)
+	versionConfigApp2["1"] = model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+	config.Add("app2", &model.ApplicationConfiguration{
+		Name: "app2",
+		MinDeployment: 1,
+		DesiredDeployment: 1,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp2,
+		Enabled: true,
+	})
+
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		State: "running",
+		SpotInstance:false,
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		Apps: []model.Application {{Name:"app2", Version:"1", State:"running"}},
+	}
+	stateStore.Add("host1", host1)
+
+	host2 := &model.Host{
+		Id: "host2",
+		State: "running",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		Apps: []model.Application {},
+	}
+	stateStore.Add("host2", host2)
+
+	res := planner.Plan(config, stateStore)
+	if len(res) != 1 || res[0].Type != "add_application"  || res[0].HostId != "host2"{
+		t.Errorf("%+v", res);
+	}
+}
+
 
 func TestPlan__Plan_RemoveOldDesired(t *testing.T){
 	planner := BoringPlanner{}

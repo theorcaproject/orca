@@ -24,33 +24,33 @@ import (
 )
 
 type ChangeApplication struct {
-	Id     string
-	Type   string
-	HostId string
-	Time   string
-	Name   string
+	Id        string
+	Type      string
+	HostId    string
+	Time      string
+	Name      string
 
 	/* This could be nil/empty if not needed */
 	AppConfig VersionConfig
 }
 
 type ChangeServer struct {
-	Id   string
-	Type string
-	Time string
-	NewHostId string
+	Id                       string
+	Type                     string
+	Time                     string
+	NewHostId                string
 	RequiresReliableInstance bool
-	Network string
-	SecurityGroups []SecurityGroup
+	Network                  string
+	SecurityGroups           []SecurityGroup
 
 	// Internal Status Information
-	InstanceLaunched bool
-	InstalledPackages bool
+	InstanceLaunched         bool
+	InstalledPackages        bool
 
 	//Load balancer add task
-	LoadBalancerName string
-	LoadBalancerAppTarget string
-	LoadBalancerAppVersion string
+	LoadBalancerName         string
+	LoadBalancerAppTarget    string
+	LoadBalancerAppVersion   string
 }
 
 type HostResources struct {
@@ -72,33 +72,33 @@ type ApplicationStateFromHost struct {
 }
 
 type Metric struct {
-	CpuUsage int64
-	MemoryUsage int64
-	NetworkUsage int64
-	HardDiskUsage int64
+	CpuUsage             int64
+	MemoryUsage          int64
+	NetworkUsage         int64
+	HardDiskUsage        int64
 	HardDiskUsagePercent int64
 }
 
 type HostCheckinDataPackage struct {
 	State          []ApplicationStateFromHost
 	ChangesApplied map[string]bool
-	HostMetrics 	Metric
+	HostMetrics    Metric
 }
 
 type Host struct {
-	Id        string
-	CloudId   string
-	LastSeen  string
-	FirstSeen string
-	State     string
-	Network     string
-	Ip        string
-	Apps      []Application
-	Changes   []ChangeApplication
-	Resources HostResources
-	SpotInstance bool
-	SecurityGroups []SecurityGroup
-	NumberOfChangeFailuresInRow 	int64
+	Id                          string
+	CloudId                     string
+	LastSeen                    string
+	FirstSeen                   string
+	State                       string
+	Network                     string
+	Ip                          string
+	Apps                        []Application
+	Changes                     []ChangeApplication
+	Resources                   HostResources
+	SpotInstance                bool
+	SecurityGroups              []SecurityGroup
+	NumberOfChangeFailuresInRow int64
 }
 
 func (host *Host) HasApp(name string) bool {
@@ -109,7 +109,6 @@ func (host *Host) HasApp(name string) bool {
 	}
 	return false;
 }
-
 
 func (host *Host) GetChange(id string) *ChangeApplication {
 	for _, change := range host.Changes {
@@ -128,7 +127,6 @@ func (host *Host) HasAppWithSameVersion(name string, version string) bool {
 	}
 	return false;
 }
-
 
 type DockerConfig struct {
 	Username   string
@@ -166,8 +164,8 @@ type CpuNeeds Needs
 type NetworkNeeds Needs
 
 type AppNeeds struct {
-	MemoryNeeds MemoryNeeds
-	CpuNeeds CpuNeeds
+	MemoryNeeds  MemoryNeeds
+	CpuNeeds     CpuNeeds
 	NetworkNeeds NetworkNeeds
 }
 
@@ -181,13 +179,17 @@ type SecurityGroup struct {
 
 type ApplicationChecks struct {
 	Type string /* Either HTTP or TCP */
-	Goal  string /* Either a port or uri */
+	Goal string /* Either a port or uri */
+}
+
+type AffinityTag struct {
+	Tag string
 }
 
 type VersionConfig struct {
-	Version 	     string
-	DockerConfig	     DockerConfig
-	Needs 		     AppNeeds
+	Version              string
+	DockerConfig         DockerConfig
+	Needs                AppNeeds
 	LoadBalancer         []LoadBalancerEntry
 	Network              string
 	SecurityGroups       []SecurityGroup
@@ -196,24 +198,25 @@ type VersionConfig struct {
 	EnvironmentVariables []EnvironmentVariable
 	Files                []File
 	Checks               []ApplicationChecks
+	Affinity             []AffinityTag
 }
 
 type ApplicationConfiguration struct {
-	Name string
-	MinDeployment int
-	DesiredDeployment int
-	DisableSchedule bool
+	Name               string
+	MinDeployment      int
+	DesiredDeployment  int
+	DisableSchedule    bool
 	DeploymentSchedule schedule.DeploymentSchedule
-	Config map[string]VersionConfig
+	Config             map[string]VersionConfig
 
-	Enabled bool
+	Enabled            bool
 }
 
 func (app *ApplicationConfiguration) GetLatestVersion() string {
 	version := 0
 	for v, _ := range app.Config {
 		iversion, _ := strconv.Atoi(v)
-		if  iversion > version {
+		if iversion > version {
 			version = iversion
 		}
 	}
