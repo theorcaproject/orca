@@ -94,7 +94,6 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 		}
 	}
 	host.LastSeen = time.Now().Format(time.RFC3339Nano)
-	host.Apps = make([]model.Application, 0)
 
 	if host.State != "running" {
 		Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
