@@ -106,6 +106,54 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 
 
 	host.State = "running"
+	for _, oldAppState := range host.Apps {
+		/* Attempt to find this application */
+		for _, appStateFromHost := range checkin.State {
+			if oldAppState.Name == appStateFromHost.Name {
+				if oldAppState.Version != appStateFromHost.Application.Version {
+					Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
+						Message: fmt.Sprintf("Application %s was updated from version %s to version %s on host %s",
+							appStateFromHost.Name, oldAppState.Version, appStateFromHost.Application.Version, hostId),
+						Details:map[string]string{
+							"host": hostId,
+							"application": appStateFromHost.Name,
+						}})
+				}
+
+				if oldAppState.State != appStateFromHost.Application.State {
+					if appStateFromHost.Application.State == "running" {
+						Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
+							Message: fmt.Sprintf("Application %s on host %s is running, all checks are succeeding",
+								appStateFromHost.Name, hostId),
+
+							Details:map[string]string{
+								"host": hostId,
+								"application": appStateFromHost.Name,
+							}})
+					}else if appStateFromHost.Application.State == "failed" {
+						Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__ERROR,
+							Message: fmt.Sprintf("Application %s on host %s has failed, docker is reporting the container is no longer active",
+								appStateFromHost.Name, hostId),
+
+							Details:map[string]string{
+								"host": hostId,
+								"application": appStateFromHost.Name,
+							}})
+					}else if appStateFromHost.Application.State == "checks_failed" {
+						Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__ERROR,
+							Message: fmt.Sprintf("Application %s on host %s has failed, the application checks have failed",
+								appStateFromHost.Name, hostId),
+
+							Details:map[string]string{
+								"host": hostId,
+								"application": appStateFromHost.Name,
+							}})
+					}
+				}
+			}
+		}
+	}
+
 	for _, appStateFromHost := range checkin.State {
 		host.Apps = append(host.Apps, appStateFromHost.Application)
 	}
