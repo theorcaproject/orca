@@ -176,7 +176,7 @@ func (db *OrcaDb) Query__HostLog(host string) []LogEvent {
 	}
 	c := db.db.C("logs")
 	var results []LogEvent
-	err := c.Find(bson.M{"host": host}).Sort("-Timestamp").All(&results)
+	err := c.Find(bson.M{"hostid": host}).Sort("-Timestamp").All(&results)
 	if err != nil {
 		panic("error querying db")
 	}
