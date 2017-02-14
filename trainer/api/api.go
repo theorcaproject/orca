@@ -203,6 +203,7 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 			host.Network = subnet
 			host.SecurityGroups = secGrps
 			host.SpotInstance = isSpot
+
 			api.state.Add(hostId, host)
 
 			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,

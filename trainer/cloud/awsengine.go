@@ -41,6 +41,7 @@ type AwsCloudEngine struct {
 	sshKey             string
 	sshKeyPath         string
 	spotPrice          float64
+
 	instanceType       string
 	spotInstanceType   string
 }

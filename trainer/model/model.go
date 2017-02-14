@@ -99,6 +99,8 @@ type Host struct {
 	SpotInstance                bool
 	SecurityGroups              []SecurityGroup
 	NumberOfChangeFailuresInRow int64
+
+	InstanceType string
 }
 
 func (host *Host) HasApp(name string) bool {
