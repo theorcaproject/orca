@@ -40,6 +40,11 @@ type Api struct {
 	sessions           map[string]bool
 }
 
+type Logs struct {
+	Out string
+	Err string
+}
+
 var ApiLogger = log.LoggerWithField(log.Logger, "module", "api")
 
 func (api *Api) Init(port int, configurationStore *configuration.ConfigurationStore, state *state.StateStore, cloudProvider *cloud.CloudProvider) {
@@ -65,8 +70,7 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r.HandleFunc("/audit/application", api.getAuditApplication)
 
 	r.HandleFunc("/log", api.getLogs)
-	r.HandleFunc("/log/host", api.pushLogs)
-	r.HandleFunc("/log/daemon", api.pushDaemonLogs)
+	r.HandleFunc("/log/apps", api.pushLogs)
 
 
 	http.Handle("/", r)
@@ -226,10 +230,15 @@ func (api *Api) getLogs(w http.ResponseWriter, r *http.Request) {
 	returnJson(w, nil)
 }
 
-func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
-}
 
-func (api *Api) pushDaemonLogs(w http.ResponseWriter, r *http.Request) {
+func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
+	var logs Logs
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&logs); err == nil {
+		fmt.Println(fmt.Sprintf("Got logs from %s: OUT: %s; ERR: %s", r.URL.Query().Get("host"), logs.Out, logs.Err))
+	} else {
+		fmt.Println(fmt.Sprintf("Log parsing error: %s", err))
+	}
 }
 
 
