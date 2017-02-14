@@ -67,7 +67,7 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 
 /* Well this is rather nasty aint it */
 func hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguration, configurationStore configuration.ConfigurationStore) bool {
-	if len(host.Apps) == 0 || len(app.GetLatestConfiguration().Affinity) == 0 {
+	if len(host.Apps) == 0 {
 		return true
 	}
 
@@ -75,6 +75,10 @@ func hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguratio
 		otherAppConfiguration, err := configurationStore.GetConfiguration(otherApps.Name)
 		if err == nil {
 			affinity := otherAppConfiguration.Config[otherApps.Version].Affinity
+			if len(affinity) == 0 && len(app.GetLatestConfiguration().Affinity) == 0 {
+				return true
+			}
+
 			for _, otherAppAffinity := range affinity {
 				for _, targetAppAffinity := range app.GetLatestConfiguration().Affinity {
 					if otherAppAffinity.Tag == targetAppAffinity.Tag {
