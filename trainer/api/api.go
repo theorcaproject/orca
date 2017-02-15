@@ -30,6 +30,7 @@ import (
 	"orca/trainer/cloud"
 	"time"
 	"github.com/twinj/uuid"
+	"strings"
 )
 
 type Api struct {
@@ -257,14 +258,25 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&logs); err == nil {
 		host := r.URL.Query().Get("host")
-		fmt.Println(fmt.Sprintf("Got logs from %s", host))
 		for app, appLogs := range logs {
-			state.Audit.Insert__Log(state.LogEvent{
-				HostId: host, AppId: app, Message: appLogs.StdOut, LogLevel: "stdout",
-			})
-			state.Audit.Insert__Log(state.LogEvent{
-				HostId: host, AppId: app, Message: appLogs.StdErr, LogLevel: "stderr",
-			})
+			if len(appLogs.StdErr) > 0 {
+				entries := strings.Split(appLogs.StdErr, "\n")
+
+				for i := len(entries) - 1; i >= 0; i-- {
+					state.Audit.Insert__Log(state.LogEvent{
+						HostId: host, AppId: app, Message: entries[i], LogLevel: "stderr",
+					})
+				}
+			}
+
+			if len(appLogs.StdOut) > 0 {
+				entries := strings.Split(appLogs.StdOut, "\n")
+				for i := len(entries)- 1; i >= 0; i-- {
+					state.Audit.Insert__Log(state.LogEvent{
+						HostId: host, AppId: app, Message: entries[i], LogLevel: "stdout",
+					})
+				}
+			}
 		}
 	} else {
 		fmt.Println(fmt.Sprintf("Log parsing error: %s", err))
