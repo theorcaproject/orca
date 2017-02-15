@@ -261,7 +261,7 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(fmt.Sprintf("Got logs from %s", host))
 		for app, appLogs := range logs {
 			if len(appLogs.StdErr) > 0 {
-				entries := strings.Split("\n", appLogs.StdErr)
+				entries := strings.Split(appLogs.StdErr, "\n")
 
 				for i := len(entries) - 1; i >= 0; i-- {
 					state.Audit.Insert__Log(state.LogEvent{
@@ -271,7 +271,7 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if len(appLogs.StdOut) > 0 {
-				entries := strings.Split("\n", appLogs.StdOut)
+				entries := strings.Split(appLogs.StdOut, "\n")
 				for i := len(entries)- 1; i >= 0; i-- {
 					state.Audit.Insert__Log(state.LogEvent{
 						HostId: host, AppId: app, Message: entries[i], LogLevel: "stdout",
