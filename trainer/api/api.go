@@ -258,7 +258,6 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&logs); err == nil {
 		host := r.URL.Query().Get("host")
-		fmt.Println(fmt.Sprintf("Got logs from %s", host))
 		for app, appLogs := range logs {
 			if len(appLogs.StdErr) > 0 {
 				entries := strings.Split(appLogs.StdErr, "\n")
