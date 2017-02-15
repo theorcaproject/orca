@@ -379,6 +379,29 @@ func (planner *BoringPlanner) Plan_KullBrokenServers(configurationStore configur
 	return ret
 }
 
+func (planner *BoringPlanner) Plan_KullBrokenApplications(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+	ret := make([]PlanningChange, 0)
+
+	for _, hostEntity := range currentState.GetAllHosts() {
+		for _, application := range hostEntity.Apps {
+			if application.State != "running" {
+				/* This application is messing up, if we have gotten to this stage then the mins and desired have already been dealt with for it */
+				if hostEntity.NumberOfChangeFailuresInRow >= configurationStore.GlobalSettings.HostChangeFailureLimit {
+					change := PlanningChange{
+						Type: "remove_application",
+						ApplicationName: application.Name,
+						HostId: hostEntity.Id,
+						Id:uuid.NewV4().String(),
+					}
+
+					ret = append(ret, change)
+				}
+			}
+		}
+	}
+	return ret
+}
+
 
 func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
@@ -475,6 +498,11 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 	}
 
 	/* Second stage of planning: Terminate any instances that are left behind */
+	ret = extend(ret, planner.Plan_KullBrokenApplications(configurationStore, currentState))
+	if len(ret) > 0 {
+		return ret
+	}
+
 	ret = extend(ret, planner.Plan_KullUnusedServers(configurationStore, currentState))
 	if len(ret) > 0 {
 		return ret
