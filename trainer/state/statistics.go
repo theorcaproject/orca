@@ -32,6 +32,7 @@ type StatisticsDb struct {
 var Stats StatisticsDb
 
 func (a *StatisticsDb) Init(hostname string) {
+	hostname = "localhost"
 	session, err := mgo.Dial(hostname)
 	if err != nil {
 		panic(err)
