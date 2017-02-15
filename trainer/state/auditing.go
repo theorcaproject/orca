@@ -57,6 +57,20 @@ const (
 	AUDIT__DEBUG = AuditSeverity("debug")
 	LOG__STDOUT = "stdout"
 	LOG__STDERR = "stderr"
+
+	LOG_MAPPING = `{
+                        "mappings" : {
+                            "log" : {
+                                "properties" : {
+                                    "Timestamp" : { "type" : "date" },
+                                    "LogLevel" : { "type" : "string", "index" : "not_analyzed" },
+                                    "HostId" : { "type" : "string", "index" : "not_analyzed" },
+                                    "AppId" : { "type" : "string", "index" : "not_analyzed" },
+                                    "Message" : { "type" : "string"}
+                                }
+                            }
+                        }
+                    }`
 )
 
 var Audit OrcaDb
@@ -83,7 +97,7 @@ func (a *OrcaDb) Init(hostname string) {
 
 	existsLogs, _ := a.client.IndexExists("logs").Do(ctx)
 	if !existsLogs {
-		a.client.CreateIndex("logs").Do(ctx)
+		a.client.CreateIndex("logs").Body(LOG_MAPPING).Do(ctx)
 	}
 
 }
