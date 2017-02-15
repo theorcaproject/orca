@@ -180,11 +180,11 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 	if log.Message == "" {
 		return
 	}
-	if (log.LogLevel == LOG__STDERR) {
-		logs.AuditLogger.Errorln(log.Message)
-	} else if log.LogLevel == LOG__STDOUT {
-		logs.AuditLogger.Infoln(log.Message)
-	}
+	//if (log.LogLevel == LOG__STDERR) {
+	//	logs.AuditLogger.Errorln(log.Message)
+	//} else if log.LogLevel == LOG__STDOUT {
+	//	logs.AuditLogger.Infoln(log.Message)
+	//}
 
 	if db.client == nil {
 		return
@@ -209,6 +209,7 @@ func (db *OrcaDb) Query__HostLog(host string) []LogEvent {
 	var logType LogEvent
 	var results []LogEvent
 	if err != nil {
+		fmt.Println(err)
 		return results
 	}
 	for _, item := range logsRes.Each(reflect.TypeOf(logType)) {
@@ -227,6 +228,7 @@ func (db *OrcaDb) Query__AppLog(app string) []LogEvent {
 	var logType LogEvent
 	var results []LogEvent
 	if err != nil {
+		fmt.Println(err)
 		return results
 	}
 	for _, item := range logsRes.Each(reflect.TypeOf(logType)) {
