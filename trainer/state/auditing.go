@@ -68,11 +68,7 @@ const (
                                     "HostId" : { "type" : "string", "index" : "not_analyzed" },
                                     "AppId" : { "type" : "string", "index" : "not_analyzed" },
                                     "Message" : { "type" : "string"}
-                                },
-                                "_ttl": {
-                                        "enabled": true,
-					"default": "24h"
-				}
+                                }
                             }
                         }
                     }`
@@ -86,7 +82,7 @@ const (
                                     "AppId" : { "type" : "string", "index" : "not_analyzed"},
                                     "Message" : { "type" : "string"},
                                     "Severity" : { "type" : "string"}
-                                },
+                                }
                             }
                         }
                     }`
