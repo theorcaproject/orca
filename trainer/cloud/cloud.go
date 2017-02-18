@@ -58,9 +58,8 @@ func (cloud*CloudProvider) ActionChange(change *model.ChangeServer, stateStore *
 			if newHost.Id != "" {
 				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 					Message: fmt.Sprintf("Beginning installation of orcahostd to server %s", newHost.Id),
-					Details:map[string]string{
-						"host": newHost.Id,
-					}})
+					HostId: newHost.Id,
+				})
 
 				stateStore.HostInit(newHost)
 				/* If the change times out we need to nuke it */
@@ -74,8 +73,7 @@ func (cloud*CloudProvider) ActionChange(change *model.ChangeServer, stateStore *
 				if ipAddr == "" {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 						Message: fmt.Sprintf("Missing IP address for host %s, cannot deploy package to instance", newHost.Id),
-						Details:map[string]string{
-						}})
+					})
 
 					return
 				}
@@ -84,8 +82,7 @@ func (cloud*CloudProvider) ActionChange(change *model.ChangeServer, stateStore *
 					if session == nil {
 						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 							Message: fmt.Sprintf("Could not connect to host %s to deploy orcahostd. Giving up!", newHost.Id),
-							Details:map[string]string{
-							}})
+						})
 
 						return
 					}
@@ -122,8 +119,7 @@ func (cloud*CloudProvider) ActionChange(change *model.ChangeServer, stateStore *
 						if !res {
 							state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 								Message: fmt.Sprintf("Could not execute command '%s' on host '%s'. Giving up now!", cmd, newHost.Id),
-								Details:map[string]string{
-								}})
+							})
 						}
 					}
 
@@ -131,9 +127,8 @@ func (cloud*CloudProvider) ActionChange(change *model.ChangeServer, stateStore *
 
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 						Message: fmt.Sprintf("Finished installation of orcahostd to server %s", newHost.Id),
-						Details:map[string]string{
-							"host": newHost.Id,
-						}})
+						HostId: newHost.Id,
+					})
 					break
 				}
 			}

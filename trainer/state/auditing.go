@@ -35,7 +35,8 @@ type OrcaDb struct {
 
 type AuditEvent struct {
 	Timestamp time.Time
-	Details   map[string]string
+	HostId    string
+	AppId     string
 	Severity  AuditSeverity
 	Message   string
 }
@@ -155,7 +156,7 @@ func (db *OrcaDb) Query__AuditEventsHost(host string) []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("host", host)).Sort("Timestamp", false).Size(10000).Do(db.ctx)
+	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("HostId", host)).Sort("Timestamp", false).Size(10000).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
@@ -173,7 +174,7 @@ func (db *OrcaDb) Query__AuditEventsApplication(application string) []AuditEvent
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("application", application)).Sort("Timestamp", false).Size(10000).Do(db.ctx)
+	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("AppId", application)).Sort("Timestamp", false).Size(10000).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {

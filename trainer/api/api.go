@@ -123,9 +123,8 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 
 				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 					Message:"Modified application " + applicationName + " in pool",
-					Details:map[string]string{
-						"application": applicationName,
-					}})
+					AppId: applicationName,
+				})
 
 				application.MinDeployment = object.MinDeployment
 				application.DesiredDeployment = object.DesiredDeployment
@@ -160,9 +159,8 @@ func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.Res
 
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 						Message:"API: Modified application " + applicationName + ", created new configuration",
-						Details:map[string]string{
-							"application": applicationName,
-						}})
+						AppId: applicationName,
+					})
 
 					api.configurationStore.Save()
 				}
@@ -215,9 +213,8 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 
 			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 				Message: fmt.Sprintf("Discovered new server %s, ip: %s, subnet: %s spot: %t", hostId, ip, subnet, isSpot),
-				Details:map[string]string{
-					"host": hostId,
-				}})
+				HostId: hostId,
+			})
 		}
 
 		result, err := api.state.HostCheckin(hostId, apps)
