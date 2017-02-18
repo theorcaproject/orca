@@ -82,8 +82,8 @@ const (
                             "event" : {
                                 "properties" : {
                                     "Timestamp" : { "type" : "date" },
-                                    "HostId" : { "type" : "string", "index" : "not_analyzed" },
-                                    "AppId" : { "type" : "string", "index" : "not_analyzed" },
+                                    "HostId" : { "type" : "string", "index" : "not_analyzed", "analyzer": "keyword" },
+                                    "AppId" : { "type" : "string", "index" : "not_analyzed", "analyzer": "keyword" },
                                     "Message" : { "type" : "string"},
                                     "Severity" : { "type" : "string"}
                                 },
