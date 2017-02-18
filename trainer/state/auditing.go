@@ -142,6 +142,7 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 		Index("audit").
 		Type("event").
 		BodyJson(event).
+		TTL("24h").
 		Do(db.ctx)
 	if err != nil {
 		fmt.Println(err)
@@ -219,6 +220,7 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 		Index("logs").
 		Type("log").
 		BodyJson(log).
+		TTL("24h").
 		Do(db.ctx)
 	if err != nil {
 		fmt.Println(err)
