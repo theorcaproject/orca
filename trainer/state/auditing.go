@@ -57,6 +57,20 @@ const (
 	AUDIT__DEBUG = AuditSeverity("debug")
 	LOG__STDOUT = "stdout"
 	LOG__STDERR = "stderr"
+
+	LOG_MAPPING = `{
+                        "mappings" : {
+                            "log" : {
+                                "properties" : {
+                                    "Timestamp" : { "type" : "date" },
+                                    "LogLevel" : { "type" : "string", "index" : "not_analyzed" },
+                                    "HostId" : { "type" : "string", "index" : "not_analyzed" },
+                                    "AppId" : { "type" : "string", "index" : "not_analyzed" },
+                                    "Message" : { "type" : "string"}
+                                }
+                            }
+                        }
+                    }`
 )
 
 var Audit OrcaDb
@@ -83,7 +97,7 @@ func (a *OrcaDb) Init(hostname string) {
 
 	existsLogs, _ := a.client.IndexExists("logs").Do(ctx)
 	if !existsLogs {
-		a.client.CreateIndex("logs").Do(ctx)
+		a.client.CreateIndex("logs").Body(LOG_MAPPING).Do(ctx)
 	}
 
 }
@@ -180,11 +194,11 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 	if log.Message == "" {
 		return
 	}
-	if (log.LogLevel == LOG__STDERR) {
-		logs.AuditLogger.Errorln(log.Message)
-	} else if log.LogLevel == LOG__STDOUT {
-		logs.AuditLogger.Infoln(log.Message)
-	}
+	//if (log.LogLevel == LOG__STDERR) {
+	//	logs.AuditLogger.Errorln(log.Message)
+	//} else if log.LogLevel == LOG__STDOUT {
+	//	logs.AuditLogger.Infoln(log.Message)
+	//}
 
 	if db.client == nil {
 		return
@@ -209,6 +223,7 @@ func (db *OrcaDb) Query__HostLog(host string) []LogEvent {
 	var logType LogEvent
 	var results []LogEvent
 	if err != nil {
+		fmt.Println(err)
 		return results
 	}
 	for _, item := range logsRes.Each(reflect.TypeOf(logType)) {
@@ -227,6 +242,7 @@ func (db *OrcaDb) Query__AppLog(app string) []LogEvent {
 	var logType LogEvent
 	var results []LogEvent
 	if err != nil {
+		fmt.Println(err)
 		return results
 	}
 	for _, item := range logsRes.Each(reflect.TypeOf(logType)) {
