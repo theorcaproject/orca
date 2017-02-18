@@ -82,15 +82,11 @@ const (
                             "event" : {
                                 "properties" : {
                                     "Timestamp" : { "type" : "date" },
-                                    "HostId" : { "type" : "string", "index" : "not_analyzed", "analyzer": "keyword" },
-                                    "AppId" : { "type" : "string", "index" : "not_analyzed", "analyzer": "keyword" },
+                                    "HostId" : { "type" : "string", "index" : "not_analyzed"},
+                                    "AppId" : { "type" : "string", "index" : "not_analyzed"},
                                     "Message" : { "type" : "string"},
                                     "Severity" : { "type" : "string"}
                                 },
-                                "_ttl": {
-                                        "enabled": true,
-					"default": "24h"
-				}
                             }
                         }
                     }`
