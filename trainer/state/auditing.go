@@ -123,7 +123,7 @@ func (db *OrcaDb) Query__AuditEvents() []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	events, err := db.client.Search().Index("audit").Query(elastic.NewMatchAllQuery()).Sort("Timestamp", false).Do(db.ctx)
+	events, err := db.client.Search().Index("audit").Query(elastic.NewMatchAllQuery()).Sort("Timestamp", false).Size(10000).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
@@ -141,7 +141,7 @@ func (db *OrcaDb) Query__AuditEventsHost(host string) []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("Details.host", host)).Sort("Timestamp", false).Do(db.ctx)
+	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("Details.host", host)).Sort("Timestamp", false).Size(10000).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
@@ -159,7 +159,7 @@ func (db *OrcaDb) Query__AuditEventsApplication(application string) []AuditEvent
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("Details.app", application)).Sort("Timestamp", false).Do(db.ctx)
+	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("Details.app", application)).Sort("Timestamp", false).Size(10000).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
@@ -205,7 +205,7 @@ func (db *OrcaDb) Query__HostLog(host string) []LogEvent {
 	if !db.enabled {
 		return []LogEvent{}
 	}
-	logsRes, err := db.client.Search().Index("logs").Query(elastic.NewTermQuery("HostId", host)).Sort("Timestamp", false).Do(db.ctx)
+	logsRes, err := db.client.Search().Index("logs").Query(elastic.NewTermQuery("HostId", host)).Sort("Timestamp", false).Size(10000).Do(db.ctx)
 	var logType LogEvent
 	var results []LogEvent
 	if err != nil {
@@ -223,7 +223,7 @@ func (db *OrcaDb) Query__AppLog(app string) []LogEvent {
 	if !db.enabled {
 		return []LogEvent{}
 	}
-	logsRes, err := db.client.Search().Index("logs").Query(elastic.NewTermQuery("AppId", app)).Sort("Timestamp", false).Do(db.ctx)
+	logsRes, err := db.client.Search().Index("logs").Query(elastic.NewTermQuery("AppId", app)).Sort("Timestamp", false).Size(10000).Do(db.ctx)
 	var logType LogEvent
 	var results []LogEvent
 	if err != nil {
