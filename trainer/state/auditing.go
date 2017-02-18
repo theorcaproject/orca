@@ -72,6 +72,20 @@ const (
                             }
                         }
                     }`
+
+	AUDIT_MAPPING = `{
+                        "mappings" : {
+                            "event" : {
+                                "properties" : {
+                                    "Timestamp" : { "type" : "date" },
+                                    "HostId" : { "type" : "string", "index" : "not_analyzed" },
+                                    "AppId" : { "type" : "string", "index" : "not_analyzed" },
+                                    "Message" : { "type" : "string"},
+                                    "Severity" : { "type" : "string"}
+                                }
+                            }
+                        }
+                    }`
 )
 
 var Audit OrcaDb
@@ -93,7 +107,7 @@ func (a *OrcaDb) Init(hostname string) {
 	a.client = cli
 	exists, _ := a.client.IndexExists("audit").Do(ctx)
 	if !exists {
-		a.client.CreateIndex("audit").Do(ctx)
+		a.client.CreateIndex("audit").Body(AUDIT_MAPPING).Do(ctx)
 	}
 
 	existsLogs, _ := a.client.IndexExists("logs").Do(ctx)
@@ -195,11 +209,6 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 	if log.Message == "" {
 		return
 	}
-	//if (log.LogLevel == LOG__STDERR) {
-	//	logs.AuditLogger.Errorln(log.Message)
-	//} else if log.LogLevel == LOG__STDOUT {
-	//	logs.AuditLogger.Infoln(log.Message)
-	//}
 
 	if db.client == nil {
 		return
