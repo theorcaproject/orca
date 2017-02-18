@@ -71,28 +71,14 @@ func hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguratio
 	}
 
 	for _, otherApps := range host.Apps {
-		if otherApps.Name == app.Name {
-			continue
-		}
-
-		otherAppConfiguration, err := configurationStore.GetConfiguration(otherApps.Name)
-		if err == nil {
-			affinity := otherAppConfiguration.Config[otherApps.Version].Affinity
-			if len(affinity) == 0 && len(app.GetLatestConfiguration().Affinity) == 0 {
-				return true
-			}
-
-			for _, otherAppAffinity := range affinity {
-				for _, targetAppAffinity := range app.GetLatestConfiguration().Affinity {
-					if otherAppAffinity.Tag == targetAppAffinity.Tag {
-						return true
-					}
-				}
-			}
+		otherAppConfiguration, _ := configurationStore.GetConfiguration(otherApps.Name)
+		affinity := otherAppConfiguration.Config[otherApps.Version].GroupingTag
+		if affinity != app.GetLatestConfiguration().GroupingTag {
+			return false
 		}
 	}
 
-	return false
+	return true
 }
 
 func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, currentState *state.StateStore) bool {
@@ -110,7 +96,6 @@ func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, cu
 
 	return instanceCount >= applicationConfiguration.MinDeployment
 }
-
 
 func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
@@ -164,7 +149,6 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 
 	return ret
 }
-
 
 func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
@@ -226,7 +210,6 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 	return ret
 }
 
-
 func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
 	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
@@ -259,13 +242,19 @@ func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configur
 	return ret
 }
 
-
 type Hosts []*model.Host
 type ByApplicationCount struct{ Hosts }
-func (s Hosts) Len() int      { return len(s) }
-func (s Hosts) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
-func (s ByApplicationCount) Less(i, j int) bool { return len(s.Hosts[i].Apps) < len(s.Hosts[j].Apps) }
+func (s Hosts) Len() int {
+	return len(s)
+}
+func (s Hosts) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s ByApplicationCount) Less(i, j int) bool {
+	return len(s.Hosts[i].Apps) < len(s.Hosts[j].Apps)
+}
 
 func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
@@ -286,7 +275,7 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 		}
 
 		/* Can we kill of some extra desired machines? */
-		if currentCount > applicationConfiguration.DesiredDeployment && currentCount > applicationConfiguration.MinDeployment{
+		if currentCount > applicationConfiguration.DesiredDeployment && currentCount > applicationConfiguration.MinDeployment {
 			if (applicationConfiguration.DesiredDeployment - applicationConfiguration.MinDeployment) > 0 {
 				/* Find potential spot instances */
 				terminateCandidateFound := false
@@ -402,7 +391,6 @@ func (planner *BoringPlanner) Plan_KullBrokenApplications(configurationStore con
 	return ret
 }
 
-
 func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
 
@@ -418,7 +406,7 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 			}
 
 			/* Now search, can we move this application to any other machine ?*/
-			for _, potentialHost :=  range currentState.ListOfHosts() {
+			for _, potentialHost := range currentState.ListOfHosts() {
 				if hostEntity.SpotInstance != potentialHost.SpotInstance {
 					continue
 				}

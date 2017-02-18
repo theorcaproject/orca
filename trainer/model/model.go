@@ -200,7 +200,7 @@ type VersionConfig struct {
 	EnvironmentVariables []EnvironmentVariable
 	Files                []File
 	Checks               []ApplicationChecks
-	Affinity             []AffinityTag
+	GroupingTag          string
 }
 
 type ApplicationConfiguration struct {
