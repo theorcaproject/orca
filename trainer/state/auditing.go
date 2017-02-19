@@ -156,7 +156,9 @@ func (db *OrcaDb) Query__AuditEvents(limit string, search string) []AuditEvent {
 	}
 	limitInteger, _ := strconv.Atoi(limit)
 	q := elastic.NewBoolQuery()
-	q.Must(elastic.NewTermQuery("Message", search))
+	if len(search) > 0{
+		q.Must(elastic.NewTermQuery("Message", search))
+	}
 	events, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
@@ -178,7 +180,9 @@ func (db *OrcaDb) Query__AuditEventsHost(host string, limit string, search strin
 	limitInteger, _ := strconv.Atoi(limit)
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("HostId", host))
-	q.Must(elastic.NewTermQuery("Message", search))
+	if len(search) > 0{
+		q.Must(elastic.NewTermQuery("Message", search))
+	}
 
 	auditRes, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
@@ -202,7 +206,9 @@ func (db *OrcaDb) Query__AuditEventsApplication(application string, limit string
 	limitInteger, _ := strconv.Atoi(limit)
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("AppId", application))
-	q.Must(elastic.NewTermQuery("Message", search))
+	if len(search) > 0{
+		q.Must(elastic.NewTermQuery("Message", search))
+	}
 
 	auditRes, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
@@ -250,7 +256,10 @@ func (db *OrcaDb) Query__HostLog(host string, limit string, search string) []Log
 	limitInteger, _ := strconv.Atoi(limit)
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("HostId", host))
-	q.Must(elastic.NewTermQuery("Message", search))
+
+	if len(search) > 0{
+		q.Must(elastic.NewTermQuery("Message", search))
+	}
 	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
 	var results []LogEvent
@@ -274,7 +283,9 @@ func (db *OrcaDb) Query__AppLog(app string, limit string, search string) []LogEv
 	limitInteger, _ := strconv.Atoi(limit)
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("AppId", app))
-	q.Must(elastic.NewTermQuery("Message", search))
+	if len(search) > 0{
+		q.Must(elastic.NewTermQuery("Message", search))
+	}
 
 	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
