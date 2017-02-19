@@ -22,6 +22,10 @@ type User struct {
 	Password string
 }
 
+type ApiToken struct {
+	Token string
+}
+
 type GlobalSettings struct {
 	ApiPort                int
 	LoggingPort            int
@@ -47,4 +51,6 @@ type GlobalSettings struct {
 
 	Users                  map[string]User
 	HostToken              string
+
+	ApiTokens		[]ApiToken
 }

@@ -31,6 +31,7 @@ import (
 	"time"
 	"github.com/twinj/uuid"
 	"strings"
+	"github.com/docker/docker/api"
 )
 
 type Api struct {
@@ -183,7 +184,7 @@ func (api *Api) getAllRunningState(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
-	if (api.configurationStore.GlobalSettings.HostToken == token){
+	if (api.configurationStore.GlobalSettings.HostToken == token) {
 		var apps model.HostCheckinDataPackage
 		hostId := r.URL.Query().Get("host")
 
@@ -239,7 +240,7 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 		} else {
 			returnJson(w, nil)
 		}
-	}else{
+	} else {
 		http.Error(w, "Token invalid", 403)
 	}
 }
@@ -249,7 +250,6 @@ func (api *Api) getLogs(w http.ResponseWriter, r *http.Request) {
 		returnJson(w, state.Audit.Query__HostLog("", "100", ""))
 	}
 }
-
 
 func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 	var logs map[string]Logs
@@ -269,7 +269,7 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 
 			if len(appLogs.StdOut) > 0 {
 				entries := strings.Split(appLogs.StdOut, "\n")
-				for i := len(entries)- 1; i >= 0; i-- {
+				for i := len(entries) - 1; i >= 0; i-- {
 					state.Audit.Insert__Log(state.LogEvent{
 						HostId: host, AppId: app, Message: entries[i], LogLevel: "stdout",
 					})
@@ -356,16 +356,36 @@ func (api *Api) getHostPerformance(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) authenticate_user(w http.ResponseWriter, r *http.Request) bool {
 	token := r.URL.Query().Get("token")
-	if !api.sessions[token] {
-		http.Error(w, "access denied", 403)
-		return false
+
+	for _, allowedToken := range api.configurationStore.GlobalSettings.ApiTokens {
+		if token == allowedToken {
+			return true
+		}
 	}
 
-	return true
+	if api.sessions[token] {
+		http.Error(w, "access denied", 403)
+		return true
+	}
+
+	return false
 }
 
 func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
+		if r.Method == "POST" {
+			var object configuration.GlobalSettings
+			decoder := json.NewDecoder(r.Body)
+			if err := decoder.Decode(&object); err == nil {
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+					Message:"Global configuration was modified",
+				})
+
+				api.configurationStore.GlobalSettings = object
+				api.configurationStore.Save()
+			}
+		}
+
 		returnJson(w, api.configurationStore.GlobalSettings)
 	}
 }
