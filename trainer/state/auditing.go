@@ -26,12 +26,16 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"orca/trainer/configuration"
+	"bytes"
+	"net/http"
 )
 
 type OrcaDb struct {
-	enabled bool
-	client  *elastic.Client
-	ctx context.Context
+	enabled            bool
+	client             *elastic.Client
+	ctx                context.Context
+	configurationStore *configuration.ConfigurationStore
 }
 
 type AuditEvent struct {
@@ -92,15 +96,16 @@ const (
 var Audit OrcaDb
 
 //"http://127.0.0.1:9200"
-func (a *OrcaDb) Init(hostname string) {
-	if hostname == "" {
+func (a *OrcaDb) Init(configurationStore *configuration.ConfigurationStore) {
+	a.configurationStore = configurationStore
+	if configurationStore.GlobalSettings.AuditDatabaseUri == "" {
 		a.enabled = false
 		return
 	}
 	a.enabled = true
 	ctx := context.Background()
 	a.ctx = ctx
-	cli, err := elastic.NewClient(elastic.SetURL(hostname))
+	cli, err := elastic.NewClient(elastic.SetURL(configurationStore.GlobalSettings.AuditDatabaseUri))
 	if err != nil {
 		fmt.Println("Cloud not connect to elasticsearch")
 		return
@@ -134,6 +139,21 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 		logs.AuditLogger.Debugln(event.Message)
 	}
 
+	/* Run hooks */
+	for _, hook := range db.configurationStore.GlobalSettings.AuditWebhooks {
+		if hook.Severity == string(event.Severity) {
+			b := new(bytes.Buffer)
+			b.WriteString("{\"text\":\"" + event.Message + "\"}")
+
+			res, err := http.Post(hook.Uri, "application/json; charset=utf-8", b)
+			if err != nil {
+				logs.AuditLogger.Errorf("Could not send event to webhook: %+v", err)
+			} else {
+				defer res.Body.Close()
+			}
+		}
+	}
+
 	if db.client == nil {
 		return
 	}
@@ -156,7 +176,7 @@ func (db *OrcaDb) Query__AuditEvents(limit string, search string) []AuditEvent {
 	}
 	limitInteger, _ := strconv.Atoi(limit)
 	q := elastic.NewBoolQuery()
-	if len(search) > 0{
+	if len(search) > 0 {
 		q.Must(elastic.NewTermQuery("Message", search))
 	}
 	events, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
@@ -180,7 +200,7 @@ func (db *OrcaDb) Query__AuditEventsHost(host string, limit string, search strin
 	limitInteger, _ := strconv.Atoi(limit)
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("HostId", host))
-	if len(search) > 0{
+	if len(search) > 0 {
 		q.Must(elastic.NewTermQuery("Message", search))
 	}
 
@@ -206,7 +226,7 @@ func (db *OrcaDb) Query__AuditEventsApplication(application string, limit string
 	limitInteger, _ := strconv.Atoi(limit)
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("AppId", application))
-	if len(search) > 0{
+	if len(search) > 0 {
 		q.Must(elastic.NewTermQuery("Message", search))
 	}
 
@@ -257,7 +277,7 @@ func (db *OrcaDb) Query__HostLog(host string, limit string, search string) []Log
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("HostId", host))
 
-	if len(search) > 0{
+	if len(search) > 0 {
 		q.Must(elastic.NewTermQuery("Message", search))
 	}
 	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
@@ -283,7 +303,7 @@ func (db *OrcaDb) Query__AppLog(app string, limit string, search string) []LogEv
 	limitInteger, _ := strconv.Atoi(limit)
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("AppId", app))
-	if len(search) > 0{
+	if len(search) > 0 {
 		q.Must(elastic.NewTermQuery("Message", search))
 	}
 

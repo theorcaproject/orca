@@ -47,8 +47,8 @@ func main() {
 	store.Load()
 
 	/* Init connection to the database for auditing */
-	state.Audit.Init(store.AuditDatabaseUri)
-	state.Stats.Init(store.AuditDatabaseUri)
+	state.Audit.Init(store)
+	state.Stats.Init(store)
 
 	var plannerEngine planner.Planner;
 	if store.GlobalSettings.PlanningAlg == "boringplanner" {

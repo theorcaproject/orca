@@ -59,4 +59,7 @@ type GlobalSettings struct {
 
 	ApiTokens		[]ApiToken
 	AuditWebhooks		[]AuditWebhook
+
+	AuditDatabaseUri	string
+	StatsDatabaseUri	string
 }

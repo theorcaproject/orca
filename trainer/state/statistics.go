@@ -22,18 +22,21 @@ import (
 	"time"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"orca/trainer/configuration"
 )
 
 type StatisticsDb struct {
 	session *mgo.Session
 	db      *mgo.Database
+	configurationStore *configuration.ConfigurationStore
 }
 
 var Stats StatisticsDb
 
-func (a *StatisticsDb) Init(hostname string) {
-	hostname = "localhost"
-	session, err := mgo.Dial(hostname)
+func (a *StatisticsDb) Init(configurationStore *configuration.ConfigurationStore) {
+	a.configurationStore = configurationStore
+
+	session, err := mgo.Dial(a.configurationStore.GlobalSettings.StatsDatabaseUri)
 	if err != nil {
 		panic(err)
 	}

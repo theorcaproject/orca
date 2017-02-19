@@ -27,14 +27,12 @@ import (
 	"orca/util"
 	Logger "orca/trainer/logs"
 	"io/ioutil"
-	"orca/trainer/state"
 	"orca/trainer/model"
 )
 
 type ConfigurationStore struct {
 	ApplicationConfigurations    	map[string]*model.ApplicationConfiguration;
 	GlobalSettings			GlobalSettings
-	AuditDatabaseUri             	string
 
 	trainerConfigurationFilePath 	string
 }
@@ -98,10 +96,6 @@ func (store* ConfigurationStore) loadApplicationConfigurationsFromFile(filename 
 }
 
 func (store* ConfigurationStore) Add(name string, config *model.ApplicationConfiguration) *model.ApplicationConfiguration{
-	state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-		Message: fmt.Sprintf("Adding application %s to orca", name),
-	})
-
 	store.ApplicationConfigurations[name] = config;
 	return config
 }
