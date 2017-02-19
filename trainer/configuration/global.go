@@ -62,4 +62,6 @@ type GlobalSettings struct {
 
 	AuditDatabaseUri	string
 	StatsDatabaseUri	string
+
+	EnvName			string
 }
