@@ -174,7 +174,11 @@ func (db *OrcaDb) Query__AuditEventsHost(host string, limit string, search strin
 		return []AuditEvent{}
 	}
 	limitInteger, _ := strconv.Atoi(limit)
-	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("HostId", host)).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
+	q := elastic.NewBoolQuery()
+	q.Must(elastic.NewTermQuery("HostId", host))
+	q.Must(elastic.NewTermQuery("Message", search))
+
+	auditRes, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
