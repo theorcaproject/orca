@@ -29,6 +29,7 @@ import (
 	"orca/trainer/configuration"
 	"bytes"
 	"net/http"
+	"os"
 )
 
 type OrcaDb struct {
@@ -108,7 +109,7 @@ func (a *OrcaDb) Init(configurationStore *configuration.ConfigurationStore) {
 	cli, err := elastic.NewClient(elastic.SetURL(configurationStore.GlobalSettings.AuditDatabaseUri))
 	if err != nil {
 		fmt.Println("Cloud not connect to elasticsearch")
-		return
+		panic(err)
 	}
 	a.client = cli
 	exists, _ := a.client.IndexExists("audit").Do(ctx)
