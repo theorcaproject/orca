@@ -26,6 +26,11 @@ type ApiToken struct {
 	Token string
 }
 
+type AuditWebhook struct {
+	Uri string
+	Severity string
+}
+
 type GlobalSettings struct {
 	ApiPort                int
 	LoggingPort            int
@@ -53,4 +58,5 @@ type GlobalSettings struct {
 	HostToken              string
 
 	ApiTokens		[]ApiToken
+	AuditWebhooks		[]AuditWebhook
 }
