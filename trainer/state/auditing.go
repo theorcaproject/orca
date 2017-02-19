@@ -240,7 +240,7 @@ func (db *OrcaDb) Query__HostLog(host string, limit string, search string) []Log
 	limitInteger, _ := strconv.Atoi(limit)
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("HostId", host))
-	q.Must(elastic.NewTermQuery("Message", search))
+	//q.Must(elastic.NewTermQuery("Message", search))
 
 	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
