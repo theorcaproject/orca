@@ -155,7 +155,9 @@ func (db *OrcaDb) Query__AuditEvents(limit string, search string) []AuditEvent {
 		return []AuditEvent{}
 	}
 	limitInteger, _ := strconv.Atoi(limit)
-	events, err := db.client.Search().Index("audit").Query(elastic.NewMatchAllQuery()).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
+	q := elastic.NewBoolQuery()
+	q.Must(elastic.NewTermQuery("Message", search))
+	events, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
@@ -198,7 +200,11 @@ func (db *OrcaDb) Query__AuditEventsApplication(application string, limit string
 	}
 
 	limitInteger, _ := strconv.Atoi(limit)
-	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("AppId", application)).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
+	q := elastic.NewBoolQuery()
+	q.Must(elastic.NewTermQuery("AppId", application))
+	q.Must(elastic.NewTermQuery("Message", search))
+
+	auditRes, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
@@ -245,7 +251,6 @@ func (db *OrcaDb) Query__HostLog(host string, limit string, search string) []Log
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("HostId", host))
 	q.Must(elastic.NewTermQuery("Message", search))
-
 	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
 	var results []LogEvent
@@ -267,7 +272,11 @@ func (db *OrcaDb) Query__AppLog(app string, limit string, search string) []LogEv
 	}
 
 	limitInteger, _ := strconv.Atoi(limit)
-	logsRes, err := db.client.Search().Index("logs").Query(elastic.NewTermQuery("AppId", app)).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
+	q := elastic.NewBoolQuery()
+	q.Must(elastic.NewTermQuery("AppId", app))
+	q.Must(elastic.NewTermQuery("Message", search))
+
+	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
 	var results []LogEvent
 	if err != nil {
