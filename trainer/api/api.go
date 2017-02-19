@@ -31,7 +31,6 @@ import (
 	"time"
 	"github.com/twinj/uuid"
 	"strings"
-	"github.com/docker/docker/api"
 )
 
 type Api struct {
@@ -358,7 +357,7 @@ func (api *Api) authenticate_user(w http.ResponseWriter, r *http.Request) bool {
 	token := r.URL.Query().Get("token")
 
 	for _, allowedToken := range api.configurationStore.GlobalSettings.ApiTokens {
-		if token == allowedToken {
+		if token == allowedToken.Token {
 			return true
 		}
 	}
