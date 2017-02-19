@@ -245,7 +245,7 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) getLogs(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
-		returnJson(w, state.Audit.Query__HostLog(""))
+		returnJson(w, state.Audit.Query__HostLog("", "100", ""))
 	}
 }
 
@@ -283,7 +283,10 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 func (api *Api) getApplicationLogs(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
 		application := r.URL.Query().Get("application")
-		returnJson(w, state.Audit.Query__AppLog(application))
+		limit := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
+
+		returnJson(w, state.Audit.Query__AppLog(application, limit, search))
 	}
 }
 
@@ -295,21 +298,27 @@ func (api *Api) getAllLogs(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) getHostLogs(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
+		limit := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
 		hostAudit := r.URL.Query().Get("host")
-		returnJson(w, state.Audit.Query__HostLog(hostAudit))
+		returnJson(w, state.Audit.Query__HostLog(hostAudit, limit, search))
 	}
 }
 
 func (api *Api) getAudit(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
-		returnJson(w, state.Audit.Query__AuditEvents())
+		limit := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
+		returnJson(w, state.Audit.Query__AuditEvents(limit, search))
 	}
 }
 
 func (api *Api) getHostAudit(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
 		hostAudit := r.URL.Query().Get("host")
-		returnJson(w, state.Audit.Query__AuditEventsHost(hostAudit))
+		limit := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
+		returnJson(w, state.Audit.Query__AuditEventsHost(hostAudit, limit, search))
 	}
 }
 
@@ -317,7 +326,9 @@ func (api *Api) getHostAudit(w http.ResponseWriter, r *http.Request) {
 func (api *Api) getApplicationAudit(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
 		application := r.URL.Query().Get("application")
-		returnJson(w, state.Audit.Query__AuditEventsApplication(application))
+		limit := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
+		returnJson(w, state.Audit.Query__AuditEventsApplication(application, limit, search))
 	}
 }
 

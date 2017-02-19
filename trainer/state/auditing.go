@@ -25,6 +25,7 @@ import (
 	"orca/trainer/logs"
 	"fmt"
 	"reflect"
+	"strconv"
 )
 
 type OrcaDb struct {
@@ -149,11 +150,12 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 	}
 }
 
-func (db *OrcaDb) Query__AuditEvents() []AuditEvent {
+func (db *OrcaDb) Query__AuditEvents(limit string, search string) []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	events, err := db.client.Search().Index("audit").Query(elastic.NewMatchAllQuery()).Sort("Timestamp", false).Size(10000).Do(db.ctx)
+	limitInteger, _ := strconv.Atoi(limit)
+	events, err := db.client.Search().Index("audit").Query(elastic.NewMatchAllQuery()).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
@@ -167,11 +169,12 @@ func (db *OrcaDb) Query__AuditEvents() []AuditEvent {
 	return results
 }
 
-func (db *OrcaDb) Query__AuditEventsHost(host string) []AuditEvent {
+func (db *OrcaDb) Query__AuditEventsHost(host string, limit string, search string) []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("HostId", host)).Sort("Timestamp", false).Size(10000).Do(db.ctx)
+	limitInteger, _ := strconv.Atoi(limit)
+	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("HostId", host)).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
@@ -185,11 +188,13 @@ func (db *OrcaDb) Query__AuditEventsHost(host string) []AuditEvent {
 	return results
 }
 
-func (db *OrcaDb) Query__AuditEventsApplication(application string) []AuditEvent {
+func (db *OrcaDb) Query__AuditEventsApplication(application string, limit string, search string) []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("AppId", application)).Sort("Timestamp", false).Size(10000).Do(db.ctx)
+
+	limitInteger, _ := strconv.Atoi(limit)
+	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("AppId", application)).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
@@ -227,11 +232,17 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 	}
 }
 
-func (db *OrcaDb) Query__HostLog(host string) []LogEvent {
+func (db *OrcaDb) Query__HostLog(host string, limit string, search string) []LogEvent {
 	if !db.enabled {
 		return []LogEvent{}
 	}
-	logsRes, err := db.client.Search().Index("logs").Query(elastic.NewTermQuery("HostId", host)).Sort("Timestamp", false).Size(10000).Do(db.ctx)
+
+	limitInteger, _ := strconv.Atoi(limit)
+	q := elastic.NewBoolQuery()
+	q.Must(elastic.NewTermQuery("HostId", host))
+	q.Must(elastic.NewTermQuery("Message", search))
+
+	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
 	var results []LogEvent
 	if err != nil {
@@ -246,11 +257,13 @@ func (db *OrcaDb) Query__HostLog(host string) []LogEvent {
 	return results
 }
 
-func (db *OrcaDb) Query__AppLog(app string) []LogEvent {
+func (db *OrcaDb) Query__AppLog(app string, limit string, search string) []LogEvent {
 	if !db.enabled {
 		return []LogEvent{}
 	}
-	logsRes, err := db.client.Search().Index("logs").Query(elastic.NewTermQuery("AppId", app)).Sort("Timestamp", false).Size(10000).Do(db.ctx)
+
+	limitInteger, _ := strconv.Atoi(limit)
+	logsRes, err := db.client.Search().Index("logs").Query(elastic.NewTermQuery("AppId", app)).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
 	var results []LogEvent
 	if err != nil {
