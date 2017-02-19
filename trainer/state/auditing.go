@@ -29,7 +29,6 @@ import (
 	"orca/trainer/configuration"
 	"bytes"
 	"net/http"
-	"os"
 )
 
 type OrcaDb struct {
