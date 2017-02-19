@@ -293,6 +293,15 @@ func main() {
 						metric.Mbytes += appHostEntry.Metrics.MemoryUsage
 						metric.Network += appHostEntry.Metrics.NetworkUsage
 						metric.InstanceCount += 1
+
+						state.Stats.Insert__ApplicationHostUtilisationStatistic(state.ApplicationHostUtilisationStatistic{
+							Cpu: appHostEntry.Metrics.CpuUsage,
+							Mbytes: appHostEntry.Metrics.MemoryUsage,
+							Network: appHostEntry.Metrics.NetworkUsage,
+							Host: hostId,
+							AppName: appName,
+							Timestamp:time.Now(),
+						})
 					}
 				}
 				state.Stats.Insert__ApplicationUtilisationStatistic(metric)

@@ -68,6 +68,7 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 
 	r.HandleFunc("/state/cloud/host/performance", api.getHostPerformance)
 	r.HandleFunc("/state/cloud/application/performance", api.getAppPerformance)
+	r.HandleFunc("/state/cloud/application/host/performance", api.getAppHostPerformance)
 
 	r.HandleFunc("/state/cloud/audit", api.getAudit)
 	r.HandleFunc("/state/cloud/host/audit", api.getHostAudit)
@@ -322,7 +323,6 @@ func (api *Api) getHostAudit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func (api *Api) getApplicationAudit(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
 		application := r.URL.Query().Get("application")
@@ -336,6 +336,14 @@ func (api *Api) getAppPerformance(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
 		application := r.URL.Query().Get("application")
 		returnJson(w, state.Stats.Query__ApplicationUtilisationStatistic(application))
+	}
+}
+
+func (api *Api) getAppHostPerformance(w http.ResponseWriter, r *http.Request) {
+	if (api.authenticate_user(w, r)) {
+		application := r.URL.Query().Get("application")
+		host := r.URL.Query().Get("host")
+		returnJson(w, state.Stats.Query__ApplicationHostUtilisationStatistic(application, host))
 	}
 }
 

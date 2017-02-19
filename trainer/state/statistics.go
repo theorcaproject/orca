@@ -50,8 +50,22 @@ type ApplicationUtilisationStatistic struct {
 	Cpu       int64
 	Mbytes    int64
 	Network   int64
+
 	InstanceCount int64
+	DesiredInstanceCount int64
+
 	AppName   string
+	Timestamp time.Time
+}
+
+type ApplicationHostUtilisationStatistic struct {
+	Cpu       int64
+	Mbytes    int64
+	Network   int64
+
+	AppName   string
+	Host   string
+
 	Timestamp time.Time
 }
 
@@ -73,6 +87,19 @@ func (db *StatisticsDb) Insert__ApplicationUtilisationStatistic(event Applicatio
 
 	event.Timestamp = time.Now()
 	c := db.db.C("app_utilisation")
+	err := c.Insert(&event)
+	if err != nil {
+		return
+	}
+}
+
+func (db *StatisticsDb) Insert__ApplicationHostUtilisationStatistic(event ApplicationHostUtilisationStatistic) {
+	if db.session == nil {
+		return
+	}
+
+	event.Timestamp = time.Now()
+	c := db.db.C("app_host_utilisation")
 	err := c.Insert(&event)
 	if err != nil {
 		return
@@ -107,6 +134,18 @@ func (db *StatisticsDb) Query__HostUtilisationStatistic(host string) []HostUtili
 	c := db.db.C("host_utilisation")
 	var results []HostUtilisationStatistic
 	err := c.Find(bson.M{"host": host}).Sort("-Timestamp").All(&results)
+	if err != nil {
+		panic("error querying db")
+	}
+
+	return results
+}
+
+
+func (db *StatisticsDb) Query__ApplicationHostUtilisationStatistic(application string, host string) []ApplicationHostUtilisationStatistic {
+	c := db.db.C("app_host_utilisation")
+	var results []ApplicationHostUtilisationStatistic
+	err := c.Find(bson.M{"host": host, "appname": application}).Sort("-Timestamp").All(&results)
 	if err != nil {
 		panic("error querying db")
 	}
