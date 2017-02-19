@@ -143,7 +143,7 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 	for _, hook := range db.configurationStore.GlobalSettings.AuditWebhooks {
 		if hook.Severity == string(event.Severity) {
 			b := new(bytes.Buffer)
-			b.WriteString("{\"text\":\"" + event.Message + "\"}")
+			b.WriteString("{\"text\":\"orca@" + db.configurationStore.GlobalSettings.EnvName + " said " + event.Message + "\"}")
 
 			res, err := http.Post(hook.Uri, "application/json; charset=utf-8", b)
 			if err != nil {
