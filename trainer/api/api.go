@@ -363,10 +363,10 @@ func (api *Api) authenticate_user(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	if api.sessions[token] {
-		http.Error(w, "access denied", 403)
 		return true
 	}
 
+	http.Error(w, "access denied", 403)
 	return false
 }
 
