@@ -177,7 +177,7 @@ func (db *OrcaDb) Query__AuditEvents(limit string, search string) []AuditEvent {
 	limitInteger, _ := strconv.Atoi(limit)
 	q := elastic.NewBoolQuery()
 	if len(search) > 0 {
-		q.Must(elastic.NewTermQuery("Message", search))
+		q.Must(elastic.NewWildcardQuery("Message", search))
 	}
 	events, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
@@ -201,7 +201,7 @@ func (db *OrcaDb) Query__AuditEventsHost(host string, limit string, search strin
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("HostId", host))
 	if len(search) > 0 {
-		q.Must(elastic.NewTermQuery("Message", search))
+		q.Must(elastic.NewWildcardQuery("Message", search))
 	}
 
 	auditRes, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
@@ -227,7 +227,7 @@ func (db *OrcaDb) Query__AuditEventsApplication(application string, limit string
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("AppId", application))
 	if len(search) > 0 {
-		q.Must(elastic.NewTermQuery("Message", search))
+		q.Must(elastic.NewWildcardQuery("Message", search))
 	}
 
 	auditRes, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
@@ -278,7 +278,7 @@ func (db *OrcaDb) Query__HostLog(host string, limit string, search string) []Log
 	q.Must(elastic.NewTermQuery("HostId", host))
 
 	if len(search) > 0 {
-		q.Must(elastic.NewTermQuery("Message", search))
+		q.Must(elastic.NewWildcardQuery("Message", search))
 	}
 	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
@@ -304,7 +304,7 @@ func (db *OrcaDb) Query__AppLog(app string, limit string, search string) []LogEv
 	q := elastic.NewBoolQuery()
 	q.Must(elastic.NewTermQuery("AppId", app))
 	if len(search) > 0 {
-		q.Must(elastic.NewTermQuery("Message", search))
+		q.Must(elastic.NewWildcardQuery("Message", search))
 	}
 
 	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
