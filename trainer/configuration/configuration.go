@@ -40,6 +40,9 @@ type ConfigurationStore struct {
 func (store *ConfigurationStore) Init(trainerConfigurationFilePath string){
 	store.trainerConfigurationFilePath = trainerConfigurationFilePath
 
+	defaultUserAccount := User{
+		Password:"admin",
+	}
 	store.ApplicationConfigurations = make(map[string]*model.ApplicationConfiguration);
 	store.GlobalSettings = GlobalSettings{
 		ApiPort:5001,
@@ -47,6 +50,11 @@ func (store *ConfigurationStore) Init(trainerConfigurationFilePath string){
 		ServerChangeTimeout:300,
 		ServerTimeout:300,
 		HostChangeFailureLimit:10,
+		Users: map[string]User{"admin": defaultUserAccount},
+		PlanningAlg: "boringplanner",
+		CloudProvider: "aws",
+		AuditDatabaseUri: "http://localhost:9200",
+		StatsDatabaseUri: "localhost",
 	}
 }
 
