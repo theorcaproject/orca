@@ -60,6 +60,7 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	/* Routes for the client */
 	r.HandleFunc("/authenticate", api.authenticate)
 	r.HandleFunc("/settings", api.getSettings)
+	r.HandleFunc("/properties", api.getAllProperties)
 	r.HandleFunc("/config", api.getAllConfiguration)
 	r.HandleFunc("/config/applications", api.getAllConfigurationApplications)
 	r.HandleFunc("/config/applications/configuration/latest", api.getAllConfigurationApplications_Configurations_Latest)
@@ -132,6 +133,7 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 				application.Enabled = object.Enabled
 				application.DisableSchedule = object.DisableSchedule
 				application.DeploymentSchedule = object.DeploymentSchedule
+				application.PropertyGroups = object.PropertyGroups
 				api.configurationStore.Save()
 			}
 
@@ -154,8 +156,9 @@ func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.Res
 				var object model.VersionConfig
 				decoder := json.NewDecoder(r.Body)
 				if err := decoder.Decode(&object); err == nil {
-					newVersion := application.GetNextVersion()
+					newVersion := application.GetSuitableNextVersion()
 					object.Version = newVersion
+
 					application.Config[newVersion] = object
 
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
@@ -386,6 +389,30 @@ func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
 		}
 
 		returnJson(w, api.configurationStore.GlobalSettings)
+	}
+}
+
+func (api *Api) getAllProperties(w http.ResponseWriter, r *http.Request) {
+	if (api.authenticate_user(w, r)) {
+		if r.Method == "POST" {
+			var object model.PropertyGroup
+			decoder := json.NewDecoder(r.Body)
+			if err := decoder.Decode(&object); err == nil {
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+					Message:"Updated property group",
+				})
+
+				object.Version = 0
+				if oldVersion, ok := api.configurationStore.Properties[object.Name]; ok {
+					object.Version += oldVersion.Version + 1
+				}
+
+				api.configurationStore.Properties[object.Name] = &object
+				api.configurationStore.Save()
+			}
+		}
+
+		returnJson(w, api.configurationStore.Properties)
 	}
 }
 

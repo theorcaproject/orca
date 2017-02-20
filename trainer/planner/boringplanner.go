@@ -46,19 +46,19 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 	if host.HasApp(app.Name) {
 		return false
 	}
-	if host.Network != app.GetLatestConfiguration().Network {
+	if host.Network != app.GetLatestPublishedConfiguration().Network {
 		return false
 	}
 
 	count := 0
-	for _, appGrp := range app.GetLatestConfiguration().SecurityGroups {
+	for _, appGrp := range app.GetLatestPublishedConfiguration().SecurityGroups {
 		for _, hostGrp := range host.SecurityGroups {
 			if appGrp.Group == hostGrp.Group {
 				count += 1
 			}
 		}
 	}
-	if count == len(app.GetLatestConfiguration().SecurityGroups) {
+	if count == len(app.GetLatestPublishedConfiguration().SecurityGroups) {
 		return true
 	}
 	return false
@@ -73,7 +73,7 @@ func hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguratio
 	for _, otherApps := range host.Apps {
 		otherAppConfiguration, _ := configurationStore.GetConfiguration(otherApps.Name)
 		affinity := otherAppConfiguration.Config[otherApps.Version].GroupingTag
-		if affinity != app.GetLatestConfiguration().GroupingTag {
+		if affinity != app.GetLatestPublishedConfiguration().GroupingTag {
 			return false
 		}
 	}
@@ -89,7 +89,7 @@ func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, cu
 		}
 
 		/* Only use reserved instances when working with the min count */
-		if hostEntity.HasAppWithSameVersion(applicationConfiguration.Name, applicationConfiguration.GetLatestVersion()) {
+		if hostEntity.HasAppWithSameVersion(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) {
 			instanceCount += 1
 		}
 	}
@@ -129,8 +129,8 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 
 			if !foundServer {
 				requiresMinServer = true
-				serverNetwork = applicationConfiguration.GetLatestConfiguration().Network
-				serverSecurityGroups = applicationConfiguration.GetLatestConfiguration().SecurityGroups
+				serverNetwork = applicationConfiguration.GetLatestPublishedConfiguration().Network
+				serverSecurityGroups = applicationConfiguration.GetLatestPublishedConfiguration().SecurityGroups
 			}
 		}
 	}
@@ -164,7 +164,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 
 		currentCount := 0
 		for _, hostEntity := range currentState.GetAllHosts() {
-			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
 				currentCount += 1
 			}
 		}
@@ -189,8 +189,8 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 
 			if !foundServer {
 				requiresSpotServer = true
-				serverNetwork = applicationConfiguration.GetLatestConfiguration().Network
-				serverSecurityGroups = applicationConfiguration.GetLatestConfiguration().SecurityGroups
+				serverNetwork = applicationConfiguration.GetLatestPublishedConfiguration().Network
+				serverSecurityGroups = applicationConfiguration.GetLatestPublishedConfiguration().SecurityGroups
 			}
 		}
 	}
@@ -219,14 +219,14 @@ func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configur
 
 		currentCount := 0
 		for _, hostEntity := range currentState.GetAllHosts() {
-			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
 				currentCount += 1
 			}
 		}
 
 		if currentCount >= applicationConfiguration.DesiredDeployment && currentCount >= applicationConfiguration.MinDeployment {
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if hostEntity.HasApp(name) && !hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+				if hostEntity.HasApp(name) && !hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
 					change := PlanningChange{
 						Type: "remove_application",
 						ApplicationName: name,
@@ -269,7 +269,7 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 
 		currentCount := 0
 		for _, hostEntity := range sortedHosts {
-			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
 				currentCount += 1
 			}
 		}
@@ -280,7 +280,7 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 				/* Find potential spot instances */
 				terminateCandidateFound := false
 				for _, hostEntity := range sortedHosts {
-					if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+					if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
 						if hostEntity.SpotInstance {
 							change := PlanningChange{
 								Type: "remove_application",
@@ -298,7 +298,7 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 
 				if !terminateCandidateFound {
 					for _, hostEntity := range currentState.GetAllHosts() {
-						if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+						if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
 							change := PlanningChange{
 								Type: "remove_application",
 								ApplicationName: name,
@@ -313,7 +313,7 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 				}
 			} else {
 				for _, hostEntity := range sortedHosts {
-					if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestVersion()) {
+					if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
 						change := PlanningChange{
 							Type: "remove_application",
 							ApplicationName: name,

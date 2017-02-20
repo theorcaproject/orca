@@ -76,6 +76,51 @@ func main() {
 				continue
 			}
 
+			/* Check for published configuration */
+			for _, app := range store.ApplicationConfigurations {
+				if !app.Enabled {
+					continue
+				}
+
+				latestConfiguredVersion := app.GetLatestConfiguration()
+				latestPublishedVersion := app.GetLatestPublishedConfiguration()
+				if latestConfiguredVersion.GetVersion() > latestPublishedVersion.GetVersion() {
+					/* Publish */
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+						Message: fmt.Sprintf("Publishing application configuration %s for app %s", latestConfiguredVersion.Version, app.Name),
+						AppId: app.Name,
+					})
+
+					store.RequestPublishConfiguration(app)
+					continue
+				}
+
+				/* Check the params */
+				for _, propertyGroupName := range app.PropertyGroups {
+					if item, ok :=latestPublishedVersion.AppliedPropertyGroups[propertyGroupName.Name]; ok {
+						if item != store.Properties[propertyGroupName.Name].Version {
+							/* Publish */
+							state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+								Message: fmt.Sprintf("Publishing app configuration %s for app %s. Properties have been updated/modified", latestConfiguredVersion.Version, app.Name),
+								AppId: app.Name,
+							})
+
+							store.RequestPublishConfiguration(app)
+							continue
+						}
+					}else{
+						/* Publish */
+						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+							Message: fmt.Sprintf("Publishing app configuration %s for app %s. Properties have been updated/modified", latestConfiguredVersion.Version, app.Name),
+							AppId: app.Name,
+						})
+
+						store.RequestPublishConfiguration(app)
+						continue
+					}
+				}
+			}
+
 			/* Check for timeouts */
 			for _, host := range state_store.GetAllHosts() {
 				for _, change := range host.Changes {

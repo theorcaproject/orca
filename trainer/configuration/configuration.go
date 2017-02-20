@@ -31,19 +31,21 @@ import (
 )
 
 type ConfigurationStore struct {
-	ApplicationConfigurations    	map[string]*model.ApplicationConfiguration;
-	GlobalSettings			GlobalSettings
+	ApplicationConfigurations    map[string]*model.ApplicationConfiguration;
+	Properties                   map[string]*model.PropertyGroup
+	GlobalSettings               GlobalSettings
 
-	trainerConfigurationFilePath 	string
+	trainerConfigurationFilePath string
 }
 
-func (store *ConfigurationStore) Init(trainerConfigurationFilePath string){
+func (store *ConfigurationStore) Init(trainerConfigurationFilePath string) {
 	store.trainerConfigurationFilePath = trainerConfigurationFilePath
 
 	defaultUserAccount := User{
 		Password:"admin",
 	}
 	store.ApplicationConfigurations = make(map[string]*model.ApplicationConfiguration);
+	store.Properties = make(map[string]*model.PropertyGroup);
 	store.GlobalSettings = GlobalSettings{
 		ApiPort:5001,
 		AppChangeTimeout:300,
@@ -58,11 +60,11 @@ func (store *ConfigurationStore) Init(trainerConfigurationFilePath string){
 	}
 }
 
-func (store *ConfigurationStore) DumpConfig(){
+func (store *ConfigurationStore) DumpConfig() {
 	Logger.InitLogger.Infof("Loading config file from %+v", store.ApplicationConfigurations)
 }
 
-func (store* ConfigurationStore) Load(){
+func (store*ConfigurationStore) Load() {
 	store.loadApplicationConfigurationsFromFile(store.trainerConfigurationFilePath)
 
 	/* If the schedule has not been defined, we should set it to defaults */
@@ -73,11 +75,11 @@ func (store* ConfigurationStore) Load(){
 	}
 }
 
-func (store* ConfigurationStore) Save(){
+func (store*ConfigurationStore) Save() {
 	store.saveConfigToFile(store.trainerConfigurationFilePath)
 }
 
-func (store* ConfigurationStore) loadApplicationConfigurationsFromFile(filename string) {
+func (store*ConfigurationStore) loadApplicationConfigurationsFromFile(filename string) {
 	Logger.InitLogger.Infof("Loading config file from %s", filename)
 	file, err := os.Open(filename)
 	if err != nil {
@@ -103,12 +105,12 @@ func (store* ConfigurationStore) loadApplicationConfigurationsFromFile(filename 
 	file.Close()
 }
 
-func (store* ConfigurationStore) Add(name string, config *model.ApplicationConfiguration) *model.ApplicationConfiguration{
+func (store*ConfigurationStore) Add(name string, config *model.ApplicationConfiguration) *model.ApplicationConfiguration {
 	store.ApplicationConfigurations[name] = config;
 	return config
 }
 
-func (store* ConfigurationStore) saveConfigToFile(filename string) {
+func (store*ConfigurationStore) saveConfigToFile(filename string) {
 	res, err := json.MarshalIndent(store, "", "  ")
 	if err != nil {
 		Logger.InitLogger.Errorf("JsonConfiguration Derialize failed: %s; %+v", err, store)
@@ -148,4 +150,32 @@ func (store *ConfigurationStore) ApplySchedules() {
 			config.DesiredDeployment = config.MinDeployment
 		}
 	}
+}
+
+func (store *ConfigurationStore) RequestPublishConfiguration(config *model.ApplicationConfiguration) {
+	templateForConfiguration := config.GetLatestConfiguration()
+
+	publishedConfiguration := model.VersionConfig{
+		Version: config.GetSuitableNextVersion(),
+		DockerConfig:  templateForConfiguration.DockerConfig,
+		Needs:templateForConfiguration.Needs,
+		LoadBalancer:templateForConfiguration.LoadBalancer,
+		Network:templateForConfiguration.Network,
+		SecurityGroups:templateForConfiguration.SecurityGroups,
+		PortMappings:templateForConfiguration.PortMappings,
+		VolumeMappings:templateForConfiguration.VolumeMappings,
+		EnvironmentVariables:  templateForConfiguration.EnvironmentVariables,
+		Files:templateForConfiguration.Files,
+		Checks:templateForConfiguration.Checks,
+		GroupingTag:templateForConfiguration.GroupingTag,
+
+		AppliedPropertyGroups: make(map[string]int),
+	}
+
+	for _, templateName := range config.PropertyGroups {
+		templateObject := store.Properties[templateName.Name]
+		publishedConfiguration.ApplyPropertyGroup(templateName.Name, templateObject)
+	}
+
+	config.PublishedConfig[publishedConfiguration.Version] = publishedConfiguration
 }
