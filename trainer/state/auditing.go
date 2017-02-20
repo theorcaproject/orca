@@ -72,7 +72,7 @@ const (
                                     "LogLevel" : { "type" : "string", "index" : "not_analyzed" },
                                     "HostId" : { "type" : "string", "index" : "not_analyzed" },
                                     "AppId" : { "type" : "string", "index" : "not_analyzed" },
-                                    "Message" : { "type" : "string"}
+                                    "Message" : { "type" : "string", "index" : "not_analyzed"}
                                 }
                             }
                         }
@@ -85,7 +85,7 @@ const (
                                     "Timestamp" : { "type" : "date" },
                                     "HostId" : { "type" : "string", "index" : "not_analyzed"},
                                     "AppId" : { "type" : "string", "index" : "not_analyzed"},
-                                    "Message" : { "type" : "string"},
+                                    "Message" : { "type" : "string", "index" : "not_analyzed"},
                                     "Severity" : { "type" : "string"}
                                 }
                             }
