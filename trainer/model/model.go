@@ -118,7 +118,7 @@ func (host *Host) HasApp(name string) bool {
 func (host *Host) GetApp(name string) (Application, error){
 	for _, runningApplicationState := range host.Apps {
 		if runningApplicationState.Name == name{
-			return runningApplicationState
+			return runningApplicationState, nil
 		}
 	}
 
@@ -134,7 +134,7 @@ func (host *Host) GetChange(id string) *ChangeApplication {
 	return nil;
 }
 
-func (host *Host) HasAppWithSameVersion(name string, version string, running bool) bool {
+func (host *Host) HasAppWithSameVersion(name string, version string) bool {
 	for _, runningApplicationState := range host.Apps {
 		if (runningApplicationState.Name == name && runningApplicationState.Version == version && runningApplicationState.State == "running") {
 		}
