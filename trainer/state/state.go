@@ -108,6 +108,10 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 		appConfiguration, _ := store.configurationStore.GetConfiguration(appStateFromHost.Name)
 		appConfigurationVersion := appConfiguration.PublishedConfig[appStateFromHost.Application.Version]
 
+		if appConfigurationVersion == nil {
+			continue
+		}
+
 		for _, oldAppState := range host.Apps {
 			/* Attempt to find this application */
 			if oldAppState.Name == appStateFromHost.Name {
