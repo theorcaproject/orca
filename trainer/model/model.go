@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"orca/trainer/schedule"
 	"strings"
+	"errors"
 )
 
 type ChangeApplication struct {
@@ -106,11 +107,22 @@ type Host struct {
 
 func (host *Host) HasApp(name string) bool {
 	for _, runningApplicationState := range host.Apps {
-		if (runningApplicationState.Name == name) {
+		if (runningApplicationState.Name == name && runningApplicationState.State == "running") {
 			return true
 		}
 	}
 	return false;
+}
+
+
+func (host *Host) GetApp(name string) (Application, error){
+	for _, runningApplicationState := range host.Apps {
+		if runningApplicationState.Name == name{
+			return runningApplicationState
+		}
+	}
+
+	return Application{}, errors.New("could not find application on host")
 }
 
 func (host *Host) GetChange(id string) *ChangeApplication {
@@ -122,10 +134,9 @@ func (host *Host) GetChange(id string) *ChangeApplication {
 	return nil;
 }
 
-func (host *Host) HasAppWithSameVersion(name string, version string) bool {
+func (host *Host) HasAppWithSameVersion(name string, version string, running bool) bool {
 	for _, runningApplicationState := range host.Apps {
-		if (runningApplicationState.Name == name && runningApplicationState.Version == version) {
-			return true
+		if (runningApplicationState.Name == name && runningApplicationState.Version == version && runningApplicationState.State == "running") {
 		}
 	}
 	return false;

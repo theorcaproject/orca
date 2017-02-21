@@ -27,7 +27,7 @@ import (
 )
 
 type StateStore struct {
-	hosts map[string]*model.Host;
+	hosts              map[string]*model.Host;
 	configurationStore *configuration.ConfigurationStore;
 }
 
@@ -112,7 +112,8 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 			continue
 		}
 
-		for _, oldAppState := range host.Apps {
+		oldAppState, err := host.GetApp(appStateFromHost.Name)
+		if err == nil {
 			/* Attempt to find this application */
 			if oldAppState.Name == appStateFromHost.Name {
 				if oldAppState.Version != appStateFromHost.Application.Version {
@@ -155,9 +156,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 					}
 				}
 			}
-		}
-
-		if !host.HasApp(appStateFromHost.Name) {
+		} else {
 			/* If we fall here then it must be that this application is newly installed */
 			Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 				Message: fmt.Sprintf("Application %s was installed to version %s on host %s",
@@ -191,6 +190,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 					HostId: hostId,
 					AppId: appStateFromHost.Name,
 				})
+
 				appConfigurationVersion.DeploymentFailures += 1
 			}
 		}
