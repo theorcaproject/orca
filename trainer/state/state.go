@@ -73,18 +73,16 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 				if changeObject.Type == "add_application" {
 					Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 						Message: fmt.Sprintf("Application %s was installed on host %s", changeObject.Name, changeObject.HostId),
-						Details:map[string]string{
-							"host": hostId,
-							"application": changeObject.Name,
-						}})
+						HostId: hostId,
+						AppId: changeObject.Name,
+					})
 
 				} else if changeObject.Type == "remove_application" {
 					Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 						Message: fmt.Sprintf("Application %s was uninstalled from host %s", changeObject.Name, changeObject.HostId),
-						Details:map[string]string{
-							"host": hostId,
-							"application": changeObject.Name,
-						}})
+						HostId: hostId,
+						AppId: changeObject.Name,
+					})
 				}
 
 				host.NumberOfChangeFailuresInRow = 0
@@ -98,9 +96,8 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 	if host.State != "running" {
 		Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 			Message: fmt.Sprintf("Server %s state changed to running", hostId),
-			Details:map[string]string{
-				"host": hostId,
-			}})
+			HostId: hostId,
+		})
 	}
 
 	host.State = "running"
@@ -112,10 +109,9 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 					Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 						Message: fmt.Sprintf("Application %s was updated from version %s to version %s on host %s",
 							appStateFromHost.Name, oldAppState.Version, appStateFromHost.Application.Version, hostId),
-						Details:map[string]string{
-							"host": hostId,
-							"application": appStateFromHost.Name,
-						}})
+						HostId: hostId,
+						AppId: appStateFromHost.Name,
+					})
 				}
 
 				if oldAppState.State != appStateFromHost.Application.State {
@@ -123,29 +119,23 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 						Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 							Message: fmt.Sprintf("Application %s on host %s is running, all checks are succeeding",
 								appStateFromHost.Name, hostId),
-
-							Details:map[string]string{
-								"host": hostId,
-								"application": appStateFromHost.Name,
-							}})
+							HostId: hostId,
+							AppId: appStateFromHost.Name,
+						})
 					} else if appStateFromHost.Application.State == "failed" {
 						Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__ERROR,
 							Message: fmt.Sprintf("Application %s on host %s has failed, docker is reporting the container is no longer active",
 								appStateFromHost.Name, hostId),
-
-							Details:map[string]string{
-								"host": hostId,
-								"application": appStateFromHost.Name,
-							}})
+							HostId: hostId,
+							AppId: appStateFromHost.Name,
+						})
 					} else if appStateFromHost.Application.State == "checks_failed" {
 						Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__ERROR,
 							Message: fmt.Sprintf("Application %s on host %s has failed, the application checks have failed",
 								appStateFromHost.Name, hostId),
-
-							Details:map[string]string{
-								"host": hostId,
-								"application": appStateFromHost.Name,
-							}})
+							HostId: hostId,
+							AppId: appStateFromHost.Name,
+						})
 					}
 				}
 			}
@@ -156,38 +146,32 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 			Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 				Message: fmt.Sprintf("Application %s was installed to version %s on host %s",
 					appStateFromHost.Name, appStateFromHost.Application.Version, hostId),
-				Details:map[string]string{
-					"host": hostId,
-					"application": appStateFromHost.Name,
-				}})
+				HostId: hostId,
+				AppId: appStateFromHost.Name,
+			})
 
 			if appStateFromHost.Application.State == "running" {
 				Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 					Message: fmt.Sprintf("Application %s on host %s is running, all checks are succeeding",
 						appStateFromHost.Name, hostId),
+					HostId: hostId,
+					AppId: appStateFromHost.Name,
+				})
 
-					Details:map[string]string{
-						"host": hostId,
-						"application": appStateFromHost.Name,
-					}})
 			} else if appStateFromHost.Application.State == "failed" {
 				Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__ERROR,
 					Message: fmt.Sprintf("Application %s on host %s has failed, docker is reporting the container is no longer active",
 						appStateFromHost.Name, hostId),
-
-					Details:map[string]string{
-						"host": hostId,
-						"application": appStateFromHost.Name,
-					}})
+					HostId: hostId,
+					AppId: appStateFromHost.Name,
+				})
 			} else if appStateFromHost.Application.State == "checks_failed" {
 				Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__ERROR,
 					Message: fmt.Sprintf("Application %s on host %s has failed, the application checks have failed",
 						appStateFromHost.Name, hostId),
-
-					Details:map[string]string{
-						"host": hostId,
-						"application": appStateFromHost.Name,
-					}})
+					HostId: hostId,
+					AppId: appStateFromHost.Name,
+				})
 			}
 		}
 	}

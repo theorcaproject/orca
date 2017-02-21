@@ -18,7 +18,6 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 
 package planner
 
-
 import (
 	"testing"
 	"orca/trainer/configuration"
@@ -31,7 +30,6 @@ import (
 func TestPlan_spawnMinHosts(t *testing.T) {
 	planner := BoringPlanner{}
 	planner.Init()
-
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
@@ -49,7 +47,7 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 	versionConfigApp2["2"] = model.VersionConfig{
 		Version: "2",
 		Network: "network1",
-		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},	}
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}}, }
 	versionConfigApp3 := make(map[string]model.VersionConfig)
 	versionConfigApp3["3"] = model.VersionConfig{
 		Version: "3",
@@ -85,7 +83,7 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 	})
 
 	res := planner.Plan(config, stateStore)
-	if len(res) != 1 || res[0].Type != "new_server"  || res[0].Network == "" {
+	if len(res) != 1 || res[0].Type != "new_server" || res[0].Network == "" {
 		t.Errorf("%+v", res);
 	}
 
@@ -130,14 +128,11 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 		t.Errorf("%+v", res3);
 	}
 
-
-
 }
 
 func TestPlan_spawnDesiredHosts(t *testing.T) {
 	planner := BoringPlanner{}
 	planner.Init()
-
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
@@ -160,7 +155,7 @@ func TestPlan_spawnDesiredHosts(t *testing.T) {
 	})
 
 	res := planner.Plan(config, stateStore)
-	if len(res) != 1 || res[0].Type != "new_server" || res[0].Network != "network1"  {
+	if len(res) != 1 || res[0].Type != "new_server" || res[0].Network != "network1" {
 		t.Errorf("%+v", res);
 	}
 
@@ -178,7 +173,7 @@ func TestPlan_spawnDesiredHosts(t *testing.T) {
 		ChangesApplied: applied,
 	})
 	res2 := planner.Plan(config, stateStore)
-	if len(res2) != 1 || res2[0].Type != "new_server" || res2[0].RequiresReliableInstance || res2[0].Network != "network1"  {
+	if len(res2) != 1 || res2[0].Type != "new_server" || res2[0].RequiresReliableInstance || res2[0].Network != "network1" {
 		t.Errorf("%+v", stateStore);
 		t.Errorf("%+v", res2);
 	}
@@ -226,7 +221,7 @@ func TestPlan_scaleDown(t *testing.T) {
 		Network: "network1",
 		State: "running",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app1", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host1", host1)
 
@@ -235,7 +230,7 @@ func TestPlan_scaleDown(t *testing.T) {
 		Network: "network1",
 		State: "running",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app1", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host2", host2)
 
@@ -244,7 +239,7 @@ func TestPlan_scaleDown(t *testing.T) {
 		Network: "network1",
 		State: "running",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app1", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host3", host3)
 
@@ -284,7 +279,7 @@ func TestPlan_scaleUp(t *testing.T) {
 		State: "running",
 		SpotInstance:false,
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app1", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host1", host1)
 
@@ -293,7 +288,7 @@ func TestPlan_scaleUp(t *testing.T) {
 		State: "running",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app1", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host2", host2)
 
@@ -302,7 +297,7 @@ func TestPlan_scaleUp(t *testing.T) {
 		State: "running",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {},
+		Apps: []model.Application{},
 	}
 	stateStore.Add("host3", host3)
 
@@ -326,7 +321,7 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 	versionConfigApp1["1"] = model.VersionConfig{
 		Version: "1",
 		Network: "network1",
-		Affinity:[]model.AffinityTag{{Tag:"tag1"}},
+		GroupingTag: "tag1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
 	}
 	config.Add("app1", &model.ApplicationConfiguration{
@@ -360,7 +355,7 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 	versionConfigApp3["1"] = model.VersionConfig{
 		Version: "1",
 		Network: "network1",
-		Affinity:[]model.AffinityTag{{Tag:"tag1"}},
+		GroupingTag:"tag1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
 	}
 
@@ -379,7 +374,7 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 		State: "running",
 		SpotInstance:false,
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app2", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app2", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host1", host1)
 
@@ -388,12 +383,12 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 		State: "running",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app3", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app3", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host2", host2)
 
 	res := planner.Plan(config, stateStore)
-	if len(res) != 1 || res[0].Type != "add_application"  || res[0].HostId != "host2"{
+	if len(res) != 1 || res[0].Type != "add_application" || res[0].HostId != "host2" {
 		t.Errorf("%+v", res);
 	}
 }
@@ -428,7 +423,7 @@ func TestPlan_scaleUp_UsingAffinity2(t *testing.T) {
 	versionConfigApp2["1"] = model.VersionConfig{
 		Version: "1",
 		Network: "network1",
-		Affinity:[]model.AffinityTag{{Tag:"tag1"}},
+		GroupingTag: "tag1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
 	}
 	config.Add("app2", &model.ApplicationConfiguration{
@@ -462,7 +457,7 @@ func TestPlan_scaleUp_UsingAffinity2(t *testing.T) {
 		State: "running",
 		SpotInstance:false,
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app1", Version:"1", State:"running"}, {Name:"app3", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}, {Name:"app3", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host1", host1)
 
@@ -471,12 +466,12 @@ func TestPlan_scaleUp_UsingAffinity2(t *testing.T) {
 		State: "running",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {},
+		Apps: []model.Application{},
 	}
 	stateStore.Add("host2", host2)
 
 	res := planner.Plan(config, stateStore)
-	if len(res) != 1 || res[0].Type != "add_application"  || res[0].HostId != "host2"{
+	if len(res) != 1 || res[0].Type != "add_application" || res[0].HostId != "host2" {
 		t.Errorf("%+v", res);
 	}
 }
@@ -495,7 +490,7 @@ func TestPlan_scaleUp_UsingAffinityChooseEmptyHost(t *testing.T) {
 	versionConfigApp1["1"] = model.VersionConfig{
 		Version: "1",
 		Network: "network1",
-		Affinity:[]model.AffinityTag{{Tag:"tag1"}},
+		GroupingTag:"tag1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
 	}
 	config.Add("app1", &model.ApplicationConfiguration{
@@ -529,7 +524,7 @@ func TestPlan_scaleUp_UsingAffinityChooseEmptyHost(t *testing.T) {
 		State: "running",
 		SpotInstance:false,
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app2", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app2", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host1", host1)
 
@@ -538,18 +533,17 @@ func TestPlan_scaleUp_UsingAffinityChooseEmptyHost(t *testing.T) {
 		State: "running",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {},
+		Apps: []model.Application{},
 	}
 	stateStore.Add("host2", host2)
 
 	res := planner.Plan(config, stateStore)
-	if len(res) != 1 || res[0].Type != "add_application"  || res[0].HostId != "host2"{
+	if len(res) != 1 || res[0].Type != "add_application" || res[0].HostId != "host2" {
 		t.Errorf("%+v", res);
 	}
 }
 
-
-func TestPlan__Plan_RemoveOldDesired(t *testing.T){
+func TestPlan__Plan_RemoveOldDesired(t *testing.T) {
 	planner := BoringPlanner{}
 	planner.Init()
 
@@ -579,7 +573,7 @@ func TestPlan__Plan_RemoveOldDesired(t *testing.T){
 		Network: "network1",
 		State: "running",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app1", Version:"1", State:"running"}, {Name:"app2", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}, {Name:"app2", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host1", host1)
 
@@ -588,7 +582,7 @@ func TestPlan__Plan_RemoveOldDesired(t *testing.T){
 		Network: "network1",
 		State: "running",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app1", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host2", host2)
 
@@ -597,7 +591,7 @@ func TestPlan__Plan_RemoveOldDesired(t *testing.T){
 		Network: "network1",
 		State: "running",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app1", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host3", host3)
 
@@ -608,7 +602,7 @@ func TestPlan__Plan_RemoveOldDesired(t *testing.T){
 
 }
 
-func TestPlan__Plan_KullUnusedServers(t *testing.T){
+func TestPlan__Plan_KullUnusedServers(t *testing.T) {
 	planner := BoringPlanner{}
 	planner.Init()
 
@@ -622,7 +616,7 @@ func TestPlan__Plan_KullUnusedServers(t *testing.T){
 		Network: "network1",
 		State: "running",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app1", Version:"1", State:"running"}, {Name:"app2", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}, {Name:"app2", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host1", host1)
 
@@ -631,7 +625,7 @@ func TestPlan__Plan_KullUnusedServers(t *testing.T){
 		Network: "network1",
 		State: "running",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app1", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host2", host2)
 
@@ -640,7 +634,7 @@ func TestPlan__Plan_KullUnusedServers(t *testing.T){
 		Network: "network1",
 		State: "running",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {},
+		Apps: []model.Application{},
 	}
 	stateStore.Add("host3", host3)
 
@@ -649,7 +643,7 @@ func TestPlan__Plan_KullUnusedServers(t *testing.T){
 		Network: "network1",
 		State: "initialising",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {},
+		Apps: []model.Application{},
 	}
 	stateStore.Add("host4", host4)
 
@@ -660,7 +654,7 @@ func TestPlan__Plan_KullUnusedServers(t *testing.T){
 
 }
 
-func TestPlan__Plan_BasicOptimise(t *testing.T){
+func TestPlan__Plan_BasicOptimise(t *testing.T) {
 	planner := BoringPlanner{}
 	planner.Init()
 
@@ -676,6 +670,22 @@ func TestPlan__Plan_BasicOptimise(t *testing.T){
 		SecurityGroups: make([]model.SecurityGroup, 0),
 	}
 
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name: "app1",
+		MinDeployment: 1,
+		DesiredDeployment: 1,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp1,
+		Enabled:true,
+	})
+	config.Add("app2", &model.ApplicationConfiguration{
+		Name: "app2",
+		MinDeployment: 1,
+		DesiredDeployment: 1,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Config: versionConfigApp1,
+		Enabled:true,
+	})
 	config.Add("app3", &model.ApplicationConfiguration{
 		Name: "app3",
 		MinDeployment: 1,
@@ -690,7 +700,7 @@ func TestPlan__Plan_BasicOptimise(t *testing.T){
 		Network: "network1",
 		State: "running",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app1", Version:"1", State:"running"}, {Name:"app2", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}, {Name:"app2", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host1", host1)
 
@@ -699,7 +709,7 @@ func TestPlan__Plan_BasicOptimise(t *testing.T){
 		Network: "network1",
 		State: "running",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"app3", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"app3", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host2", host2)
 
@@ -708,21 +718,22 @@ func TestPlan__Plan_BasicOptimise(t *testing.T){
 		Network: "network1",
 		State: "initialising",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {},
+		Apps: []model.Application{},
 	}
 	stateStore.Add("host3", host3)
 
 	changes := planner.Plan_OptimiseLayout(config, stateStore)
+	fmt.Println("%+v", changes)
 	fmt.Printf("changes: %+v", changes)
 	if len(changes) != 2 || changes[0].Type != "add_application" && changes[0].HostId != "host1" {
 		t.Errorf("%+v", changes);
 	}
-	if len(changes) != 2 || changes[1].Type != "remove_application" && changes[1].HostId != "host1" {
+	if len(changes) != 2 || changes[1].Type != "remove_application" && changes[1].HostId != "host2" {
 		t.Errorf("%+v", changes);
 	}
 }
 
-func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T){
+func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T) {
 	planner := BoringPlanner{}
 	planner.Init()
 
@@ -777,7 +788,7 @@ func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T){
 		State: "running",
 		SpotInstance:true,
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}, {Name:"classwize", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}, {Name:"classwize", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host1", host1)
 
@@ -787,7 +798,7 @@ func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T){
 		State: "running",
 		SpotInstance:true,
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"mylinewize", Version:"1", State:"running"}, {Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"mylinewize", Version:"1", State:"running"}, {Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host2", host2)
 
@@ -797,7 +808,7 @@ func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T){
 		State: "running",
 		SpotInstance:false,
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"mylinewize", Version:"1", State:"running"}, {Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}, {Name:"classwize", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"mylinewize", Version:"1", State:"running"}, {Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}, {Name:"classwize", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host3", host3)
 
@@ -811,7 +822,7 @@ func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T){
 	}
 }
 
-func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T){
+func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T) {
 	planner := BoringPlanner{}
 	planner.Init()
 
@@ -866,7 +877,7 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T){
 		State: "running",
 		SpotInstance:true,
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host1", host1)
 
@@ -876,7 +887,7 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T){
 		State: "running",
 		SpotInstance:true,
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"mylinewize", Version:"1", State:"running"}, {Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"},  {Name:"classwize", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"mylinewize", Version:"1", State:"running"}, {Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}, {Name:"classwize", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host2", host2)
 
@@ -886,19 +897,19 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T){
 		State: "running",
 		SpotInstance:false,
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"mylinewize", Version:"1", State:"running"}, {Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}, {Name:"classwize", Version:"1", State:"running"}},
+		Apps: []model.Application{{Name:"mylinewize", Version:"1", State:"running"}, {Name:"surfwizeweb", Version:"1", State:"running"}, {Name:"surfwizeauth", Version:"1", State:"running"}, {Name:"classwize", Version:"1", State:"running"}},
 	}
 	stateStore.Add("host3", host3)
 
 	changes := planner.Plan_OptimiseLayout(config, stateStore)
 	fmt.Printf("changes: %+v", changes)
-	if len(changes) != 0{
+	if len(changes) != 0 {
 		t.Errorf("%+v", changes);
 	}
 
 }
 
-func TestPlan__Plan_HostWithFailedAppsAndErrors_Terminated(t *testing.T){
+func TestPlan__Plan_HostWithFailedAppsAndErrors_Terminated(t *testing.T) {
 	planner := BoringPlanner{}
 	planner.Init()
 
@@ -914,13 +925,13 @@ func TestPlan__Plan_HostWithFailedAppsAndErrors_Terminated(t *testing.T){
 		SpotInstance:true,
 		NumberOfChangeFailuresInRow: 5,
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application {{Name:"surfwizeweb", Version:"1", State:"failed"}, {Name:"surfwizeauth", Version:"1", State:"failed"}},
+		Apps: []model.Application{{Name:"surfwizeweb", Version:"1", State:"failed"}, {Name:"surfwizeauth", Version:"1", State:"failed"}},
 	}
 	stateStore.Add("host1", host1)
 
 	changes := planner.Plan_OptimiseLayout(config, stateStore)
 	fmt.Printf("changes: %+v", changes)
-	if len(changes) != 0{
+	if len(changes) != 0 {
 		t.Errorf("%+v", changes);
 	}
 

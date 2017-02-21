@@ -22,6 +22,15 @@ type User struct {
 	Password string
 }
 
+type ApiToken struct {
+	Token string
+}
+
+type AuditWebhook struct {
+	Uri string
+	Severity string
+}
+
 type GlobalSettings struct {
 	ApiPort                int
 	LoggingPort            int
@@ -47,4 +56,12 @@ type GlobalSettings struct {
 
 	Users                  map[string]User
 	HostToken              string
+
+	ApiTokens		[]ApiToken
+	AuditWebhooks		[]AuditWebhook
+
+	AuditDatabaseUri	string
+	StatsDatabaseUri	string
+
+	EnvName			string
 }

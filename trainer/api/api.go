@@ -60,6 +60,7 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	/* Routes for the client */
 	r.HandleFunc("/authenticate", api.authenticate)
 	r.HandleFunc("/settings", api.getSettings)
+	r.HandleFunc("/properties", api.getAllProperties)
 	r.HandleFunc("/config", api.getAllConfiguration)
 	r.HandleFunc("/config/applications", api.getAllConfigurationApplications)
 	r.HandleFunc("/config/applications/configuration/latest", api.getAllConfigurationApplications_Configurations_Latest)
@@ -68,6 +69,7 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 
 	r.HandleFunc("/state/cloud/host/performance", api.getHostPerformance)
 	r.HandleFunc("/state/cloud/application/performance", api.getAppPerformance)
+	r.HandleFunc("/state/cloud/application/host/performance", api.getAppHostPerformance)
 
 	r.HandleFunc("/state/cloud/audit", api.getAudit)
 	r.HandleFunc("/state/cloud/host/audit", api.getHostAudit)
@@ -123,15 +125,15 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 
 				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 					Message:"Modified application " + applicationName + " in pool",
-					Details:map[string]string{
-						"application": applicationName,
-					}})
+					AppId: applicationName,
+				})
 
 				application.MinDeployment = object.MinDeployment
 				application.DesiredDeployment = object.DesiredDeployment
 				application.Enabled = object.Enabled
 				application.DisableSchedule = object.DisableSchedule
 				application.DeploymentSchedule = object.DeploymentSchedule
+				application.PropertyGroups = object.PropertyGroups
 				api.configurationStore.Save()
 			}
 
@@ -154,15 +156,15 @@ func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.Res
 				var object model.VersionConfig
 				decoder := json.NewDecoder(r.Body)
 				if err := decoder.Decode(&object); err == nil {
-					newVersion := application.GetNextVersion()
+					newVersion := application.GetSuitableNextVersion()
 					object.Version = newVersion
+
 					application.Config[newVersion] = object
 
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 						Message:"API: Modified application " + applicationName + ", created new configuration",
-						Details:map[string]string{
-							"application": applicationName,
-						}})
+						AppId: applicationName,
+					})
 
 					api.configurationStore.Save()
 				}
@@ -184,7 +186,7 @@ func (api *Api) getAllRunningState(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
-	if (api.configurationStore.GlobalSettings.HostToken == token){
+	if (api.configurationStore.GlobalSettings.HostToken == token) {
 		var apps model.HostCheckinDataPackage
 		hostId := r.URL.Query().Get("host")
 
@@ -215,9 +217,8 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 
 			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 				Message: fmt.Sprintf("Discovered new server %s, ip: %s, subnet: %s spot: %t", hostId, ip, subnet, isSpot),
-				Details:map[string]string{
-					"host": hostId,
-				}})
+				HostId: hostId,
+			})
 		}
 
 		result, err := api.state.HostCheckin(hostId, apps)
@@ -241,17 +242,16 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 		} else {
 			returnJson(w, nil)
 		}
-	}else{
+	} else {
 		http.Error(w, "Token invalid", 403)
 	}
 }
 
 func (api *Api) getLogs(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
-		returnJson(w, state.Audit.Query__HostLog(""))
+		returnJson(w, state.Audit.Query__HostLog("", "100", ""))
 	}
 }
-
 
 func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 	var logs map[string]Logs
@@ -271,7 +271,7 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 
 			if len(appLogs.StdOut) > 0 {
 				entries := strings.Split(appLogs.StdOut, "\n")
-				for i := len(entries)- 1; i >= 0; i-- {
+				for i := len(entries) - 1; i >= 0; i-- {
 					state.Audit.Insert__Log(state.LogEvent{
 						HostId: host, AppId: app, Message: entries[i], LogLevel: "stdout",
 					})
@@ -286,7 +286,10 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 func (api *Api) getApplicationLogs(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
 		application := r.URL.Query().Get("application")
-		returnJson(w, state.Audit.Query__AppLog(application))
+		limit := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
+
+		returnJson(w, state.Audit.Query__AppLog(application, limit, search))
 	}
 }
 
@@ -298,29 +301,36 @@ func (api *Api) getAllLogs(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) getHostLogs(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
+		limit := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
 		hostAudit := r.URL.Query().Get("host")
-		returnJson(w, state.Audit.Query__HostLog(hostAudit))
+		returnJson(w, state.Audit.Query__HostLog(hostAudit, limit, search))
 	}
 }
 
 func (api *Api) getAudit(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
-		returnJson(w, state.Audit.Query__AuditEvents())
+		limit := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
+		returnJson(w, state.Audit.Query__AuditEvents(limit, search))
 	}
 }
 
 func (api *Api) getHostAudit(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
 		hostAudit := r.URL.Query().Get("host")
-		returnJson(w, state.Audit.Query__AuditEventsHost(hostAudit))
+		limit := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
+		returnJson(w, state.Audit.Query__AuditEventsHost(hostAudit, limit, search))
 	}
 }
-
 
 func (api *Api) getApplicationAudit(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
 		application := r.URL.Query().Get("application")
-		returnJson(w, state.Audit.Query__AuditEventsApplication(application))
+		limit := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
+		returnJson(w, state.Audit.Query__AuditEventsApplication(application, limit, search))
 	}
 }
 
@@ -328,6 +338,14 @@ func (api *Api) getAppPerformance(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
 		application := r.URL.Query().Get("application")
 		returnJson(w, state.Stats.Query__ApplicationUtilisationStatistic(application))
+	}
+}
+
+func (api *Api) getAppHostPerformance(w http.ResponseWriter, r *http.Request) {
+	if (api.authenticate_user(w, r)) {
+		application := r.URL.Query().Get("application")
+		host := r.URL.Query().Get("host")
+		returnJson(w, state.Stats.Query__ApplicationHostUtilisationStatistic(application, host))
 	}
 }
 
@@ -340,17 +358,61 @@ func (api *Api) getHostPerformance(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) authenticate_user(w http.ResponseWriter, r *http.Request) bool {
 	token := r.URL.Query().Get("token")
-	if !api.sessions[token] {
-		http.Error(w, "access denied", 403)
-		return false
+
+	for _, allowedToken := range api.configurationStore.GlobalSettings.ApiTokens {
+		if token == allowedToken.Token {
+			return true
+		}
 	}
 
-	return true
+	if api.sessions[token] {
+		return true
+	}
+
+	http.Error(w, "access denied", 403)
+	return false
 }
 
 func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
 	if (api.authenticate_user(w, r)) {
+		if r.Method == "POST" {
+			var object configuration.GlobalSettings
+			decoder := json.NewDecoder(r.Body)
+			if err := decoder.Decode(&object); err == nil {
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+					Message:"Global configuration was modified",
+				})
+
+				api.configurationStore.GlobalSettings = object
+				api.configurationStore.Save()
+			}
+		}
+
 		returnJson(w, api.configurationStore.GlobalSettings)
+	}
+}
+
+func (api *Api) getAllProperties(w http.ResponseWriter, r *http.Request) {
+	if (api.authenticate_user(w, r)) {
+		if r.Method == "POST" {
+			var object model.PropertyGroup
+			decoder := json.NewDecoder(r.Body)
+			if err := decoder.Decode(&object); err == nil {
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+					Message:"Updated property group",
+				})
+
+				object.Version = 0
+				if oldVersion, ok := api.configurationStore.Properties[object.Name]; ok {
+					object.Version += oldVersion.Version + 1
+				}
+
+				api.configurationStore.Properties[object.Name] = &object
+				api.configurationStore.Save()
+			}
+		}
+
+		returnJson(w, api.configurationStore.Properties)
 	}
 }
 

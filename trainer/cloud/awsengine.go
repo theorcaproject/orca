@@ -158,8 +158,7 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, netwo
 	if err != nil {
 		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 			Message: fmt.Sprintf("AwsCloudEngine SpawnInstanceSync encountered an error '%s'", err),
-			Details:map[string]string{
-			}})
+		})
 
 		return &model.Host{}
 	}
@@ -260,8 +259,7 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network str
 	if err != nil {
 		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 			Message: fmt.Sprintf("AwsCloudEngine SpawnSpotInstance encountered an error '%s'", err),
-			Details:map[string]string{
-			}})
+		})
 
 		return &model.Host{}
 	}
@@ -289,8 +287,7 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network str
 		if err != nil {
 			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 				Message: fmt.Sprintf("Could not get instanceId for spot instance"),
-				Details:map[string]string{
-				}})
+			})
 			return &model.Host{}
 		}
 		return  &model.Host{
@@ -339,8 +336,7 @@ func (engine *AwsCloudEngine) doSanityCheck(host *model.Host) {
 		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 			Message: fmt.Sprintf("Got different info for host %s from AWS. Host was: %s, AWS Ip: %s, Subnet: %s, SpotInstance: %t, securityGroups: %v",
 				host.Id, host, ip, network, isSpot, securityGroups),
-			Details:map[string]string{
-			}})
+		})
 
 		host.Ip = ip
 		host.Network = network

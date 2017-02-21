@@ -47,8 +47,8 @@ func main() {
 	store.Load()
 
 	/* Init connection to the database for auditing */
-	state.Audit.Init(store.AuditDatabaseUri)
-	state.Stats.Init(store.AuditDatabaseUri)
+	state.Audit.Init(store)
+	state.Stats.Init(store)
 
 	var plannerEngine planner.Planner;
 	if store.GlobalSettings.PlanningAlg == "boringplanner" {
@@ -76,6 +76,51 @@ func main() {
 				continue
 			}
 
+			/* Check for published configuration */
+			for _, app := range store.ApplicationConfigurations {
+				if !app.Enabled {
+					continue
+				}
+
+				latestConfiguredVersion := app.GetLatestConfiguration()
+				latestPublishedVersion := app.GetLatestPublishedConfiguration()
+				if latestConfiguredVersion.GetVersion() > latestPublishedVersion.GetVersion() {
+					/* Publish */
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+						Message: fmt.Sprintf("Publishing application configuration %s for app %s", latestConfiguredVersion.Version, app.Name),
+						AppId: app.Name,
+					})
+
+					store.RequestPublishConfiguration(app)
+					continue
+				}
+
+				/* Check the params */
+				for _, propertyGroupName := range app.PropertyGroups {
+					if item, ok :=latestPublishedVersion.AppliedPropertyGroups[propertyGroupName.Name]; ok {
+						if item != store.Properties[propertyGroupName.Name].Version {
+							/* Publish */
+							state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+								Message: fmt.Sprintf("Publishing app configuration %s for app %s. Properties have been updated/modified", latestConfiguredVersion.Version, app.Name),
+								AppId: app.Name,
+							})
+
+							store.RequestPublishConfiguration(app)
+							continue
+						}
+					}else{
+						/* Publish */
+						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+							Message: fmt.Sprintf("Publishing app configuration %s for app %s. Properties have been updated/modified", latestConfiguredVersion.Version, app.Name),
+							AppId: app.Name,
+						})
+
+						store.RequestPublishConfiguration(app)
+						continue
+					}
+				}
+			}
+
 			/* Check for timeouts */
 			for _, host := range state_store.GetAllHosts() {
 				for _, change := range host.Changes {
@@ -83,10 +128,9 @@ func main() {
 					if (time.Now().Unix() - parsedTime.Unix()) > store.GlobalSettings.AppChangeTimeout {
 						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 							Message: fmt.Sprintf("Application change event %s timed out, event type was %s for application %s on host %s", change.Id, change.Type, change.Name, change.HostId),
-							Details:map[string]string{
-								"application": change.Name,
-								"host": change.HostId,
-							}})
+							AppId: change.Name,
+							HostId: change.Name,
+							})
 						state_store.RemoveChange(host.Id, change.Id)
 						host.NumberOfChangeFailuresInRow += 1
 					}
@@ -99,18 +143,16 @@ func main() {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{
 						Severity: state.AUDIT__ERROR,
 						Message: fmt.Sprintf("Server change event %s timed out, event type was %s with hostid %s", change.Id, change.Type, change.NewHostId),
-						Details:map[string]string{
-							"host": change.NewHostId,
-						}})
+						HostId: change.NewHostId,
+						})
 
 					/* If we were attempting to launch a spot instance, we need to relaunch it as a reserved */
 					if change.Type == "new_server" && !change.RequiresReliableInstance {
 						state.Audit.Insert__AuditEvent(state.AuditEvent{
 							Severity: state.AUDIT__ERROR,
 							Message: fmt.Sprintf("Failed to launch spot instance, change event was %s, attempting to relaunch on-demand instance", change.Id),
-							Details:map[string]string{
-								"host": change.NewHostId,
-							}})
+							HostId: change.NewHostId,
+							})
 
 						cloud_provider.ActionChange(&model.ChangeServer{
 							Id:uuid.NewV4().String(),
@@ -145,9 +187,8 @@ func main() {
 				if (time.Now().Unix() - parsedTime.Unix()) > store.GlobalSettings.ServerTimeout {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 						Message:fmt.Sprintf("Host timed out, we have not heard from host %s since %s", host.Id, host.LastSeen),
-						Details:map[string]string{
-							"host": host.Id,
-						}})
+						HostId: host.Id,
+						})
 
 					cloud_provider.ActionChange(&model.ChangeServer{
 						Id:uuid.NewV4().String(),
@@ -174,8 +215,7 @@ func main() {
 				if change.Type == "new_server" {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 						Message: fmt.Sprintf("Planner requested a new server, spot: %t subnet: %s", !change.RequiresReliableInstance, change.Network),
-						Details:map[string]string{
-						}})
+					})
 
 					/* Add new server */
 					cloud_provider.ActionChange(&model.ChangeServer{
@@ -193,10 +233,9 @@ func main() {
 					/* Add new server */
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 						Message: fmt.Sprintf("Planner requested application %s be %s to host %s", change.ApplicationName, change.Type, change.HostId),
-						Details:map[string]string{
-							"application": change.ApplicationName,
-							"host": change.HostId,
-						}})
+						AppId: change.ApplicationName,
+						HostId: change.HostId,
+						})
 
 					host, _ := state_store.GetConfiguration(change.HostId)
 					app, _ := store.GetConfiguration(change.ApplicationName)
@@ -204,7 +243,7 @@ func main() {
 						Id: uuid.NewV4().String(),
 						Type: "add_application",
 						HostId: host.Id,
-						AppConfig: app.GetLatestConfiguration(),
+						AppConfig: app.GetLatestPublishedConfiguration(),
 						Name: change.ApplicationName,
 						Time:time.Now().Format(time.RFC3339Nano),
 					})
@@ -212,10 +251,9 @@ func main() {
 					for _, elb := range app.GetLatestConfiguration().LoadBalancer {
 						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 							Message: fmt.Sprintf("Registering host %s with load balancer %s for application %s", change.HostId, elb.Domain, change.ApplicationName),
-							Details:map[string]string{
-								"application": change.ApplicationName,
-								"host": change.HostId,
-							}})
+							AppId: change.ApplicationName,
+							HostId: change.HostId,
+							})
 
 						cloud_provider.ActionChange(&model.ChangeServer{
 							Id:uuid.NewV4().String(),
@@ -232,10 +270,9 @@ func main() {
 				if change.Type == "remove_application" {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 						Message: fmt.Sprintf("Planner requested application %s be %s to host %s", change.ApplicationName, change.Type, change.HostId),
-						Details:map[string]string{
-							"application": change.ApplicationName,
-							"host": change.HostId,
-						}})
+						AppId: change.ApplicationName,
+						HostId: change.HostId,
+					})
 
 					host, _ := state_store.GetConfiguration(change.HostId)
 					app, _ := store.GetConfiguration(change.ApplicationName)
@@ -243,7 +280,7 @@ func main() {
 						Id: uuid.NewV4().String(),
 						Type: "remove_application",
 						HostId: host.Id,
-						AppConfig: app.GetLatestConfiguration(),
+						AppConfig: app.GetLatestPublishedConfiguration(),
 						Name: change.ApplicationName,
 						Time:time.Now().Format(time.RFC3339Nano),
 					})
@@ -251,10 +288,9 @@ func main() {
 					for _, elb := range app.GetLatestConfiguration().LoadBalancer {
 						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 							Message: fmt.Sprintf("Deregistering host %s with load balancer %s for application %s", change.HostId, elb.Domain, change.ApplicationName),
-							Details:map[string]string{
-								"application": change.ApplicationName,
-								"host": change.HostId,
-							}})
+							AppId: change.ApplicationName,
+							HostId: change.HostId,
+						})
 
 						cloud_provider.ActionChange(&model.ChangeServer{
 							Id:uuid.NewV4().String(),
@@ -271,8 +307,7 @@ func main() {
 				if change.Type == "kill_server" {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 						Message:fmt.Sprintf("Planner requested server %s be kulled in a bloodbath", change.HostId),
-						Details:map[string]string{
-						}})
+					})
 
 					cloud_provider.ActionChange(&model.ChangeServer{
 						Id: change.Id,
@@ -303,6 +338,15 @@ func main() {
 						metric.Mbytes += appHostEntry.Metrics.MemoryUsage
 						metric.Network += appHostEntry.Metrics.NetworkUsage
 						metric.InstanceCount += 1
+
+						state.Stats.Insert__ApplicationHostUtilisationStatistic(state.ApplicationHostUtilisationStatistic{
+							Cpu: appHostEntry.Metrics.CpuUsage,
+							Mbytes: appHostEntry.Metrics.MemoryUsage,
+							Network: appHostEntry.Metrics.NetworkUsage,
+							Host: hostId,
+							AppName: appName,
+							Timestamp:time.Now(),
+						})
 					}
 				}
 				state.Stats.Insert__ApplicationUtilisationStatistic(metric)

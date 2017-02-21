@@ -25,17 +25,23 @@ import (
 	"orca/trainer/logs"
 	"fmt"
 	"reflect"
+	"strconv"
+	"orca/trainer/configuration"
+	"bytes"
+	"net/http"
 )
 
 type OrcaDb struct {
-	enabled bool
-	client  *elastic.Client
-	ctx context.Context
+	enabled            bool
+	client             *elastic.Client
+	ctx                context.Context
+	configurationStore *configuration.ConfigurationStore
 }
 
 type AuditEvent struct {
 	Timestamp time.Time
-	Details   map[string]string
+	HostId    string
+	AppId     string
 	Severity  AuditSeverity
 	Message   string
 }
@@ -66,7 +72,21 @@ const (
                                     "LogLevel" : { "type" : "string", "index" : "not_analyzed" },
                                     "HostId" : { "type" : "string", "index" : "not_analyzed" },
                                     "AppId" : { "type" : "string", "index" : "not_analyzed" },
-                                    "Message" : { "type" : "string"}
+                                    "Message" : { "type" : "string", "index" : "not_analyzed"}
+                                }
+                            }
+                        }
+                    }`
+
+	AUDIT_MAPPING = `{
+                        "mappings" : {
+                            "event" : {
+                                "properties" : {
+                                    "Timestamp" : { "type" : "date" },
+                                    "HostId" : { "type" : "string", "index" : "not_analyzed"},
+                                    "AppId" : { "type" : "string", "index" : "not_analyzed"},
+                                    "Message" : { "type" : "string", "index" : "not_analyzed"},
+                                    "Severity" : { "type" : "string"}
                                 }
                             }
                         }
@@ -76,23 +96,24 @@ const (
 var Audit OrcaDb
 
 //"http://127.0.0.1:9200"
-func (a *OrcaDb) Init(hostname string) {
-	if hostname == "" {
+func (a *OrcaDb) Init(configurationStore *configuration.ConfigurationStore) {
+	a.configurationStore = configurationStore
+	if configurationStore.GlobalSettings.AuditDatabaseUri == "" {
 		a.enabled = false
 		return
 	}
 	a.enabled = true
 	ctx := context.Background()
 	a.ctx = ctx
-	cli, err := elastic.NewClient(elastic.SetURL(hostname))
+	cli, err := elastic.NewClient(elastic.SetURL(configurationStore.GlobalSettings.AuditDatabaseUri))
 	if err != nil {
 		fmt.Println("Cloud not connect to elasticsearch")
-		return
+		panic(err)
 	}
 	a.client = cli
 	exists, _ := a.client.IndexExists("audit").Do(ctx)
 	if !exists {
-		a.client.CreateIndex("audit").Do(ctx)
+		a.client.CreateIndex("audit").Body(AUDIT_MAPPING).Do(ctx)
 	}
 
 	existsLogs, _ := a.client.IndexExists("logs").Do(ctx)
@@ -118,6 +139,21 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 		logs.AuditLogger.Debugln(event.Message)
 	}
 
+	/* Run hooks */
+	for _, hook := range db.configurationStore.GlobalSettings.AuditWebhooks {
+		if hook.Severity == string(event.Severity) {
+			b := new(bytes.Buffer)
+			b.WriteString("{\"text\":\"orca@" + db.configurationStore.GlobalSettings.EnvName + " said " + event.Message + "\"}")
+
+			res, err := http.Post(hook.Uri, "application/json; charset=utf-8", b)
+			if err != nil {
+				logs.AuditLogger.Errorf("Could not send event to webhook: %+v", err)
+			} else {
+				defer res.Body.Close()
+			}
+		}
+	}
+
 	if db.client == nil {
 		return
 	}
@@ -127,17 +163,23 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 		Index("audit").
 		Type("event").
 		BodyJson(event).
+		TTL("24h").
 		Do(db.ctx)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-func (db *OrcaDb) Query__AuditEvents() []AuditEvent {
+func (db *OrcaDb) Query__AuditEvents(limit string, search string) []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	events, err := db.client.Search().Index("audit").Query(elastic.NewMatchAllQuery()).Sort("Timestamp", false).Do(db.ctx)
+	limitInteger, _ := strconv.Atoi(limit)
+	q := elastic.NewBoolQuery()
+	if len(search) > 0 {
+		q.Must(elastic.NewWildcardQuery("Message", search))
+	}
+	events, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
@@ -151,11 +193,18 @@ func (db *OrcaDb) Query__AuditEvents() []AuditEvent {
 	return results
 }
 
-func (db *OrcaDb) Query__AuditEventsHost(host string) []AuditEvent {
+func (db *OrcaDb) Query__AuditEventsHost(host string, limit string, search string) []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("Details.host", host)).Sort("Timestamp", false).Do(db.ctx)
+	limitInteger, _ := strconv.Atoi(limit)
+	q := elastic.NewBoolQuery()
+	q.Must(elastic.NewTermQuery("HostId", host))
+	if len(search) > 0 {
+		q.Must(elastic.NewWildcardQuery("Message", search))
+	}
+
+	auditRes, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
@@ -169,11 +218,19 @@ func (db *OrcaDb) Query__AuditEventsHost(host string) []AuditEvent {
 	return results
 }
 
-func (db *OrcaDb) Query__AuditEventsApplication(application string) []AuditEvent {
+func (db *OrcaDb) Query__AuditEventsApplication(application string, limit string, search string) []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	auditRes, err := db.client.Search().Index("audit").Query(elastic.NewTermQuery("Details.app", application)).Sort("Timestamp", false).Do(db.ctx)
+
+	limitInteger, _ := strconv.Atoi(limit)
+	q := elastic.NewBoolQuery()
+	q.Must(elastic.NewTermQuery("AppId", application))
+	if len(search) > 0 {
+		q.Must(elastic.NewWildcardQuery("Message", search))
+	}
+
+	auditRes, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
 	if err != nil {
@@ -194,11 +251,6 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 	if log.Message == "" {
 		return
 	}
-	//if (log.LogLevel == LOG__STDERR) {
-	//	logs.AuditLogger.Errorln(log.Message)
-	//} else if log.LogLevel == LOG__STDOUT {
-	//	logs.AuditLogger.Infoln(log.Message)
-	//}
 
 	if db.client == nil {
 		return
@@ -209,17 +261,26 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 		Index("logs").
 		Type("log").
 		BodyJson(log).
+		TTL("24h").
 		Do(db.ctx)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-func (db *OrcaDb) Query__HostLog(host string) []LogEvent {
+func (db *OrcaDb) Query__HostLog(host string, limit string, search string) []LogEvent {
 	if !db.enabled {
 		return []LogEvent{}
 	}
-	logsRes, err := db.client.Search().Index("logs").Query(elastic.NewTermQuery("HostId", host)).Sort("Timestamp", false).Do(db.ctx)
+
+	limitInteger, _ := strconv.Atoi(limit)
+	q := elastic.NewBoolQuery()
+	q.Must(elastic.NewTermQuery("HostId", host))
+
+	if len(search) > 0 {
+		q.Must(elastic.NewWildcardQuery("Message", search))
+	}
+	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
 	var results []LogEvent
 	if err != nil {
@@ -234,11 +295,19 @@ func (db *OrcaDb) Query__HostLog(host string) []LogEvent {
 	return results
 }
 
-func (db *OrcaDb) Query__AppLog(app string) []LogEvent {
+func (db *OrcaDb) Query__AppLog(app string, limit string, search string) []LogEvent {
 	if !db.enabled {
 		return []LogEvent{}
 	}
-	logsRes, err := db.client.Search().Index("logs").Query(elastic.NewTermQuery("AppId", app)).Sort("Timestamp", false).Do(db.ctx)
+
+	limitInteger, _ := strconv.Atoi(limit)
+	q := elastic.NewBoolQuery()
+	q.Must(elastic.NewTermQuery("AppId", app))
+	if len(search) > 0 {
+		q.Must(elastic.NewWildcardQuery("Message", search))
+	}
+
+	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
 	var results []LogEvent
 	if err != nil {
