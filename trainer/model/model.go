@@ -106,7 +106,7 @@ type Host struct {
 
 func (host *Host) HasApp(name string) bool {
 	for _, runningApplicationState := range host.Apps {
-		if (runningApplicationState.Name == name && runningApplicationState.State == "running") {
+		if (runningApplicationState.Name == name) {
 			return true
 		}
 	}
@@ -124,7 +124,7 @@ func (host *Host) GetChange(id string) *ChangeApplication {
 
 func (host *Host) HasAppWithSameVersion(name string, version string) bool {
 	for _, runningApplicationState := range host.Apps {
-		if (runningApplicationState.Name == name && runningApplicationState.Version == version && runningApplicationState.State == "running") {
+		if (runningApplicationState.Name == name && runningApplicationState.Version == version) {
 			return true
 		}
 	}

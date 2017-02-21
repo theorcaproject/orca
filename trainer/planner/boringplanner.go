@@ -72,7 +72,7 @@ func hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguratio
 
 	for _, otherApps := range host.Apps {
 		otherAppConfiguration, _ := configurationStore.GetConfiguration(otherApps.Name)
-		affinity := otherAppConfiguration.Config[otherApps.Version].GroupingTag
+		affinity := otherAppConfiguration.PublishedConfig[otherApps.Version].GroupingTag
 		if affinity != app.GetLatestPublishedConfiguration().GroupingTag {
 			return false
 		}
