@@ -177,5 +177,9 @@ func (store *ConfigurationStore) RequestPublishConfiguration(config *model.Appli
 		publishedConfiguration.ApplyPropertyGroup(templateName.Name, templateObject)
 	}
 
+
+	if config.PublishedConfig == nil {
+		config.PublishedConfig = make(map[string]model.VersionConfig)
+	}
 	config.PublishedConfig[publishedConfiguration.Version] = publishedConfiguration
 }
