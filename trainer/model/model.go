@@ -232,7 +232,7 @@ type ApplicationConfiguration struct {
 	DesiredDeployment  int
 	DisableSchedule    bool
 	DeploymentSchedule schedule.DeploymentSchedule
-
+	ScheduleParts	   []schedule.DeploymentSchedulePart
 	Config             map[string]VersionConfig
 	PublishedConfig    map[string]VersionConfig
 
