@@ -243,7 +243,7 @@ func main() {
 						Id: uuid.NewV4().String(),
 						Type: "add_application",
 						HostId: host.Id,
-						AppConfig: app.GetLatestConfiguration(),
+						AppConfig: app.GetLatestPublishedConfiguration(),
 						Name: change.ApplicationName,
 						Time:time.Now().Format(time.RFC3339Nano),
 					})
@@ -280,7 +280,7 @@ func main() {
 						Id: uuid.NewV4().String(),
 						Type: "remove_application",
 						HostId: host.Id,
-						AppConfig: app.GetLatestConfiguration(),
+						AppConfig: app.GetLatestPublishedConfiguration(),
 						Name: change.ApplicationName,
 						Time:time.Now().Format(time.RFC3339Nano),
 					})
