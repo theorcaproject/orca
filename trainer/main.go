@@ -84,6 +84,10 @@ func main() {
 
 				latestConfiguredVersion := app.GetLatestConfiguration()
 				latestPublishedVersion := app.GetLatestPublishedConfiguration()
+				if latestPublishedVersion == nil {
+					continue
+				}
+
 				if latestConfiguredVersion.GetVersion() > latestPublishedVersion.GetVersion() {
 					/* Publish */
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
