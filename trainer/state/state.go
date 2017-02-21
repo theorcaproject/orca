@@ -23,13 +23,16 @@ import (
 	"time"
 	"orca/trainer/model"
 	"fmt"
+	"orca/trainer/configuration"
 )
 
 type StateStore struct {
 	hosts map[string]*model.Host;
+	configurationStore *configuration.ConfigurationStore;
 }
 
-func (store *StateStore) Init() {
+func (store *StateStore) Init(configurationStore *configuration.ConfigurationStore) {
+	store.configurationStore = configurationStore;
 	store.hosts = make(map[string]*model.Host);
 }
 
@@ -102,6 +105,9 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 
 	host.State = "running"
 	for _, appStateFromHost := range checkin.State {
+		appConfiguration, _ := store.configurationStore.GetConfiguration(appStateFromHost.Name)
+		appConfigurationVersion := appConfiguration.PublishedConfig[appStateFromHost.Application.Version]
+
 		for _, oldAppState := range host.Apps {
 			/* Attempt to find this application */
 			if oldAppState.Name == appStateFromHost.Name {
@@ -116,12 +122,15 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 
 				if oldAppState.State != appStateFromHost.Application.State {
 					if appStateFromHost.Application.State == "running" {
+
 						Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 							Message: fmt.Sprintf("Application %s on host %s is running, all checks are succeeding",
 								appStateFromHost.Name, hostId),
 							HostId: hostId,
 							AppId: appStateFromHost.Name,
 						})
+
+						appConfigurationVersion.DeploymentSuccess += 1
 					} else if appStateFromHost.Application.State == "failed" {
 						Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__ERROR,
 							Message: fmt.Sprintf("Application %s on host %s has failed, docker is reporting the container is no longer active",
@@ -129,6 +138,8 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 							HostId: hostId,
 							AppId: appStateFromHost.Name,
 						})
+
+						appConfigurationVersion.DeploymentFailures += 1
 					} else if appStateFromHost.Application.State == "checks_failed" {
 						Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__ERROR,
 							Message: fmt.Sprintf("Application %s on host %s has failed, the application checks have failed",
@@ -136,6 +147,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 							HostId: hostId,
 							AppId: appStateFromHost.Name,
 						})
+						appConfigurationVersion.DeploymentFailures += 1
 					}
 				}
 			}
@@ -157,6 +169,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 					HostId: hostId,
 					AppId: appStateFromHost.Name,
 				})
+				appConfigurationVersion.DeploymentSuccess += 1
 
 			} else if appStateFromHost.Application.State == "failed" {
 				Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__ERROR,
@@ -165,6 +178,8 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 					HostId: hostId,
 					AppId: appStateFromHost.Name,
 				})
+				appConfigurationVersion.DeploymentFailures += 1
+
 			} else if appStateFromHost.Application.State == "checks_failed" {
 				Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__ERROR,
 					Message: fmt.Sprintf("Application %s on host %s has failed, the application checks have failed",
@@ -172,6 +187,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 					HostId: hostId,
 					AppId: appStateFromHost.Name,
 				})
+				appConfigurationVersion.DeploymentFailures += 1
 			}
 		}
 	}

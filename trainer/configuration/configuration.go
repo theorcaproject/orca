@@ -170,6 +170,8 @@ func (store *ConfigurationStore) RequestPublishConfiguration(config *model.Appli
 		GroupingTag:templateForConfiguration.GroupingTag,
 
 		AppliedPropertyGroups: make(map[string]int),
+		DeploymentFailures:0,
+		DeploymentSuccess:0,
 	}
 
 	for _, templateName := range config.PropertyGroups {
@@ -179,7 +181,7 @@ func (store *ConfigurationStore) RequestPublishConfiguration(config *model.Appli
 
 
 	if config.PublishedConfig == nil {
-		config.PublishedConfig = make(map[string]model.VersionConfig)
+		config.PublishedConfig = make(map[string]*model.VersionConfig)
 	}
-	config.PublishedConfig[publishedConfiguration.Version] = publishedConfiguration
+	config.PublishedConfig[publishedConfiguration.Version] = &publishedConfiguration
 }

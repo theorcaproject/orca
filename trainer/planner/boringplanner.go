@@ -97,6 +97,14 @@ func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, cu
 	return instanceCount >= applicationConfiguration.MinDeployment
 }
 
+func canDeploy(applicationConfiguration *model.ApplicationConfiguration) bool {
+	if applicationConfiguration.GetLatestPublishedConfiguration().DeploymentFailures > 2 && applicationConfiguration.GetLatestPublishedConfiguration().DeploymentSuccess == 0 {
+		return false
+	}
+
+	return true
+}
+
 func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
 
@@ -106,6 +114,10 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 
 	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
 		if !applicationConfiguration.Enabled {
+			continue
+		}
+
+		if !canDeploy(applicationConfiguration) {
 			continue
 		}
 
@@ -159,6 +171,10 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 
 	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
 		if !applicationConfiguration.Enabled {
+			continue
+		}
+
+		if !canDeploy(applicationConfiguration) {
 			continue
 		}
 

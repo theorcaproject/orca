@@ -119,7 +119,7 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 			if err := decoder.Decode(&object); err == nil {
 				application, err := api.configurationStore.GetConfiguration(applicationName)
 				if err != nil {
-					object.Config = make(map[string]model.VersionConfig)
+					object.Config = make(map[string]*model.VersionConfig)
 					application = api.configurationStore.Add(applicationName, &object)
 				}
 
@@ -159,7 +159,7 @@ func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.Res
 					newVersion := application.GetSuitableNextVersion()
 					object.Version = newVersion
 
-					application.Config[newVersion] = object
+					application.Config[newVersion] = &object
 
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 						Message:"API: Modified application " + applicationName + ", created new configuration",

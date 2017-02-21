@@ -204,6 +204,9 @@ type VersionConfig struct {
 	GroupingTag           string
 
 	AppliedPropertyGroups map[string]int
+
+	DeploymentFailures	int
+	DeploymentSuccess	int
 }
 
 func (config *VersionConfig) GetVersion() int {
@@ -233,8 +236,8 @@ type ApplicationConfiguration struct {
 	DisableSchedule    bool
 	DeploymentSchedule schedule.DeploymentSchedule
 	ScheduleParts	   []schedule.DeploymentSchedulePart
-	Config             map[string]VersionConfig
-	PublishedConfig    map[string]VersionConfig
+	Config             map[string]*VersionConfig
+	PublishedConfig    map[string]*VersionConfig
 
 	Enabled            bool
 	Publish            bool
@@ -290,12 +293,12 @@ func (app *ApplicationConfiguration) GetNextVersion() string {
 	return strconv.Itoa(ivalue + 1)
 }
 
-func (app *ApplicationConfiguration) GetLatestConfiguration() (VersionConfig) {
+func (app *ApplicationConfiguration) GetLatestConfiguration() (*VersionConfig) {
 	last_version := app.GetLatestVersion()
 	return app.Config[last_version]
 }
 
-func (app *ApplicationConfiguration) GetLatestPublishedConfiguration() (VersionConfig) {
+func (app *ApplicationConfiguration) GetLatestPublishedConfiguration() (*VersionConfig) {
 	last_version := app.GetLatestPublishedVersion()
 	return app.PublishedConfig[last_version]
 }

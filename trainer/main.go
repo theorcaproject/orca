@@ -41,7 +41,7 @@ func main() {
 	store.Init((*configurationPath) + "/trainer.conf")
 
 	state_store := &state.StateStore{};
-	state_store.Init()
+	state_store.Init(store)
 
 	/* Load configuration */
 	store.Load()
@@ -133,6 +133,13 @@ func main() {
 							})
 						state_store.RemoveChange(host.Id, change.Id)
 						host.NumberOfChangeFailuresInRow += 1
+
+						appConfiguration, _ := store.GetConfiguration(change.Name)
+						appConfigurationVersion := appConfiguration.PublishedConfig[change.AppConfig.Version]
+						if appConfigurationVersion != nil {
+							appConfigurationVersion.DeploymentFailures += 1
+						}
+
 					}
 				}
 			}
@@ -243,7 +250,7 @@ func main() {
 						Id: uuid.NewV4().String(),
 						Type: "add_application",
 						HostId: host.Id,
-						AppConfig: app.GetLatestPublishedConfiguration(),
+						AppConfig: (*app.GetLatestPublishedConfiguration()),
 						Name: change.ApplicationName,
 						Time:time.Now().Format(time.RFC3339Nano),
 					})
@@ -280,7 +287,7 @@ func main() {
 						Id: uuid.NewV4().String(),
 						Type: "remove_application",
 						HostId: host.Id,
-						AppConfig: app.GetLatestPublishedConfiguration(),
+						AppConfig: (*app.GetLatestPublishedConfiguration()),
 						Name: change.ApplicationName,
 						Time:time.Now().Format(time.RFC3339Nano),
 					})
