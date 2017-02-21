@@ -22,6 +22,15 @@ import "time"
 
 type DeploymentSchedule WeekdaySchedule
 
+type DeploymentSchedulePart struct {
+	Id int
+	Days int
+	Minutes int
+	StartDay int
+	StartMinute int
+	Desired int
+}
+
 
 func (w DeploymentSchedule) IsEmpty() bool {
 	return w.Schedule.isEmpty()
