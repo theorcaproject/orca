@@ -92,7 +92,7 @@ func canDeploy(applicationConfiguration *model.ApplicationConfiguration) bool {
 		return false
 	}
 
-	if applicationConfiguration.GetLatestPublishedConfiguration().DeploymentFailures > 2 && applicationConfiguration.GetLatestPublishedConfiguration().DeploymentSuccess == 0 {
+	if applicationConfiguration.GetLatestPublishedConfiguration().DeploymentFailures > 5 && applicationConfiguration.GetLatestPublishedConfiguration().DeploymentSuccess == 0 {
 		return false
 	}
 
