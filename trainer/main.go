@@ -169,6 +169,9 @@ func main() {
 							Network: change.Network,
 							SecurityGroups: change.SecurityGroups,
 						}, state_store)
+
+						/* Lastly, if the spot instance fails to launch, block future retries */
+						cloud_provider.LastSpotInstanceFailure = time.Now()
 					}
 
 					/* In-case the system actually launched an instance, nuke it from the system */

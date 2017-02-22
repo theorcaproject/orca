@@ -23,6 +23,7 @@ import (
 	orcaSSh "orca/util"
 	"orca/trainer/state"
 	"fmt"
+	"time"
 )
 
 type CloudProvider struct {
@@ -32,6 +33,8 @@ type CloudProvider struct {
 	apiEndpoint string
 	loggingEndpoint string
 	sshUser string
+
+	LastSpotInstanceFailure time.Time
 }
 
 func (cloud* CloudProvider) Init(engine CloudEngine, sshUser string, apiEndpoint string, loggingEndpoint string) {
@@ -49,7 +52,7 @@ func (cloud*CloudProvider) ActionChange(change *model.ChangeServer, stateStore *
 		/* Here we can spawn a new server */
 		if change.Type == "new_server" {
 			var newHost *model.Host
-			if change.RequiresReliableInstance {
+			if change.RequiresReliableInstance || (time.Now().Unix() - cloud.LastSpotInstanceFailure.Unix() < time.Hour * 3) {
 				newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroups)
 			} else {
 				newHost = cloud.Engine.SpawnSpotInstanceSync("", change.Network, change.SecurityGroups)
