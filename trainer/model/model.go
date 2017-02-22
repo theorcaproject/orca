@@ -53,6 +53,9 @@ type ChangeServer struct {
 	LoadBalancerName         string
 	LoadBalancerAppTarget    string
 	LoadBalancerAppVersion   string
+
+	//Other stuff
+	GroupingTag              string
 }
 
 type HostResources struct {
@@ -103,9 +106,10 @@ type Host struct {
 	NumberOfChangeFailuresInRow int64
 
 	InstanceType                string
+	GroupingTag                 string
 }
 
-func (host *Host) HasApp(name string) bool {
+func (host *Host) HasAppRunning(name string) bool {
 	for _, runningApplicationState := range host.Apps {
 		if (runningApplicationState.Name == name && runningApplicationState.State == "running") {
 			return true
@@ -114,10 +118,18 @@ func (host *Host) HasApp(name string) bool {
 	return false;
 }
 
-
-func (host *Host) GetApp(name string) (Application, error){
+func (host *Host) HasApp(name string) bool {
 	for _, runningApplicationState := range host.Apps {
-		if runningApplicationState.Name == name{
+		if (runningApplicationState.Name == name) {
+			return true
+		}
+	}
+	return false;
+}
+
+func (host *Host) GetApp(name string) (Application, error) {
+	for _, runningApplicationState := range host.Apps {
+		if runningApplicationState.Name == name {
 			return runningApplicationState, nil
 		}
 	}
@@ -217,8 +229,8 @@ type VersionConfig struct {
 
 	AppliedPropertyGroups map[string]int
 
-	DeploymentFailures	int
-	DeploymentSuccess	int
+	DeploymentFailures    int
+	DeploymentSuccess     int
 }
 
 func (config *VersionConfig) GetVersion() int {
@@ -238,7 +250,7 @@ type PropertyGroup struct {
 }
 
 type UsedPropertyGroup struct {
-	Name 	string
+	Name string
 }
 
 type ApplicationConfiguration struct {
@@ -247,7 +259,7 @@ type ApplicationConfiguration struct {
 	DesiredDeployment  int
 	DisableSchedule    bool
 	DeploymentSchedule schedule.DeploymentSchedule
-	ScheduleParts	   []schedule.DeploymentSchedulePart
+	ScheduleParts      []schedule.DeploymentSchedulePart
 	Config             map[string]*VersionConfig
 	PublishedConfig    map[string]*VersionConfig
 
@@ -281,7 +293,7 @@ func (app *ApplicationConfiguration) GetLatestPublishedVersion() string {
 	return strconv.Itoa(version)
 }
 
-func (app* ApplicationConfiguration) GetSuitableNextVersion() string {
+func (app*ApplicationConfiguration) GetSuitableNextVersion() string {
 	version := 0
 	for v, _ := range app.Config {
 		iversion, _ := strconv.Atoi(v)
@@ -317,16 +329,16 @@ func (app *ApplicationConfiguration) GetLatestPublishedConfiguration() (*Version
 
 func (config *VersionConfig) ApplyPropertyGroup(name string, prop *PropertyGroup) {
 	for _, property := range prop.Properties {
-		config.DockerConfig.Repository = strings.Replace(config.DockerConfig.Repository, "%"+ property.Key +"%", property.Value, -1)
-		config.DockerConfig.Email = strings.Replace(config.DockerConfig.Email, "%"+ property.Key +"%", property.Value, -1)
-		config.DockerConfig.Password = strings.Replace(config.DockerConfig.Password, "%"+ property.Key +"%", property.Value, -1)
-		config.DockerConfig.Reference = strings.Replace(config.DockerConfig.Reference, "%"+ property.Key +"%", property.Value, -1)
-		config.DockerConfig.Server = strings.Replace(config.DockerConfig.Server, "%"+ property.Key +"%", property.Value, -1)
-		config.DockerConfig.Tag = strings.Replace(config.DockerConfig.Tag, "%"+ property.Key +"%", property.Value, -1)
-		config.DockerConfig.Username = strings.Replace(config.DockerConfig.Username, "%"+ property.Key +"%", property.Value, -1)
+		config.DockerConfig.Repository = strings.Replace(config.DockerConfig.Repository, "%" + property.Key + "%", property.Value, -1)
+		config.DockerConfig.Email = strings.Replace(config.DockerConfig.Email, "%" + property.Key + "%", property.Value, -1)
+		config.DockerConfig.Password = strings.Replace(config.DockerConfig.Password, "%" + property.Key + "%", property.Value, -1)
+		config.DockerConfig.Reference = strings.Replace(config.DockerConfig.Reference, "%" + property.Key + "%", property.Value, -1)
+		config.DockerConfig.Server = strings.Replace(config.DockerConfig.Server, "%" + property.Key + "%", property.Value, -1)
+		config.DockerConfig.Tag = strings.Replace(config.DockerConfig.Tag, "%" + property.Key + "%", property.Value, -1)
+		config.DockerConfig.Username = strings.Replace(config.DockerConfig.Username, "%" + property.Key + "%", property.Value, -1)
 
-		config.GroupingTag = strings.Replace(config.GroupingTag, "%"+ property.Key +"%", property.Value, -1)
-		config.Network = strings.Replace(config.Network, "%"+ property.Key +"%", property.Value, -1)
+		config.GroupingTag = strings.Replace(config.GroupingTag, "%" + property.Key + "%", property.Value, -1)
+		config.Network = strings.Replace(config.Network, "%" + property.Key + "%", property.Value, -1)
 	}
 
 	config.AppliedPropertyGroups[name] = prop.Version

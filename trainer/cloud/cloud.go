@@ -61,6 +61,8 @@ func (cloud*CloudProvider) ActionChange(change *model.ChangeServer, stateStore *
 					HostId: newHost.Id,
 				})
 
+				newHost.GroupingTag = change.GroupingTag /* TODO Persist this guy as a tag*/
+
 				stateStore.HostInit(newHost)
 				/* If the change times out we need to nuke it */
 				change.NewHostId = string(newHost.Id)

@@ -34,22 +34,22 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	stateStore := state.StateStore{}
-	stateStore.Init()
-	state.Audit.Init("")
-	versionConfigApp1 := make(map[string]model.VersionConfig)
-	versionConfigApp1["1"] = model.VersionConfig{
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
 		Version: "1",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
 	}
 
-	versionConfigApp2 := make(map[string]model.VersionConfig)
-	versionConfigApp2["2"] = model.VersionConfig{
+	versionConfigApp2 := make(map[string]*model.VersionConfig)
+	versionConfigApp2["2"] = &model.VersionConfig{
 		Version: "2",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}}, }
-	versionConfigApp3 := make(map[string]model.VersionConfig)
-	versionConfigApp3["3"] = model.VersionConfig{
+	versionConfigApp3 := make(map[string]*model.VersionConfig)
+	versionConfigApp3["3"] = &model.VersionConfig{
 		Version: "3",
 		Network: "network3",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp3"}},
@@ -59,7 +59,7 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 0,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled: true,
 
 	})
@@ -68,7 +68,7 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 		MinDeployment: 2,
 		DesiredDeployment: 0,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp2,
+		PublishedConfig: versionConfigApp2,
 		Enabled: true,
 
 	})
@@ -77,7 +77,7 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 		MinDeployment: 3,
 		DesiredDeployment: 0,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp3,
+		PublishedConfig: versionConfigApp3,
 		Enabled: true,
 
 	})
@@ -137,10 +137,10 @@ func TestPlan_spawnDesiredHosts(t *testing.T) {
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	stateStore := state.StateStore{}
-	stateStore.Init()
-	state.Audit.Init("")
-	versionConfigApp1 := make(map[string]model.VersionConfig)
-	versionConfigApp1["1"] = model.VersionConfig{
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
 		Version: "1",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
@@ -150,7 +150,7 @@ func TestPlan_spawnDesiredHosts(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 4,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled: true,
 	})
 
@@ -199,9 +199,10 @@ func TestPlan_scaleDown(t *testing.T) {
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	stateStore := state.StateStore{}
-	stateStore.Init()
-	versionConfigApp1 := make(map[string]model.VersionConfig)
-	versionConfigApp1["1"] = model.VersionConfig{
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
 		Version: "1",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
@@ -211,7 +212,7 @@ func TestPlan_scaleDown(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 2,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 
@@ -257,9 +258,9 @@ func TestPlan_scaleUp(t *testing.T) {
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	stateStore := state.StateStore{}
-	stateStore.Init()
-	versionConfigApp1 := make(map[string]model.VersionConfig)
-	versionConfigApp1["1"] = model.VersionConfig{
+	stateStore.Init(&config)
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
 		Version: "1",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
@@ -269,7 +270,7 @@ func TestPlan_scaleUp(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 3,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled: true,
 	})
 
@@ -314,11 +315,12 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	stateStore := state.StateStore{}
-	stateStore.Init()
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
 
 	/* App1 has an affinity with any other apps */
-	versionConfigApp1 := make(map[string]model.VersionConfig)
-	versionConfigApp1["1"] = model.VersionConfig{
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
 		Version: "1",
 		Network: "network1",
 		GroupingTag: "tag1",
@@ -329,13 +331,13 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 2,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled: true,
 	})
 
 	/* App2 does not have an affinity with any other apps */
-	versionConfigApp2 := make(map[string]model.VersionConfig)
-	versionConfigApp2["1"] = model.VersionConfig{
+	versionConfigApp2 := make(map[string]*model.VersionConfig)
+	versionConfigApp2["1"] = &model.VersionConfig{
 		Version: "1",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
@@ -345,14 +347,14 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 1,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp2,
+		PublishedConfig: versionConfigApp2,
 		Enabled: true,
 	})
 
 
 	/* App3 has an affinity with any other apps */
-	versionConfigApp3 := make(map[string]model.VersionConfig)
-	versionConfigApp3["1"] = model.VersionConfig{
+	versionConfigApp3 := make(map[string]*model.VersionConfig)
+	versionConfigApp3["1"] = &model.VersionConfig{
 		Version: "1",
 		Network: "network1",
 		GroupingTag:"tag1",
@@ -364,7 +366,7 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 1,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp3,
+		PublishedConfig: versionConfigApp3,
 		Enabled: true,
 	})
 
@@ -373,6 +375,7 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 		Network: "network1",
 		State: "running",
 		SpotInstance:false,
+		GroupingTag: "",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
 		Apps: []model.Application{{Name:"app2", Version:"1", State:"running"}},
 	}
@@ -382,6 +385,7 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 		Id: "host2",
 		State: "running",
 		Network: "network1",
+		GroupingTag: "tag1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
 		Apps: []model.Application{{Name:"app3", Version:"1", State:"running"}},
 	}
@@ -393,155 +397,7 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 	}
 }
 
-func TestPlan_scaleUp_UsingAffinity2(t *testing.T) {
-	planner := BoringPlanner{}
-	planner.Init()
 
-	config := configuration.ConfigurationStore{}
-	config.Init("")
-	stateStore := state.StateStore{}
-	stateStore.Init()
-
-	/* App1 has an affinity with any other apps */
-	versionConfigApp1 := make(map[string]model.VersionConfig)
-	versionConfigApp1["1"] = model.VersionConfig{
-		Version: "1",
-		Network: "network1",
-		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-	}
-	config.Add("app1", &model.ApplicationConfiguration{
-		Name: "app1",
-		MinDeployment: 1,
-		DesiredDeployment: 2,
-		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
-		Enabled: true,
-	})
-
-	/* App2 does not have an affinity with any other apps */
-	versionConfigApp2 := make(map[string]model.VersionConfig)
-	versionConfigApp2["1"] = model.VersionConfig{
-		Version: "1",
-		Network: "network1",
-		GroupingTag: "tag1",
-		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-	}
-	config.Add("app2", &model.ApplicationConfiguration{
-		Name: "app2",
-		MinDeployment: 1,
-		DesiredDeployment: 1,
-		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp2,
-		Enabled: true,
-	})
-
-	versionConfigApp3 := make(map[string]model.VersionConfig)
-	versionConfigApp3["1"] = model.VersionConfig{
-		Version: "1",
-		Network: "network1",
-		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-	}
-
-	config.Add("app3", &model.ApplicationConfiguration{
-		Name: "app3",
-		MinDeployment: 1,
-		DesiredDeployment: 1,
-		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp3,
-		Enabled: true,
-	})
-
-	host1 := &model.Host{
-		Id: "host1",
-		Network: "network1",
-		State: "running",
-		SpotInstance:false,
-		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application{{Name:"app1", Version:"1", State:"running"}, {Name:"app3", Version:"1", State:"running"}},
-	}
-	stateStore.Add("host1", host1)
-
-	host2 := &model.Host{
-		Id: "host2",
-		State: "running",
-		Network: "network1",
-		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application{},
-	}
-	stateStore.Add("host2", host2)
-
-	res := planner.Plan(config, stateStore)
-	if len(res) != 1 || res[0].Type != "add_application" || res[0].HostId != "host2" {
-		t.Errorf("%+v", res);
-	}
-}
-
-func TestPlan_scaleUp_UsingAffinityChooseEmptyHost(t *testing.T) {
-	planner := BoringPlanner{}
-	planner.Init()
-
-	config := configuration.ConfigurationStore{}
-	config.Init("")
-	stateStore := state.StateStore{}
-	stateStore.Init()
-
-	/* App1 has an affinity with any other apps */
-	versionConfigApp1 := make(map[string]model.VersionConfig)
-	versionConfigApp1["1"] = model.VersionConfig{
-		Version: "1",
-		Network: "network1",
-		GroupingTag:"tag1",
-		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-	}
-	config.Add("app1", &model.ApplicationConfiguration{
-		Name: "app1",
-		MinDeployment: 1,
-		DesiredDeployment: 2,
-		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
-		Enabled: true,
-	})
-
-	/* App2 does not have an affinity with any other apps */
-	versionConfigApp2 := make(map[string]model.VersionConfig)
-	versionConfigApp2["1"] = model.VersionConfig{
-		Version: "1",
-		Network: "network1",
-		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-	}
-	config.Add("app2", &model.ApplicationConfiguration{
-		Name: "app2",
-		MinDeployment: 1,
-		DesiredDeployment: 1,
-		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp2,
-		Enabled: true,
-	})
-
-	host1 := &model.Host{
-		Id: "host1",
-		Network: "network1",
-		State: "running",
-		SpotInstance:false,
-		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application{{Name:"app2", Version:"1", State:"running"}},
-	}
-	stateStore.Add("host1", host1)
-
-	host2 := &model.Host{
-		Id: "host2",
-		State: "running",
-		Network: "network1",
-		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps: []model.Application{},
-	}
-	stateStore.Add("host2", host2)
-
-	res := planner.Plan(config, stateStore)
-	if len(res) != 1 || res[0].Type != "add_application" || res[0].HostId != "host2" {
-		t.Errorf("%+v", res);
-	}
-}
 
 func TestPlan__Plan_RemoveOldDesired(t *testing.T) {
 	planner := BoringPlanner{}
@@ -550,10 +406,11 @@ func TestPlan__Plan_RemoveOldDesired(t *testing.T) {
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	stateStore := state.StateStore{}
-	stateStore.Init()
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
 
-	versionConfigApp1 := make(map[string]model.VersionConfig)
-	versionConfigApp1["1"] = model.VersionConfig{
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
 		Version: "1",
 		Network: "network1",
 		SecurityGroups: make([]model.SecurityGroup, 0),
@@ -564,7 +421,7 @@ func TestPlan__Plan_RemoveOldDesired(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 1,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 
@@ -599,7 +456,6 @@ func TestPlan__Plan_RemoveOldDesired(t *testing.T) {
 	if len(changes) != 1 || changes[0].Type != "remove_application" && changes[0].HostId != "host2" {
 		t.Errorf("%+v", changes);
 	}
-
 }
 
 func TestPlan__Plan_KullUnusedServers(t *testing.T) {
@@ -609,7 +465,8 @@ func TestPlan__Plan_KullUnusedServers(t *testing.T) {
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	stateStore := state.StateStore{}
-	stateStore.Init()
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
 
 	host1 := &model.Host{
 		Id: "host1",
@@ -661,10 +518,11 @@ func TestPlan__Plan_BasicOptimise(t *testing.T) {
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	stateStore := state.StateStore{}
-	stateStore.Init()
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
 
-	versionConfigApp1 := make(map[string]model.VersionConfig)
-	versionConfigApp1["1"] = model.VersionConfig{
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
 		Version: "1",
 		Network: "network1",
 		SecurityGroups: make([]model.SecurityGroup, 0),
@@ -675,7 +533,7 @@ func TestPlan__Plan_BasicOptimise(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 1,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 	config.Add("app2", &model.ApplicationConfiguration{
@@ -683,7 +541,7 @@ func TestPlan__Plan_BasicOptimise(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 1,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 	config.Add("app3", &model.ApplicationConfiguration{
@@ -691,7 +549,7 @@ func TestPlan__Plan_BasicOptimise(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 1,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 
@@ -740,10 +598,11 @@ func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T) {
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	stateStore := state.StateStore{}
-	stateStore.Init()
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
 
-	versionConfigApp1 := make(map[string]model.VersionConfig)
-	versionConfigApp1["1"] = model.VersionConfig{
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
 		Version: "1",
 		Network: "network1",
 		SecurityGroups: make([]model.SecurityGroup, 0),
@@ -754,7 +613,7 @@ func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 2,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 	config.Add("surfwizeauth", &model.ApplicationConfiguration{
@@ -762,7 +621,7 @@ func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 2,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 	config.Add("classwize", &model.ApplicationConfiguration{
@@ -770,7 +629,7 @@ func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 2,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 	config.Add("mylinewize", &model.ApplicationConfiguration{
@@ -778,7 +637,7 @@ func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 2,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 
@@ -829,10 +688,11 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T) {
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	stateStore := state.StateStore{}
-	stateStore.Init()
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
 
-	versionConfigApp1 := make(map[string]model.VersionConfig)
-	versionConfigApp1["1"] = model.VersionConfig{
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
 		Version: "1",
 		Network: "network1",
 		SecurityGroups: make([]model.SecurityGroup, 0),
@@ -843,7 +703,7 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 2,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 	config.Add("surfwizeauth", &model.ApplicationConfiguration{
@@ -851,7 +711,7 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 2,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 	config.Add("classwize", &model.ApplicationConfiguration{
@@ -859,7 +719,7 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 2,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 	config.Add("mylinewize", &model.ApplicationConfiguration{
@@ -867,7 +727,7 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T) {
 		MinDeployment: 1,
 		DesiredDeployment: 2,
 		DeploymentSchedule: schedule.DeploymentSchedule{},
-		Config: versionConfigApp1,
+		PublishedConfig: versionConfigApp1,
 		Enabled:true,
 	})
 
@@ -916,7 +776,7 @@ func TestPlan__Plan_HostWithFailedAppsAndErrors_Terminated(t *testing.T) {
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	stateStore := state.StateStore{}
-	stateStore.Init()
+	stateStore.Init(&config)
 
 	host1 := &model.Host{
 		Id: "host1",

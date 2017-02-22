@@ -33,7 +33,8 @@ func (*BoringPlanner) Init() {
 
 }
 
-func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool {
+func
+hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool {
 	if host.State != "running" {
 		return false
 	}
@@ -43,9 +44,10 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 	the min on older versions during an upgrade. Upgrades should be done on new hosts without impacting
 	the old versions.
 	*/
-	if host.HasApp(app.Name) {
+	if host.HasAppRunning(app.Name) {
 		return false
 	}
+
 	if host.Network != app.GetLatestPublishedConfiguration().Network {
 		return false
 	}
@@ -65,20 +67,8 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 }
 
 /* Well this is rather nasty aint it */
-func hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguration, configurationStore configuration.ConfigurationStore) bool {
-	if len(host.Apps) == 0 {
-		return true
-	}
-
-	for _, otherApps := range host.Apps {
-		otherAppConfiguration, _ := configurationStore.GetConfiguration(otherApps.Name)
-		affinity := otherAppConfiguration.PublishedConfig[otherApps.Version].GroupingTag
-		if affinity != app.GetLatestPublishedConfiguration().GroupingTag {
-			return false
-		}
-	}
-
-	return true
+func hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguration) bool {
+	return host.GroupingTag == app.GetLatestPublishedConfiguration().GroupingTag
 }
 
 func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, currentState *state.StateStore) bool {
@@ -114,8 +104,9 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 
 	requiresMinServer := false
 	serverNetwork := ""
-	var serverSecurityGroups []model.SecurityGroup
+	groupingTag := ""
 
+	var serverSecurityGroups []model.SecurityGroup
 	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
 		if !applicationConfiguration.Enabled {
 			continue
@@ -129,7 +120,7 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
 				/* Only use reserved instances when working with the min count */
-				if hostIsSuitable(hostEntity, applicationConfiguration) && !hostEntity.SpotInstance && hostHasCorrectAffinity(hostEntity, applicationConfiguration, configurationStore) {
+				if hostIsSuitable(hostEntity, applicationConfiguration) && !hostEntity.SpotInstance && hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
 					change := PlanningChange{
 						Type: "add_application",
 						ApplicationName: name,
@@ -147,6 +138,7 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 				requiresMinServer = true
 				serverNetwork = applicationConfiguration.GetLatestPublishedConfiguration().Network
 				serverSecurityGroups = applicationConfiguration.GetLatestPublishedConfiguration().SecurityGroups
+				groupingTag = applicationConfiguration.GetLatestPublishedConfiguration().GroupingTag
 			}
 		}
 	}
@@ -158,6 +150,7 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 			RequiresReliableInstance: true,
 			Network: serverNetwork,
 			SecurityGroups: serverSecurityGroups,
+			GroupingTag: groupingTag,
 		}
 
 		ret = append(ret, change)
@@ -171,6 +164,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 
 	requiresSpotServer := false
 	serverNetwork := ""
+	groupingTag := ""
 	var serverSecurityGroups []model.SecurityGroup
 
 	for name, applicationConfiguration := range configurationStore.GetAllConfiguration() {
@@ -193,7 +187,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 		if currentCount >= applicationConfiguration.MinDeployment && currentCount < applicationConfiguration.DesiredDeployment {
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if hostIsSuitable(hostEntity, applicationConfiguration) && hostHasCorrectAffinity(hostEntity, applicationConfiguration, configurationStore) {
+				if hostIsSuitable(hostEntity, applicationConfiguration) && hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
 					change := PlanningChange{
 						Type: "add_application",
 						ApplicationName: name,
@@ -211,6 +205,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 				requiresSpotServer = true
 				serverNetwork = applicationConfiguration.GetLatestPublishedConfiguration().Network
 				serverSecurityGroups = applicationConfiguration.GetLatestPublishedConfiguration().SecurityGroups
+				groupingTag = applicationConfiguration.GetLatestPublishedConfiguration().GroupingTag
 			}
 		}
 	}
@@ -222,6 +217,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 			RequiresReliableInstance: false,
 			Network: serverNetwork,
 			SecurityGroups: serverSecurityGroups,
+			GroupingTag:groupingTag,
 		}
 
 		ret = append(ret, change)
@@ -246,7 +242,7 @@ func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configur
 
 		if currentCount >= applicationConfiguration.DesiredDeployment && currentCount >= applicationConfiguration.MinDeployment {
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if hostEntity.HasApp(name) && !hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
+				if hostEntity.HasAppRunning(name) && !hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
 					change := PlanningChange{
 						Type: "remove_application",
 						ApplicationName: name,
@@ -432,7 +428,7 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 				}
 
 				if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersion(app.Name, app.Version) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
-					if hostIsSuitable(potentialHost, appConfiguration) && hostHasCorrectAffinity(potentialHost, appConfiguration, configurationStore) {
+					if hostIsSuitable(potentialHost, appConfiguration) && hostHasCorrectAffinity(potentialHost, appConfiguration) {
 						change := PlanningChange{
 							Type: "add_application",
 							ApplicationName: app.Name,

@@ -38,6 +38,7 @@ type PlanningChange struct {
 	RequiresReliableInstance bool
 	Network string
 	SecurityGroups []model.SecurityGroup
+	GroupingTag	string
 }
 
 type Planner interface {

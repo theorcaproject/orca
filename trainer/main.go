@@ -232,6 +232,7 @@ func main() {
 						RequiresReliableInstance: change.RequiresReliableInstance,
 						Network: change.Network,
 						SecurityGroups: change.SecurityGroups,
+						GroupingTag:change.GroupingTag,
 					}, state_store)
 
 					continue
