@@ -98,6 +98,10 @@ func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, cu
 }
 
 func canDeploy(applicationConfiguration *model.ApplicationConfiguration) bool {
+	if applicationConfiguration.GetLatestPublishedConfiguration() == nil {
+		return false
+	}
+
 	if applicationConfiguration.GetLatestPublishedConfiguration().DeploymentFailures > 2 && applicationConfiguration.GetLatestPublishedConfiguration().DeploymentSuccess == 0 {
 		return false
 	}
