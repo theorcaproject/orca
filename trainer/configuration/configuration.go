@@ -184,4 +184,5 @@ func (store *ConfigurationStore) RequestPublishConfiguration(config *model.Appli
 		config.PublishedConfig = make(map[string]*model.VersionConfig)
 	}
 	config.PublishedConfig[publishedConfiguration.Version] = &publishedConfiguration
+	store.Save()
 }
