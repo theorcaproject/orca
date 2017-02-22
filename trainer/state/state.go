@@ -158,14 +158,14 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 			}
 		} else {
 			/* If we fall here then it must be that this application is newly installed */
-			Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
-				Message: fmt.Sprintf("Application %s was installed to version %s on host %s",
-					appStateFromHost.Name, appStateFromHost.Application.Version, hostId),
-				HostId: hostId,
-				AppId: appStateFromHost.Name,
-			})
-
 			if appStateFromHost.Application.State == "running" {
+				Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
+					Message: fmt.Sprintf("Application %s was installed to version %s on host %s",
+						appStateFromHost.Name, appStateFromHost.Application.Version, hostId),
+					HostId: hostId,
+					AppId: appStateFromHost.Name,
+				})
+
 				Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 					Message: fmt.Sprintf("Application %s on host %s is running, all checks are succeeding",
 						appStateFromHost.Name, hostId),
@@ -176,8 +176,8 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 
 			} else if appStateFromHost.Application.State == "failed" {
 				Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__ERROR,
-					Message: fmt.Sprintf("Application %s on host %s has failed, docker is reporting the container is no longer active",
-						appStateFromHost.Name, hostId),
+					Message: fmt.Sprintf("Application %s on host %s version %s has failed to install under docker",
+						appStateFromHost.Name, hostId, appStateFromHost.Application.Version),
 					HostId: hostId,
 					AppId: appStateFromHost.Name,
 				})
@@ -185,8 +185,8 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 
 			} else if appStateFromHost.Application.State == "checks_failed" {
 				Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__ERROR,
-					Message: fmt.Sprintf("Application %s on host %s has failed, the application checks have failed",
-						appStateFromHost.Name, hostId),
+					Message: fmt.Sprintf("Application %s on host %s version %s has failed to install, the checks have failed",
+						appStateFromHost.Name, hostId, appStateFromHost.Application.Version),
 					HostId: hostId,
 					AppId: appStateFromHost.Name,
 				})
