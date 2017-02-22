@@ -134,6 +134,7 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 				application.DisableSchedule = object.DisableSchedule
 				application.DeploymentSchedule = object.DeploymentSchedule
 				application.PropertyGroups = object.PropertyGroups
+				application.ScheduleParts = object.ScheduleParts
 				api.configurationStore.Save()
 			}
 
