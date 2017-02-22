@@ -165,7 +165,7 @@ func main() {
 							Id:uuid.NewV4().String(),
 							Type: "new_server",
 							Time:time.Now().Format(time.RFC3339Nano),
-							RequiresReliableInstance: change.RequiresReliableInstance,
+							RequiresReliableInstance: true,
 							Network: change.Network,
 							SecurityGroups: change.SecurityGroups,
 						}, state_store)
