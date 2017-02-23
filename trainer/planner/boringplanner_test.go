@@ -48,12 +48,7 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 		Version: "2",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}}, }
-	versionConfigApp3 := make(map[string]*model.VersionConfig)
-	versionConfigApp3["3"] = &model.VersionConfig{
-		Version: "3",
-		Network: "network3",
-		SecurityGroups: []model.SecurityGroup{{Group: "secgrp3"}},
-	}
+
 	config.Add("app1", &model.ApplicationConfiguration{
 		Name: "app1",
 		MinDeployment: 1,
@@ -72,15 +67,6 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 		Enabled: true,
 
 	})
-	config.Add("app3", &model.ApplicationConfiguration{
-		Name: "app3",
-		MinDeployment: 3,
-		DesiredDeployment: 0,
-		DeploymentSchedule: schedule.DeploymentSchedule{},
-		PublishedConfig: versionConfigApp3,
-		Enabled: true,
-
-	})
 
 	res := planner.Plan(config, stateStore)
 	if len(res) != 1 || res[0].Type != "new_server" || res[0].Network == "" {
@@ -93,41 +79,202 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 	host1 := &model.Host{
 		Id: "host1",
 		Network: "network1",
+		State:"running",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
 	}
-	stateStore.HostInit(host1)
-	stateStore.HostCheckin("host1", model.HostCheckinDataPackage{
-		State: []model.ApplicationStateFromHost{{"app1", model.Application{Name: "app1", State: "running", Version: "1", ChangeId: res[0].Id}}},
-		ChangesApplied: applied,
-	})
+
+	stateStore.Add("host1", host1)
+
 	res2 := planner.Plan(config, stateStore)
 	if len(res2) != 2 || res2[0].Type != "add_application" || res2[0].RequiresReliableInstance {
 		t.Errorf("%+v", stateStore.GetAllHosts()["host1"]);
 		t.Errorf("%+v", res2);
 	}
+}
 
+func TestPlan_spawnMinHosts__OverrideFailing(t *testing.T) {
+	planner := BoringPlanner{}
+	planner.Init()
 
-	//This app can be deployed to an existing host, new_server event for app3 because it is in the wrong network and securitygroup
-	applied2 := make(map[string]bool)
-	applied2[res2[0].Id] = true
-	// create a appropriate host object and check in
-	host2 := &model.Host{
-		Id: "host2",
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
+		Version: "1",
 		Network: "network1",
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
 	}
-	stateStore.HostInit(host2)
-	stateStore.HostCheckin("host2", model.HostCheckinDataPackage{
-		State: []model.ApplicationStateFromHost{{"app2", model.Application{Name: "app2", State: "running", Version: "2", ChangeId: res2[0].Id}}},
-		ChangesApplied: applied,
+
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name: "app1",
+		MinDeployment: 1,
+		DesiredDeployment: 0,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		PublishedConfig: versionConfigApp1,
+		Enabled: true,
+
 	})
 
-	res3 := planner.Plan(config, stateStore)
-	if len(res3) != 2 || res3[0].ApplicationName != "app2" || res3[0].Type != "add_application" || res3[1].Type != "new_server" {
-		t.Errorf("%+v", stateStore);
-		t.Errorf("%+v", res3);
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		State:"running",
+		Apps: []model.Application{{
+			State:"failed",
+			ChangeId:"",
+			Name:"app1",
+			Version:"1",
+		}},
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
 	}
 
+	stateStore.Add("host1", host1)
+
+	res2 := planner.Plan(config, stateStore)
+	if len(res2) != 1 || res2[0].Type != "add_application" || res2[0].RequiresReliableInstance {
+		t.Errorf("%+v", stateStore.GetAllHosts()["host1"]);
+		t.Errorf("%+v", res2);
+	}
+}
+
+func TestPlan_spawnMinHosts__DontOverrideRunning(t *testing.T) {
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name: "app1",
+		MinDeployment: 2,
+		DesiredDeployment: 0,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		PublishedConfig: versionConfigApp1,
+		Enabled: true,
+
+	})
+
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		State:"running",
+		Apps: []model.Application{{
+			State:"running",
+			ChangeId:"",
+			Name:"app1",
+			Version:"1",
+		}},
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	stateStore.Add("host1", host1)
+
+	res := planner.Plan(config, stateStore)
+	if len(res) != 1 || res[0].Type != "new_server" || res[0].Network == "" {
+		t.Errorf("%+v", res);
+	}
+}
+
+func TestPlan_spawnMinHosts__DontOverrideRunningOldVersion(t *testing.T) {
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name: "app1",
+		MinDeployment: 2,
+		DesiredDeployment: 0,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		PublishedConfig: versionConfigApp1,
+		Enabled: true,
+
+	})
+
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		State:"running",
+		Apps: []model.Application{{
+			State:"running",
+			ChangeId:"",
+			Name:"app1",
+			Version:"0",
+		}},
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	stateStore.Add("host1", host1)
+
+	res := planner.Plan(config, stateStore)
+	if len(res) != 1 || res[0].Type != "new_server" || res[0].Network == "" {
+		t.Errorf("%+v", res);
+	}
+}
+
+func TestPlan_spawnMinHosts__DontUseSpotInstance(t *testing.T) {
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name: "app1",
+		MinDeployment: 2,
+		DesiredDeployment: 0,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		PublishedConfig: versionConfigApp1,
+		Enabled: true,
+
+	})
+
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		State:"running",
+		SpotInstance:true,
+		Apps: []model.Application{},
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	stateStore.Add("host1", host1)
+
+	res := planner.Plan(config, stateStore)
+	if len(res) != 1 || res[0].Type != "new_server" || res[0].Network == "" {
+		t.Errorf("%+v", res);
+	}
 }
 
 func TestPlan_spawnDesiredHosts(t *testing.T) {
@@ -187,6 +334,191 @@ func TestPlan_spawnDesiredHosts(t *testing.T) {
 	})
 	res3 := planner.Plan(config, stateStore)
 	if len(res3) != 1 || res3[0].Type != "new_server" || res3[0].RequiresReliableInstance || res3[0].Network != "network1" {
+		t.Errorf("%+v", stateStore);
+		t.Errorf("%+v", res3);
+	}
+}
+
+func TestPlan_DesiredOverrideFailingInstance(t *testing.T){
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init(&config)
+
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name: "app1",
+		MinDeployment: 1,
+		DesiredDeployment: 4,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		PublishedConfig: versionConfigApp1,
+		Enabled: true,
+	})
+
+	res := planner.Plan(config, stateStore)
+	if len(res) != 1 || res[0].Type != "new_server" || res[0].Network != "network1" {
+		t.Errorf("%+v", res);
+	}
+
+	applied := make(map[string]bool)
+	applied[res[0].Id] = true
+	// create a appropriate host object and check in
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+	stateStore.HostInit(host1)
+	stateStore.HostCheckin("host1", model.HostCheckinDataPackage{
+		State: []model.ApplicationStateFromHost{{"app1", model.Application{Name: "app1", State: "running", Version: "1", ChangeId: res[0].Id}}},
+		ChangesApplied: applied,
+	})
+	res2 := planner.Plan(config, stateStore)
+	if len(res2) != 1 || res2[0].Type != "new_server" || res2[0].RequiresReliableInstance || res2[0].Network != "network1" {
+		t.Errorf("%+v", stateStore);
+		t.Errorf("%+v", res2);
+	}
+
+	applied2 := make(map[string]bool)
+	applied2[res[0].Id] = true
+	// create a appropriate host object and check in
+	stateStore.HostCheckin("host1", model.HostCheckinDataPackage{
+		State: []model.ApplicationStateFromHost{{"app1", model.Application{Name: "app1", State: "failed", Version: "1", ChangeId: res[0].Id}}},
+		ChangesApplied: applied2,
+	})
+	res3 := planner.Plan(config, stateStore)
+	if len(res3) != 1 || res3[0].Type != "add_application" {
+		t.Errorf("%+v", stateStore);
+		t.Errorf("%+v", res3);
+	}
+}
+
+func TestPlan_DesiredOverrideOldInstance(t *testing.T){
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init(&config)
+
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name: "app1",
+		MinDeployment: 0,
+		DesiredDeployment: 1,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		PublishedConfig: versionConfigApp1,
+		Enabled: true,
+	})
+
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		State:"running",
+		Apps:[]model.Application{{Name: "app1", State: "running", Version: "0",}},
+	}
+
+	stateStore.Add("host1", host1)
+	res3 := planner.Plan(config, stateStore)
+	if len(res3) != 1 || res3[0].Type != "add_application" {
+		t.Errorf("%+v", stateStore);
+		t.Errorf("%+v", res3);
+	}
+}
+
+func TestPlan_DesiredOverrideOldInstance_Failing(t *testing.T){
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init(&config)
+
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name: "app1",
+		MinDeployment: 0,
+		DesiredDeployment: 1,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		PublishedConfig: versionConfigApp1,
+		Enabled: true,
+	})
+
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		State:"running",
+		Apps:[]model.Application{{Name: "app1", State: "failed", Version: "0",}},
+	}
+
+	stateStore.Add("host1", host1)
+	res3 := planner.Plan(config, stateStore)
+	if len(res3) != 1 || res3[0].Type != "add_application" {
+		t.Errorf("%+v", stateStore);
+		t.Errorf("%+v", res3);
+	}
+}
+
+func TestPlan_DesiredIgnoreExistingVersionRunning(t *testing.T){
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init(&config)
+
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name: "app1",
+		MinDeployment: 0,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		PublishedConfig: versionConfigApp1,
+		Enabled: true,
+	})
+
+	host1 := &model.Host{
+		Id: "host1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+		State:"running",
+		Apps:[]model.Application{{Name: "app1", State: "running", Version: "1",}},
+	}
+
+	stateStore.Add("host1", host1)
+	res3 := planner.Plan(config, stateStore)
+	if len(res3) != 1 || res3[0].Type != "new_server" {
 		t.Errorf("%+v", stateStore);
 		t.Errorf("%+v", res3);
 	}
@@ -396,8 +728,6 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 		t.Errorf("%+v", res);
 	}
 }
-
-
 
 func TestPlan__Plan_RemoveOldDesired(t *testing.T) {
 	planner := BoringPlanner{}

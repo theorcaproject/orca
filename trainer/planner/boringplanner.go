@@ -69,7 +69,7 @@ func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, cu
 		}
 
 		/* Only use reserved instances when working with the min count */
-		if hostEntity.HasAppWithSameVersion(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) {
+		if hostEntity.HasAppWithSameVersionRunning(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) {
 			instanceCount += 1
 		}
 	}
@@ -82,7 +82,7 @@ func canDeploy(applicationConfiguration *model.ApplicationConfiguration) bool {
 		return false
 	}
 
-	if applicationConfiguration.GetLatestPublishedConfiguration().DeploymentFailures > 5 && applicationConfiguration.GetLatestPublishedConfiguration().DeploymentSuccess == 0 {
+	if applicationConfiguration.GetLatestPublishedConfiguration().DeploymentFailures >= 2 && applicationConfiguration.GetLatestPublishedConfiguration().DeploymentSuccess == 0 {
 		return false
 	}
 
@@ -110,18 +110,45 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
 				/* Only use reserved instances when working with the min count */
-				if hostIsSuitable(hostEntity, applicationConfiguration) && !hostEntity.HasApp(name) && !hostEntity.SpotInstance && hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
-					change := PlanningChange{
-						Type: "add_application",
-						ApplicationName: name,
-						HostId: hostEntity.Id,
-						Id:uuid.NewV4().String(),
-					}
-
-					ret = append(ret, change)
-					foundServer = true
-					break
+				if !hostIsSuitable(hostEntity, applicationConfiguration) {
+					continue
 				}
+
+				if hostEntity.SpotInstance {
+					continue
+				}
+
+				if !hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
+					continue
+				}
+
+				/* If this host already has this application version and its running avoid */
+				if (hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion())) {
+					continue
+				}
+
+				/* If this host has an older version of the app running, avoid */
+				if (hostEntity.HasAppWithDifferentVersion(name, applicationConfiguration.GetLatestPublishedVersion()) && hostEntity.HasAppRunning(name)) {
+					continue
+				}
+
+				/*
+				If we are here this means:
+				1) This host does not have an older version of the app running
+				2) This host does not have the same version of the app running
+				3) This means either the app is not installed on this host, or a failing version is
+				4) This host is not a spot instance
+				*/
+				change := PlanningChange{
+					Type: "add_application",
+					ApplicationName: name,
+					HostId: hostEntity.Id,
+					Id:uuid.NewV4().String(),
+				}
+
+				ret = append(ret, change)
+				foundServer = true
+				break
 			}
 
 			if !foundServer {
@@ -168,7 +195,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 
 		currentCount := 0
 		for _, hostEntity := range currentState.GetAllHosts() {
-			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
+			if hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
 				currentCount += 1
 			}
 		}
@@ -177,21 +204,28 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 		if currentCount >= applicationConfiguration.MinDeployment && currentCount < applicationConfiguration.DesiredDeployment {
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if hostIsSuitable(hostEntity, applicationConfiguration) &&
-					hostHasCorrectAffinity(hostEntity, applicationConfiguration) &&
-					!hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()){
-
-					change := PlanningChange{
-						Type: "add_application",
-						ApplicationName: name,
-						HostId: hostEntity.Id,
-						Id:uuid.NewV4().String(),
-					}
-
-					ret = append(ret, change)
-					foundServer = true
-					break
+				if !hostIsSuitable(hostEntity, applicationConfiguration) {
+					continue
 				}
+
+				if !hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
+					continue
+				}
+
+				if hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
+					continue
+				}
+
+				change := PlanningChange{
+					Type: "add_application",
+					ApplicationName: name,
+					HostId: hostEntity.Id,
+					Id:uuid.NewV4().String(),
+				}
+
+				ret = append(ret, change)
+				foundServer = true
+				break
 			}
 
 			if !foundServer {
@@ -228,14 +262,14 @@ func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configur
 
 		currentCount := 0
 		for _, hostEntity := range currentState.GetAllHosts() {
-			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
+			if hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
 				currentCount += 1
 			}
 		}
 
 		if currentCount >= applicationConfiguration.DesiredDeployment && currentCount >= applicationConfiguration.MinDeployment {
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if hostEntity.HasApp(name) && !hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
+				if hostEntity.HasApp(name) && !hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
 					change := PlanningChange{
 						Type: "remove_application",
 						ApplicationName: name,
@@ -278,7 +312,7 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 
 		currentCount := 0
 		for _, hostEntity := range sortedHosts {
-			if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
+			if hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
 				currentCount += 1
 			}
 		}
@@ -289,7 +323,7 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 				/* Find potential spot instances */
 				terminateCandidateFound := false
 				for _, hostEntity := range sortedHosts {
-					if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
+					if hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
 						if hostEntity.SpotInstance {
 							change := PlanningChange{
 								Type: "remove_application",
@@ -307,7 +341,7 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 
 				if !terminateCandidateFound {
 					for _, hostEntity := range currentState.GetAllHosts() {
-						if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
+						if hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
 							change := PlanningChange{
 								Type: "remove_application",
 								ApplicationName: name,
@@ -322,7 +356,7 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 				}
 			} else {
 				for _, hostEntity := range sortedHosts {
-					if hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
+					if hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
 						change := PlanningChange{
 							Type: "remove_application",
 							ApplicationName: name,
@@ -420,7 +454,7 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 					continue
 				}
 
-				if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersion(app.Name, app.Version) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
+				if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersionRunning(app.Name, app.Version) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
 					if hostIsSuitable(potentialHost, appConfiguration) && hostHasCorrectAffinity(potentialHost, appConfiguration) {
 						change := PlanningChange{
 							Type: "add_application",
