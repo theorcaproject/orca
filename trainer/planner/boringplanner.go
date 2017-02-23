@@ -177,7 +177,10 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 		if currentCount >= applicationConfiguration.MinDeployment && currentCount < applicationConfiguration.DesiredDeployment {
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if hostIsSuitable(hostEntity, applicationConfiguration) && hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
+				if hostIsSuitable(hostEntity, applicationConfiguration) &&
+					hostHasCorrectAffinity(hostEntity, applicationConfiguration) &&
+					!hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()){
+
 					change := PlanningChange{
 						Type: "add_application",
 						ApplicationName: name,
