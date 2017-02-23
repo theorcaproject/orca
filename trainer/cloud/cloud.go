@@ -34,7 +34,7 @@ type CloudProvider struct {
 	loggingEndpoint string
 	sshUser string
 
-	LastSpotInstanceFailure time.Time
+	lastSpotInstanceFailure time.Time
 }
 
 func (cloud* CloudProvider) Init(engine CloudEngine, sshUser string, apiEndpoint string, loggingEndpoint string) {
@@ -52,10 +52,12 @@ func (cloud*CloudProvider) ActionChange(change *model.ChangeServer, stateStore *
 		/* Here we can spawn a new server */
 		if change.Type == "new_server" {
 			var newHost *model.Host
-			if change.RequiresReliableInstance || ((time.Now().Unix() - cloud.LastSpotInstanceFailure.Unix() < (int64(time.Hour.Seconds()) * 3))) {
-				newHost = cloud.Engine.SpawnInstanceSync("", change.Network, change.SecurityGroups)
+			if !change.RequiresReliableInstance && cloud.canLaunchSpotInstance() {
+				change.SpotInstanceRequested = true
+				newHost = cloud.Engine.SpawnSpotInstanceSync(change)
 			} else {
-				newHost = cloud.Engine.SpawnSpotInstanceSync("", change.Network, change.SecurityGroups)
+				change.SpotInstanceRequested = false
+				newHost = cloud.Engine.SpawnInstanceSync(change)
 			}
 
 			if newHost.Id != "" {
@@ -198,4 +200,34 @@ func (cloud*CloudProvider) GetChange(changeId string) *model.ChangeServer {
 		}
 	}
 	return nil
+}
+
+func (cloud *CloudProvider) NotifyHostTimedOut(host *model.Host) {
+	if host.SpotInstance {
+		terminate, reason := cloud.Engine.WasSpotInstanceTerminatedDueToPrice(host.SpotInstanceId)
+		if terminate {
+			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+				Message: fmt.Sprintf("Spot instance was terminated by aws, reason provided was %s", reason),
+			})
+			cloud.lastSpotInstanceFailure = time.Now()
+		}
+	}
+}
+
+func (cloud *CloudProvider) NotifySpawnHostTimedOut(change *model.ChangeServer) {
+	if change.SpotInstanceRequested {
+		terminate, reason := cloud.Engine.WasSpotInstanceTerminatedDueToPrice(change.SpotInstanceId)
+
+		if terminate {
+			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+				Message: fmt.Sprintf("Could not launch new spot instance, aws kulled the request because %s", reason),
+			})
+
+			cloud.lastSpotInstanceFailure = time.Now()
+		}
+	}
+}
+
+func (cloud *CloudProvider) canLaunchSpotInstance() bool {
+	return (time.Now().Unix() - cloud.lastSpotInstanceFailure.Unix()) > 60 * 60 * 2
 }

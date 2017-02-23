@@ -208,11 +208,12 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 				Changes: []model.ChangeApplication{},
 				Resources: model.HostResources{},
 			}
-			ip, subnet, secGrps, isSpot := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
+			ip, subnet, secGrps, isSpot, spotId := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
 			host.Ip = ip
 			host.Network = subnet
 			host.SecurityGroups = secGrps
 			host.SpotInstance = isSpot
+			host.SpotInstanceId = spotId
 
 			api.state.Add(hostId, host)
 

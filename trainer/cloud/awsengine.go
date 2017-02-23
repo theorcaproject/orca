@@ -93,10 +93,10 @@ func (a *AwsCloudEngine) GetIp(hostId string) string {
 	return string(*ipAddress)
 }
 
-func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.SecurityGroup, bool) {
+func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.SecurityGroup, bool, string) {
 	info, err := a.getInstanceInfo(hostId)
 	if err != nil || info == nil || (info.PublicIpAddress == nil && info.PrivateIpAddress == nil) || info.SubnetId == nil {
-		return "", "", []model.SecurityGroup{}, false
+		return "", "", []model.SecurityGroup{}, false, ""
 	}
 	secGrps := make([]model.SecurityGroup, 0)
 	for _, grp := range info.SecurityGroups {
@@ -104,8 +104,12 @@ func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.Sec
 	}
 
 	isSpot := false
+	spotId := ""
 	if (info.InstanceLifecycle != nil){
 		isSpot = string(*info.InstanceLifecycle) == "spot"
+		if isSpot {
+			spotId = string(*info.SpotInstanceRequestId)
+		}
 	}
 
 	var ipAddress *string;
@@ -115,7 +119,7 @@ func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.Sec
 		ipAddress = info.PrivateIpAddress
 	}
 
-	return string(*ipAddress), string(*info.SubnetId), secGrps, isSpot
+	return string(*ipAddress), string(*info.SubnetId), secGrps, isSpot, spotId
 }
 
 func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
@@ -128,11 +132,9 @@ func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
 }
 
 
-func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, network string, securityGroups []model.SecurityGroup) *model.Host {
+func (engine *AwsCloudEngine) SpawnInstanceSync(change *model.ChangeServer) *model.Host {
 	securityGroupsStrings := make([]string, 0)
-	if instanceType == "" {
-		instanceType = InstanceType(engine.instanceType)
-	}
+	instanceType := InstanceType(engine.instanceType)
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 
 	conf := &ec2.RunInstancesInput{
@@ -143,11 +145,11 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, netwo
 		KeyName:      &engine.sshKey,
 	}
 
-	if network != "" {
-		conf.SubnetId = aws.String(network)
+	if change.Network != "" {
+		conf.SubnetId = aws.String(change.Network)
 	}
-	if len(securityGroups) > 0 {
-		for _, grp := range securityGroups {
+	if len(change.SecurityGroups) > 0 {
+		for _, grp := range change.SecurityGroups{
 			securityGroupsStrings = append(securityGroupsStrings, grp.Group)
 		}
 		conf.SecurityGroupIds = aws.StringSlice(securityGroupsStrings)
@@ -170,8 +172,8 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(instanceType InstanceType, netwo
 
 	host := &model.Host{
 		Id: string(id),
-		SecurityGroups: securityGroups,
-		Network: network,
+		SecurityGroups: change.SecurityGroups,
+		Network: change.Network,
 	}
 	return host
 }
@@ -226,13 +228,11 @@ func (engine *AwsCloudEngine) DeRegisterWithLb(hostId string, lbId string) {
 	}
 }
 
-func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network string, securityGroups []model.SecurityGroup) *model.Host {
+func (engine *AwsCloudEngine) SpawnSpotInstanceSync(change *model.ChangeServer) *model.Host {
 	securityGroupsStrings := make([]string, 0)
-	if ty == "" {
-		ty = InstanceType(engine.spotInstanceType)
-	}
-	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+	ty := InstanceType(engine.spotInstanceType)
 
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 	params := ec2.RequestSpotInstancesInput{
 		LaunchSpecification: &ec2.RequestSpotLaunchSpecification{
 			ImageId:      aws.String(engine.awsBaseAmi),
@@ -245,11 +245,11 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network str
 		SpotPrice: aws.String(strconv.FormatFloat(float64(engine.spotPrice), 'f', 4, 32)),
 	}
 
-	if network != "" {
-		params.LaunchSpecification.SubnetId = aws.String(network)
+	if change.Network!= "" {
+		params.LaunchSpecification.SubnetId = aws.String(change.Network)
 	}
-	if len(securityGroups) >0 {
-		for _, grp := range securityGroups {
+	if len(change.SecurityGroups) >0 {
+		for _, grp := range change.SecurityGroups {
 			securityGroupsStrings = append(securityGroupsStrings, grp.Group)
 		}
 		params.LaunchSpecification.SecurityGroupIds = aws.StringSlice(securityGroupsStrings)
@@ -264,11 +264,12 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network str
 		return &model.Host{}
 	}
 	if len(runResult.SpotInstanceRequests) == 1 {
-		spotId := runResult.SpotInstanceRequests[0].SpotInstanceRequestId
+		change.SpotInstanceId = (*runResult.SpotInstanceRequests[0].SpotInstanceRequestId)
+
 		time.Sleep(2* time.Second)
 		var hostId HostId
 		for {
-			hostId, err := engine.GetSpotInstanceHostId(*spotId)
+			hostId, err := engine.GetSpotInstanceHostId(change.SpotInstanceId)
 			if err != nil {
 				fmt.Println(err)
 				break
@@ -279,8 +280,9 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network str
 			}
 			return  &model.Host{
 				Id: string(hostId),
-				SecurityGroups: securityGroups,
-				Network: network,
+				SecurityGroups: change.SecurityGroups,
+				Network: change.Network,
+				SpotInstanceId: change.SpotInstanceId,
 			}
 		}
 
@@ -292,8 +294,9 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(ty InstanceType, network str
 		}
 		return  &model.Host{
 			Id: string(hostId),
-			SecurityGroups: securityGroups,
-			Network: network,
+			SecurityGroups: change.SecurityGroups,
+			Network: change.Network,
+			SpotInstanceId:change.SpotInstanceId,
 		}
 	}
 	return &model.Host{}
@@ -328,11 +331,11 @@ func (engine *AwsCloudEngine) SanityCheckHosts(hosts map[string]*model.Host) {
 }
 
 func (engine *AwsCloudEngine) doSanityCheck(host *model.Host) {
-	ip, network, securityGroups, isSpot := engine.GetHostInfo(HostId(host.Id))
+	ip, network, securityGroups, isSpot, spotId := engine.GetHostInfo(HostId(host.Id))
 	if ip == "" || network == "" || len(securityGroups) == 0 {
 		return
 	}
-	if host.Ip != ip || host.Network != network || host.SpotInstance != isSpot || !securityGroupsEqual(host.SecurityGroups, securityGroups){
+	if host.Ip != ip || host.Network != network || host.SpotInstance != isSpot || !securityGroupsEqual(host.SecurityGroups, securityGroups) || host.SpotInstanceId != spotId {
 		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 			Message: fmt.Sprintf("Got different info for host %s from AWS. Host was: %s, AWS Ip: %s, Subnet: %s, SpotInstance: %t, securityGroups: %v",
 				host.Id, host, ip, network, isSpot, securityGroups),
@@ -342,6 +345,7 @@ func (engine *AwsCloudEngine) doSanityCheck(host *model.Host) {
 		host.Network = network
 		host.SpotInstance = isSpot
 		host.SecurityGroups = securityGroups
+		host.SpotInstanceId= spotId
 	}
 }
 
@@ -359,4 +363,39 @@ func securityGroupsEqual(groups []model.SecurityGroup, other []model.SecurityGro
 		}
 	}
 	return count == len(groups)
+}
+
+func (engine *AwsCloudEngine) WasSpotInstanceTerminatedDueToPrice(spotRequestId string) (bool, string) {
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+
+	params := &ec2.DescribeSpotInstanceRequestsInput{
+		SpotInstanceRequestIds: []*string{
+			aws.String(spotRequestId),
+		},
+	}
+
+	req, resp:= svc.DescribeSpotInstanceRequestsRequest(params)
+	req.Send()
+
+	if req.Error != nil {
+		return false, ""
+	}
+
+	for _, instance := range resp.SpotInstanceRequests{
+		reason := (*instance.Status.Code)
+		if reason == "instance-terminated-by-price" {
+			return true, reason
+		}
+		if reason == "price-too-low" {
+			return true, reason
+		}
+		if reason == "instance-terminated-no-capacity" {
+			return true, reason
+		}
+		if reason == "instance-terminated-capacity-oversubscribed" {
+			return true, reason
+		}
+	}
+
+	return false, ""
 }

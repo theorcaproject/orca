@@ -24,11 +24,13 @@ type InstanceType string
 type HostId string
 
 type CloudEngine interface {
-	SpawnInstanceSync(InstanceType, string, []model.SecurityGroup) *model.Host
-	SpawnSpotInstanceSync(InstanceType, string, []model.SecurityGroup) *model.Host
+	SpawnInstanceSync(change *model.ChangeServer) *model.Host
+	SpawnSpotInstanceSync(change *model.ChangeServer) *model.Host
+
 	GetInstanceType(HostId) InstanceType
 	TerminateInstance(HostId) bool
-	GetHostInfo(HostId) (string, string, []model.SecurityGroup, bool)
+	GetHostInfo(HostId) (string, string, []model.SecurityGroup, bool, string)
+	WasSpotInstanceTerminatedDueToPrice(spotRequestId string) (bool, string)
 
 	GetIp(hostId string) string
 

@@ -794,5 +794,4 @@ func TestPlan__Plan_HostWithFailedAppsAndErrors_Terminated(t *testing.T) {
 	if len(changes) != 0 {
 		t.Errorf("%+v", changes);
 	}
-
 }

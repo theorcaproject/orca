@@ -154,24 +154,14 @@ func main() {
 						})
 
 					/* If we were attempting to launch a spot instance, we need to relaunch it as a reserved */
-					if change.Type == "new_server" && !change.RequiresReliableInstance {
+					if change.Type == "new_server" {
 						state.Audit.Insert__AuditEvent(state.AuditEvent{
 							Severity: state.AUDIT__ERROR,
-							Message: fmt.Sprintf("Failed to launch spot instance, change event was %s, attempting to relaunch on-demand instance", change.Id),
+							Message: fmt.Sprintf("Failed to launch instance, change event was %s", change.Id),
 							HostId: change.NewHostId,
 							})
 
-						cloud_provider.ActionChange(&model.ChangeServer{
-							Id:uuid.NewV4().String(),
-							Type: "new_server",
-							Time:time.Now().Format(time.RFC3339Nano),
-							RequiresReliableInstance: true,
-							Network: change.Network,
-							SecurityGroups: change.SecurityGroups,
-						}, state_store)
-
-						/* Lastly, if the spot instance fails to launch, block future retries */
-						cloud_provider.LastSpotInstanceFailure = time.Now()
+						cloud_provider.NotifySpawnHostTimedOut(change)
 					}
 
 					/* In-case the system actually launched an instance, nuke it from the system */
@@ -200,6 +190,7 @@ func main() {
 						HostId: host.Id,
 						})
 
+					cloud_provider.NotifyHostTimedOut(host)
 					cloud_provider.ActionChange(&model.ChangeServer{
 						Id:uuid.NewV4().String(),
 						Type: "remove",

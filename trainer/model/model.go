@@ -48,6 +48,8 @@ type ChangeServer struct {
 	// Internal Status Information
 	InstanceLaunched         bool
 	InstalledPackages        bool
+	SpotInstanceId		 string
+	SpotInstanceRequested    bool
 
 	//Load balancer add task
 	LoadBalancerName         string
@@ -106,6 +108,7 @@ type Host struct {
 	NumberOfChangeFailuresInRow int64
 
 	InstanceType                string
+	SpotInstanceId              string
 	GroupingTag                 string
 }
 
