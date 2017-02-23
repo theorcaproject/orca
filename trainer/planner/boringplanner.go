@@ -33,18 +33,8 @@ func (*BoringPlanner) Init() {
 
 }
 
-func
-hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool {
+func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool {
 	if host.State != "running" {
-		return false
-	}
-
-	/*
-	We should not take the version into consideration here, if we do then we will break
-	the min on older versions during an upgrade. Upgrades should be done on new hosts without impacting
-	the old versions.
-	*/
-	if host.HasAppRunning(app.Name) {
 		return false
 	}
 
@@ -120,7 +110,7 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllHosts() {
 				/* Only use reserved instances when working with the min count */
-				if hostIsSuitable(hostEntity, applicationConfiguration) && !hostEntity.SpotInstance && hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
+				if hostIsSuitable(hostEntity, applicationConfiguration) && !hostEntity.HasApp(name) && !hostEntity.SpotInstance && hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
 					change := PlanningChange{
 						Type: "add_application",
 						ApplicationName: name,
@@ -242,7 +232,7 @@ func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configur
 
 		if currentCount >= applicationConfiguration.DesiredDeployment && currentCount >= applicationConfiguration.MinDeployment {
 			for _, hostEntity := range currentState.GetAllHosts() {
-				if hostEntity.HasAppRunning(name) && !hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
+				if hostEntity.HasApp(name) && !hostEntity.HasAppWithSameVersion(name, applicationConfiguration.GetLatestPublishedVersion()) {
 					change := PlanningChange{
 						Type: "remove_application",
 						ApplicationName: name,
