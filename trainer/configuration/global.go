@@ -64,4 +64,5 @@ type GlobalSettings struct {
 	StatsDatabaseUri	string
 
 	EnvName			string
+	PlanningDisabled	bool
 }

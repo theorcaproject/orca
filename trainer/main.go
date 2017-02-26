@@ -76,6 +76,10 @@ func main() {
 				continue
 			}
 
+			if store.GlobalSettings.PlanningDisabled {
+				continue
+			}
+
 			/* Check for published configuration */
 			for _, app := range store.ApplicationConfigurations {
 				if !app.Enabled {
