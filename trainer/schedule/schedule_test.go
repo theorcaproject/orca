@@ -63,6 +63,111 @@ func TestWeekdayBasedDeploymentCount(t *testing.T) {
 	}
 }
 
+func TestMidnightWorks(t *testing.T) {
+	schedule := DeploymentSchedule{}
+	schedule.SetAll(100)
+
+	res := schedule.Get(time.Now())
+	if res != 100 {
+		t.Error(res)
+	}
+
+	t1, _ := time.Parse(time.RFC3339Nano, "2017-02-22T00:15:44+00:00")
+	schedule.Set(time.Wednesday, Minutes(00), 150)
+	if schedule.Get(t1) != 150 {
+		t.Error(schedule.Get(t1))
+	}
+}
+
+func TestBeforeMidnightWorks(t *testing.T) {
+	schedule := DeploymentSchedule{}
+	schedule.SetAll(100)
+
+	res := schedule.Get(time.Now())
+	if res != 100 {
+		t.Error(res)
+	}
+
+	t1, _ := time.Parse(time.RFC3339Nano, "2017-02-22T23:15:44+00:00")
+	schedule.Set(time.Wednesday, Minutes(1380), 150)
+	if schedule.Get(t1) != 150 {
+		t.Error(schedule.Get(t1))
+	}
+}
+
+/*
+            "1020": 5,
+            "1080": 5,
+            "1140": 5,
+            "120": 5,
+            "1200": 5,
+            "1260": 5,
+            "1320": 5,
+            "1380": 5,
+            "1440": 0,
+            "180": 5,
+            "240": 1,
+            "300": 1,
+            "360": 1,
+            "420": 1,
+            "480": 1,
+            "540": 1,
+            "600": 1,
+            "660": 1,
+            "720": 1,
+            "780": 1,
+            "840": 1,
+            "900": 1,
+            "960": 1
+*/
+func TestComplex(t *testing.T) {
+	schedule := DeploymentSchedule{}
+	schedule.SetAll(100)
+
+	res := schedule.Get(time.Now())
+	if res != 100 {
+		t.Error(res)
+	}
+
+	schedule.Set(time.Wednesday, Minutes(0), 5)
+	schedule.Set(time.Wednesday, Minutes(60), 5)
+	schedule.Set(time.Wednesday, Minutes(120), 5)
+	schedule.Set(time.Wednesday, Minutes(180), 5)
+	schedule.Set(time.Wednesday, Minutes(240), 1)
+	schedule.Set(time.Wednesday, Minutes(300), 1)
+	schedule.Set(time.Wednesday, Minutes(360), 1)
+	schedule.Set(time.Wednesday, Minutes(420), 1)
+	schedule.Set(time.Wednesday, Minutes(480), 1)
+	schedule.Set(time.Wednesday, Minutes(540), 1)
+	schedule.Set(time.Wednesday, Minutes(600), 1)
+	schedule.Set(time.Wednesday, Minutes(660), 1)
+	schedule.Set(time.Wednesday, Minutes(720), 1)
+	schedule.Set(time.Wednesday, Minutes(780), 1)
+	schedule.Set(time.Wednesday, Minutes(840), 1)
+	schedule.Set(time.Wednesday, Minutes(900), 1)
+	schedule.Set(time.Wednesday, Minutes(960), 1)
+	schedule.Set(time.Wednesday, Minutes(1020), 5)
+	schedule.Set(time.Wednesday, Minutes(1080), 5)
+	schedule.Set(time.Wednesday, Minutes(1140), 5)
+	schedule.Set(time.Wednesday, Minutes(1200), 5)
+	schedule.Set(time.Wednesday, Minutes(1260), 5)
+	schedule.Set(time.Wednesday, Minutes(1320), 5)
+	schedule.Set(time.Wednesday, Minutes(1380), 5)
+
+	schedule.Set(time.Wednesday, Minutes(1440), 0)
+
+	t1, _ := time.Parse(time.RFC3339Nano, "2017-02-22T23:15:44+00:00")
+	if schedule.Get(t1) != 5 {
+		t.Error(schedule.Get(t1))
+	}
+
+	t2, _ := time.Parse(time.RFC3339Nano, "2017-02-22T00:15:44+00:00")
+	if schedule.Get(t2) != 5 {
+		t.Error(schedule.Get(t2))
+	}
+}
+
+
 func TestGenerateSchedule (t *testing.T){
 	schedule := DeploymentSchedule{}
 	schedule.SetAll(100)

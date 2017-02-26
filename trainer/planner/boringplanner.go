@@ -24,6 +24,7 @@ import (
 	"github.com/twinj/uuid"
 	"orca/trainer/model"
 	"sort"
+	"time"
 )
 
 type BoringPlanner struct {
@@ -483,6 +484,24 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 	return ret
 }
 
+func (planner *BoringPlanner) Plan_KullServersExceedingTTL(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+	ret := make([]PlanningChange, 0)
+
+	for _, hostEntity := range currentState.GetAllHosts() {
+		firstTimeParsed, _ := time.Parse(time.RFC3339Nano, hostEntity.FirstSeen)
+		if ((time.Now().Unix() - firstTimeParsed.Unix()) > 86400) {
+			change := PlanningChange{
+				Type: "kill_server",
+				HostId: hostEntity.Id,
+				Id:uuid.NewV4().String(),
+			}
+
+			ret = append(ret, change)
+		}
+	}
+	return ret
+}
+
 func extend(existing []PlanningChange, changes []PlanningChange) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 	for _, change := range existing {
@@ -541,5 +560,8 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 
 	/* Third stage of planning: Move applications around to see if we can optimise it to be cheaper */
 	ret = extend(ret, planner.Plan_OptimiseLayout(configurationStore, currentState))
+
+	/* Last stage of planning: Kill servers that are older than 24hours or configured TTL */
+	ret = extend(ret, planner.Plan_KullServersExceedingTTL(configurationStore, currentState))
 	return ret
 }
