@@ -29,6 +29,7 @@ import (
 	"orca/trainer/configuration"
 	"bytes"
 	"net/http"
+	"encoding/json"
 )
 
 type OrcaDb struct {
@@ -69,11 +70,7 @@ const (
                             "log" : {
                                 "properties" : {
                                     "Timestamp" : { "type" : "date" },
-                                    "LogLevel" : { "type" : "string", "index" : "not_analyzed" },
-                                    "HostId" : { "type" : "string", "index" : "not_analyzed" },
-                                    "AppId" : { "type" : "string", "index" : "not_analyzed" },
-                                    "Message" : { "type" : "string", "index" : "not_analyzed"}
-                                }
+                                 }
                             }
                         }
                     }`
@@ -254,6 +251,20 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 
 	if db.client == nil {
 		return
+	}
+
+	/* Run hooks */
+	for _, hook := range db.configurationStore.GlobalSettings.LoggingWebHooks {
+		j, err := json.MarshalIndent(log, "", "  ")
+		if err != nil {
+			res, err := http.Post(hook.Uri, "application/json; charset=utf-8", j)
+			if err != nil {
+				logs.AuditLogger.Errorf("Could not send event to webhook: %+v", err)
+			} else {
+				defer res.Body.Close()
+			}
+		}
+
 	}
 
 	log.Timestamp = time.Now()

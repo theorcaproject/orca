@@ -31,6 +31,10 @@ type AuditWebhook struct {
 	Severity string
 }
 
+type LoggingWebHook struct {
+	Uri string
+}
+
 type GlobalSettings struct {
 	ApiPort                int
 	LoggingPort            int
@@ -59,6 +63,7 @@ type GlobalSettings struct {
 
 	ApiTokens		[]ApiToken
 	AuditWebhooks		[]AuditWebhook
+	LoggingWebHooks		[]LoggingWebHook
 
 	AuditDatabaseUri	string
 	StatsDatabaseUri	string
