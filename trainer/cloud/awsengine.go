@@ -31,6 +31,7 @@ import (
 
 	"orca/trainer/model"
 	"orca/trainer/state"
+	"strings"
 )
 
 type AwsCloudEngine struct {
@@ -398,4 +399,72 @@ func (engine *AwsCloudEngine) WasSpotInstanceTerminatedDueToPrice(spotRequestId 
 	}
 
 	return false, ""
+}
+
+func (engine *AwsCloudEngine) GetNameTag(newHostId string) string {
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+	filters := make([]*ec2.Filter, 1)
+
+	name := string("resource-id")
+	values := make([]*string, 1)
+	values[0] = &newHostId
+	filters[0]= &ec2.Filter{Name: &name, Values: values}
+
+	tags, err := svc.DescribeTags(&ec2.DescribeTagsInput{
+		Filters: filters,
+	})
+
+	if err == nil {
+		/* Find the name tag */
+		for _, tag := range tags.Tags {
+			if (*tag.Key) == "Name" {
+				return (*tag.Value)
+			}
+		}
+	}
+
+	return ""
+}
+
+
+func (engine *AwsCloudEngine) SetNameTag(newHostId string, tagValue string) {
+	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+
+	name := string("Name")
+	value := tagValue
+
+	resouces := make([]*string, 1)
+	resouces[0] = &newHostId
+
+	tags := make([]*ec2.Tag, 1)
+	tags[0] = &ec2.Tag{Key:&name, Value: &value}
+
+	svc.CreateTags(&ec2.CreateTagsInput{
+		Resources: resouces,
+		Tags: tags,
+	})
+}
+
+
+func (engine *AwsCloudEngine) AddNameTag(newHostId string, appName string) {
+	currentTag := engine.GetNameTag(newHostId)
+	splices := strings.Split(currentTag, "_")
+	splices = append(splices, appName)
+
+	engine.SetNameTag(newHostId, strings.Join(splices, "_"))
+}
+
+
+func (engine *AwsCloudEngine) RemoveNameTag(newHostId string, appName string) {
+	newTags := make([]string, 0)
+	currentTag := engine.GetNameTag(newHostId)
+	splices := strings.Split(currentTag, "_")
+
+	for _, tag := range splices {
+		if tag != appName {
+			newTags = append(newTags, tag)
+		}
+	}
+
+	engine.SetNameTag(newHostId, strings.Join(newTags, "_"))
 }

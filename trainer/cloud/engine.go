@@ -38,5 +38,8 @@ type CloudEngine interface {
 	RegisterWithLb(hostId string, elb string)
 	DeRegisterWithLb(hostId string, elb string)
 	SanityCheckHosts(map[string]*model.Host)
+
+	AddNameTag(newHostId string, appName string)
+	RemoveNameTag(newHostId string, appName string)
 }
 

@@ -28,6 +28,7 @@ import (
 	"orca/trainer/model"
 	"orca/trainer/configuration"
 	"strings"
+	"github.com/aws/aws-sdk-go/service/elb"
 )
 
 func main() {
@@ -270,6 +271,14 @@ func main() {
 						}, state_store)
 					}
 
+					cloud_provider.ActionChange(&model.ChangeServer{
+						Id:uuid.NewV4().String(),
+						Type: "app_tag_add",
+						Time:time.Now().Format(time.RFC3339Nano),
+						NewHostId: change.HostId,
+						LoadBalancerAppTarget: change.ApplicationName,
+					}, state_store)
+
 					continue
 				}
 
@@ -307,6 +316,13 @@ func main() {
 						}, state_store)
 					}
 
+					cloud_provider.ActionChange(&model.ChangeServer{
+						Id:uuid.NewV4().String(),
+						Type: "app_tag_remove",
+						Time:time.Now().Format(time.RFC3339Nano),
+						NewHostId: change.HostId,
+						LoadBalancerAppTarget: change.ApplicationName,
+					}, state_store)
 					continue
 
 				}

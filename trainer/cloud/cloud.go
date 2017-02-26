@@ -155,6 +155,14 @@ func (cloud*CloudProvider) ActionChange(change *model.ChangeServer, stateStore *
 		}else if change.Type == "loadbalancer_leave" {
 			cloud.Engine.DeRegisterWithLb(change.NewHostId, change.LoadBalancerName)
 			cloud.RemoveChange(change.Id, true)
+
+		}else if change.Type == "app_tag_add" {
+			cloud.Engine.AddNameTag(change.NewHostId, change.LoadBalancerName)
+			cloud.RemoveChange(change.Id, true)
+
+		}else if change.Type == "app_tag_remove" {
+			cloud.Engine.RemoveNameTag(change.NewHostId, change.LoadBalancerName)
+			cloud.RemoveChange(change.Id, true)
 		}
 	}()
 }
