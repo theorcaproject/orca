@@ -256,8 +256,10 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 	/* Run hooks */
 	for _, hook := range db.configurationStore.GlobalSettings.LoggingWebHooks {
 		j, err := json.MarshalIndent(log, "", "  ")
+		b := new(bytes.Buffer)
+		b.Write(j)
 		if err != nil {
-			res, err := http.Post(hook.Uri, "application/json; charset=utf-8", j)
+			res, err := http.Post(hook.Uri, "application/json; charset=utf-8", b)
 			if err != nil {
 				logs.AuditLogger.Errorf("Could not send event to webhook: %+v", err)
 			} else {

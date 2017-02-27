@@ -28,7 +28,6 @@ import (
 	"orca/trainer/model"
 	"orca/trainer/configuration"
 	"strings"
-	"github.com/aws/aws-sdk-go/service/elb"
 )
 
 func main() {
