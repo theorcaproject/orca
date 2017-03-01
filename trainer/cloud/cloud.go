@@ -44,7 +44,7 @@ func (cloud* CloudProvider) Init(engine CloudEngine, sshUser string, apiEndpoint
 	cloud.loggingEndpoint= loggingEndpoint
 }
 
-func (cloud*CloudProvider) ActionChange(change *model.ChangeServer, stateStore *state.StateStore) {
+func (cloud*CloudProvider)  ActionChange(change *model.ChangeServer, stateStore *state.StateStore) {
 	/* First push this change onto the change queue for the cloud provider */
 	cloud.AddChange(change)
 

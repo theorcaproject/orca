@@ -63,6 +63,7 @@ func (store *StateStore) GetApplication(hostId string, applicationName string) (
 
 func (store *StateStore) HostInit(host *model.Host) {
 	host.State = "initializing"
+	host.FirstSeen = time.Now().Format(time.RFC3339Nano)
 	store.hosts[host.Id] = host
 }
 

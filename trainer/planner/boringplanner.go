@@ -560,6 +560,9 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 
 	/* Third stage of planning: Move applications around to see if we can optimise it to be cheaper */
 	ret = extend(ret, planner.Plan_OptimiseLayout(configurationStore, currentState))
+	if len(ret) > 0 {
+		return ret
+	}
 
 	/* Last stage of planning: Kill servers that are older than 24hours or configured TTL */
 	ret = extend(ret, planner.Plan_KullServersExceedingTTL(configurationStore, currentState))

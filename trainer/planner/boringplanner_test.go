@@ -92,6 +92,40 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 	}
 }
 
+func TestPlan_spawnMinZeroDesiredOneHosts(t *testing.T) {
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
+		Version: "1",
+		Network: "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name: "app1",
+		MinDeployment: 0,
+		DesiredDeployment: 1,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		PublishedConfig: versionConfigApp1,
+		Enabled: true,
+
+	})
+
+	res := planner.Plan(config, stateStore)
+
+		t.Errorf("%+v", res);
+	if len(res) != 1 || res[0].Type != "new_server" || res[0].Network == "" {
+		t.Errorf("%+v", res);
+	}
+}
+
 func TestPlan_spawnMinHosts__OverrideFailing(t *testing.T) {
 	planner := BoringPlanner{}
 	planner.Init()
