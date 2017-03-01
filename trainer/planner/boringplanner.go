@@ -384,6 +384,7 @@ func (planner *BoringPlanner) Plan_KullUnusedServers(configurationStore configur
 				Type: "kill_server",
 				HostId: hostEntity.Id,
 				Id:uuid.NewV4().String(),
+				Reason: "Planner deemed this server to be unused, Plan_KullUnusedServers",
 			}
 
 			ret = append(ret, change)
@@ -403,6 +404,7 @@ func (planner *BoringPlanner) Plan_KullBrokenServers(configurationStore configur
 					Type: "kill_server",
 					HostId: hostEntity.Id,
 					Id:uuid.NewV4().String(),
+					Reason: "Planner deemed this server to be broken, Plan_KullBrokenServers",
 				}
 
 				ret = append(ret, change)
@@ -494,6 +496,7 @@ func (planner *BoringPlanner) Plan_KullServersExceedingTTL(configurationStore co
 				Type: "kill_server",
 				HostId: hostEntity.Id,
 				Id:uuid.NewV4().String(),
+				Reason: "Server has exceeded the TTL configured, Plan_KullServersExceedingTTL",
 			}
 
 			ret = append(ret, change)

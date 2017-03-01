@@ -39,6 +39,8 @@ type PlanningChange struct {
 	Network string
 	SecurityGroups []model.SecurityGroup
 	GroupingTag	string
+
+	Reason	string
 }
 
 type Planner interface {

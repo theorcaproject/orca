@@ -327,7 +327,7 @@ func main() {
 				}
 				if change.Type == "kill_server" {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-						Message:fmt.Sprintf("Planner requested server %s be kulled in a bloodbath", change.HostId),
+						Message:fmt.Sprintf("Planner requested server %s be kulled in a bloodbath, reason supplied was %s", change.HostId, change.Reason),
 					})
 
 					cloud_provider.ActionChange(&model.ChangeServer{
