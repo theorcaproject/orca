@@ -157,11 +157,11 @@ func (cloud*CloudProvider)  ActionChange(change *model.ChangeServer, stateStore 
 			cloud.RemoveChange(change.Id, true)
 
 		}else if change.Type == "app_tag_add" {
-			cloud.Engine.AddNameTag(change.NewHostId, change.LoadBalancerName)
+			cloud.Engine.AddNameTag(change.NewHostId, change.LoadBalancerAppTarget)
 			cloud.RemoveChange(change.Id, true)
 
 		}else if change.Type == "app_tag_remove" {
-			cloud.Engine.RemoveNameTag(change.NewHostId, change.LoadBalancerName)
+			cloud.Engine.RemoveNameTag(change.NewHostId, change.LoadBalancerAppTarget)
 			cloud.RemoveChange(change.Id, true)
 		}
 	}()
