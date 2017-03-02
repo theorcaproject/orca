@@ -209,12 +209,13 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 				Resources: model.HostResources{},
 			}
 			ip, subnet, secGrps, isSpot, spotId := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
+			host.GroupingTag = api.cloudProvider.Engine.GetTag("GroupingTag", host.Id)
+
 			host.Ip = ip
 			host.Network = subnet
 			host.SecurityGroups = secGrps
 			host.SpotInstance = isSpot
 			host.SpotInstanceId = spotId
-
 			api.state.Add(hostId, host)
 
 			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,

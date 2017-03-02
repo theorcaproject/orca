@@ -491,7 +491,11 @@ func (planner *BoringPlanner) Plan_KullServersExceedingTTL(configurationStore co
 
 	for _, hostEntity := range currentState.GetAllHosts() {
 		firstTimeParsed, _ := time.Parse(time.RFC3339Nano, hostEntity.FirstSeen)
-		if ((time.Now().Unix() - firstTimeParsed.Unix()) > 86400) {
+		if configurationStore.GlobalSettings.ServerTTL == 0 {
+			continue
+		}
+
+		if ((time.Now().Unix() - firstTimeParsed.Unix()) > configurationStore.GlobalSettings.ServerTTL) {
 			change := PlanningChange{
 				Type: "kill_server",
 				HostId: hostEntity.Id,
@@ -500,6 +504,7 @@ func (planner *BoringPlanner) Plan_KullServersExceedingTTL(configurationStore co
 			}
 
 			ret = append(ret, change)
+			break /* Only kull one server at once */
 		}
 	}
 	return ret

@@ -57,6 +57,7 @@ func (store *ConfigurationStore) Init(trainerConfigurationFilePath string) {
 		CloudProvider: "aws",
 		AuditDatabaseUri: "http://localhost:9200",
 		StatsDatabaseUri: "localhost",
+		ServerTTL:86400,
 	}
 }
 

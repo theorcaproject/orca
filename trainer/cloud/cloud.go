@@ -69,9 +69,11 @@ func (cloud*CloudProvider)  ActionChange(change *model.ChangeServer, stateStore 
 				newHost.GroupingTag = change.GroupingTag /* TODO Persist this guy as a tag*/
 
 				stateStore.HostInit(newHost)
+
 				/* If the change times out we need to nuke it */
 				change.NewHostId = string(newHost.Id)
 				change.InstanceLaunched = true
+				cloud.Engine.SetTag(newHost.Id, "GroupingTag", newHost.GroupingTag)
 
 				/* A new server was created, wahoo */
 				/* Next we should install some stuff to it */

@@ -401,7 +401,7 @@ func (engine *AwsCloudEngine) WasSpotInstanceTerminatedDueToPrice(spotRequestId 
 	return false, ""
 }
 
-func (engine *AwsCloudEngine) GetNameTag(newHostId string) string {
+func (engine *AwsCloudEngine) GetTag(tagKey string, newHostId string) string {
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 	filters := make([]*ec2.Filter, 1)
 
@@ -417,7 +417,7 @@ func (engine *AwsCloudEngine) GetNameTag(newHostId string) string {
 	if err == nil {
 		/* Find the name tag */
 		for _, tag := range tags.Tags {
-			if (*tag.Key) == "Name" {
+			if (*tag.Key) == tagKey {
 				return (*tag.Value)
 			}
 		}
@@ -427,10 +427,10 @@ func (engine *AwsCloudEngine) GetNameTag(newHostId string) string {
 }
 
 
-func (engine *AwsCloudEngine) SetNameTag(newHostId string, tagValue string) {
+func (engine *AwsCloudEngine) SetTag(newHostId string, tagKey string, tagValue string) {
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 
-	name := string("Name")
+	name := string(tagKey)
 	value := tagValue
 
 	resouces := make([]*string, 1)
@@ -447,17 +447,17 @@ func (engine *AwsCloudEngine) SetNameTag(newHostId string, tagValue string) {
 
 
 func (engine *AwsCloudEngine) AddNameTag(newHostId string, appName string) {
-	currentTag := engine.GetNameTag(newHostId)
+	currentTag := engine.GetTag("Name", newHostId)
 	splices := strings.Split(currentTag, "_")
 	splices = append(splices, appName)
 
-	engine.SetNameTag(newHostId, strings.Join(splices, "_"))
+	engine.SetTag(newHostId, "Name", strings.Join(splices, "_"))
 }
 
 
 func (engine *AwsCloudEngine) RemoveNameTag(newHostId string, appName string) {
 	newTags := make([]string, 0)
-	currentTag := engine.GetNameTag(newHostId)
+	currentTag := engine.GetTag("Name", newHostId)
 	splices := strings.Split(currentTag, "_")
 
 	for _, tag := range splices {
@@ -466,5 +466,5 @@ func (engine *AwsCloudEngine) RemoveNameTag(newHostId string, appName string) {
 		}
 	}
 
-	engine.SetNameTag(newHostId, strings.Join(newTags, "_"))
+	engine.SetTag(newHostId, "Name", strings.Join(newTags, "_"))
 }

@@ -70,4 +70,5 @@ type GlobalSettings struct {
 
 	EnvName			string
 	PlanningDisabled	bool
+	ServerTTL		int64
 }

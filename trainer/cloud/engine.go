@@ -41,5 +41,8 @@ type CloudEngine interface {
 
 	AddNameTag(newHostId string, appName string)
 	RemoveNameTag(newHostId string, appName string)
+
+	SetTag(newHostId string, tagKey string, tagValue string)
+	GetTag(tagKey string, newHostId string) string
 }
 
