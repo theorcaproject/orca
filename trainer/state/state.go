@@ -97,14 +97,14 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 	}
 	host.LastSeen = time.Now().Format(time.RFC3339Nano)
 
-	if host.State != "running" {
+	if host.State == "initializing" {
 		Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 			Message: fmt.Sprintf("Server %s state changed to running", hostId),
 			HostId: hostId,
 		})
+		host.State = "running"
 	}
 
-	host.State = "running"
 	for _, appStateFromHost := range checkin.State {
 		appConfiguration, _ := store.configurationStore.GetConfiguration(appStateFromHost.Name)
 		appConfigurationVersion := appConfiguration.PublishedConfig[appStateFromHost.Application.Version]
