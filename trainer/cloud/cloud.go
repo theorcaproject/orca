@@ -165,6 +165,13 @@ func (cloud*CloudProvider)  ActionChange(change *model.ChangeServer, stateStore 
 		}else if change.Type == "app_tag_remove" {
 			cloud.Engine.RemoveNameTag(change.NewHostId, change.LoadBalancerAppTarget)
 			cloud.RemoveChange(change.Id, true)
+
+		}else if change.Type == "retire_server" {
+			hostToRemove, err := stateStore.GetConfiguration(change.NewHostId)
+			if err == nil {
+				hostToRemove.State = "terminating"
+			}
+			cloud.RemoveChange(change.Id, true)
 		}
 	}()
 }

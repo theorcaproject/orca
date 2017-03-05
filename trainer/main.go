@@ -338,6 +338,19 @@ func main() {
 					}, state_store)
 					continue
 				}
+				if change.Type == "retire_server" {
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+						Message:fmt.Sprintf("Planner requested server %s be retired", change.HostId),
+					})
+
+					cloud_provider.ActionChange(&model.ChangeServer{
+						Id: change.Id,
+						Type: "retire_server",
+						NewHostId:change.HostId,
+						Time:time.Now().Format(time.RFC3339Nano),
+					}, state_store)
+					continue
+				}
 			}
 		}
 	}()

@@ -69,6 +69,10 @@ func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, cu
 			continue
 		}
 
+		if hostEntity.State == "terminating" {
+			continue
+		}
+
 		/* Only use reserved instances when working with the min count */
 		if hostEntity.HasAppWithSameVersionRunning(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) {
 			instanceCount += 1
@@ -196,6 +200,10 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 
 		currentCount := 0
 		for _, hostEntity := range currentState.GetAllHosts() {
+			if hostEntity.State == "terminating" {
+				continue
+			}
+
 			if hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
 				currentCount += 1
 			}
@@ -497,7 +505,7 @@ func (planner *BoringPlanner) Plan_KullServersExceedingTTL(configurationStore co
 
 		if ((time.Now().Unix() - firstTimeParsed.Unix()) > configurationStore.GlobalSettings.ServerTTL) {
 			change := PlanningChange{
-				Type: "kill_server",
+				Type: "retire_server",
 				HostId: hostEntity.Id,
 				Id:uuid.NewV4().String(),
 				Reason: "Server has exceeded the TTL configured, Plan_KullServersExceedingTTL",
@@ -505,6 +513,24 @@ func (planner *BoringPlanner) Plan_KullServersExceedingTTL(configurationStore co
 
 			ret = append(ret, change)
 			break /* Only kull one server at once */
+		}
+	}
+	return ret
+}
+
+func (planner *BoringPlanner) Plan_KullServersInTerminatingState(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+	ret := make([]PlanningChange, 0)
+
+	for _, hostEntity := range currentState.GetAllHosts() {
+		if hostEntity.State == "terminating" {
+			change := PlanningChange{
+				Type: "kill_server",
+				HostId: hostEntity.Id,
+				Id:uuid.NewV4().String(),
+				Reason: "Server has exceeded the TTL configured, Plan_KullServersInTerminatingState",
+			}
+
+			ret = append(ret, change)
 		}
 	}
 	return ret
@@ -568,6 +594,13 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 
 	/* Third stage of planning: Move applications around to see if we can optimise it to be cheaper */
 	ret = extend(ret, planner.Plan_OptimiseLayout(configurationStore, currentState))
+	if len(ret) > 0 {
+		return ret
+	}
+
+
+	/* Kull servers that are terminating. If we reach this step, MINS/DESIRED are meet so we can kill them of */
+	ret = extend(ret, planner.Plan_KullServersInTerminatingState(configurationStore, currentState))
 	if len(ret) > 0 {
 		return ret
 	}
