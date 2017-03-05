@@ -51,6 +51,17 @@ func (store *StateStore) GetAllHosts() map[string]*model.Host {
 	return store.hosts
 }
 
+func (store *StateStore) GetAllRunningHosts() map[string]*model.Host {
+	ret := make(map[string]*model.Host)
+	for name, host := range store.hosts {
+		if host.State == "running" {
+			ret[name] = host
+		}
+	}
+
+	return ret
+}
+
 func (store *StateStore) GetApplication(hostId string, applicationName string) (model.Application, error) {
 	host, _ := store.GetConfiguration(hostId)
 	for _, application := range host.Apps {
@@ -231,7 +242,7 @@ func (store *StateStore) RemoveHost(hostId string) {
 
 func (store *StateStore) ListOfHosts() []*model.Host {
 	hosts := make([]*model.Host, 0)
-	for _, host := range store.GetAllHosts() {
+	for _, host := range store.GetAllRunningHosts() {
 		hosts = append(hosts, host)
 	}
 

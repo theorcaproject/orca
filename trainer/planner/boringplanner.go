@@ -27,6 +27,20 @@ import (
 	"time"
 )
 
+type Hosts []*model.Host
+type ByApplicationCount struct{ Hosts }
+
+func (s Hosts) Len() int {
+	return len(s)
+}
+func (s Hosts) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s ByApplicationCount) Less(i, j int) bool {
+	return len(s.Hosts[i].Apps) < len(s.Hosts[j].Apps)
+}
+
 type BoringPlanner struct {
 }
 
@@ -64,12 +78,8 @@ func hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguratio
 
 func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, currentState *state.StateStore) bool {
 	instanceCount := 0;
-	for _, hostEntity := range currentState.GetAllHosts() {
+	for _, hostEntity := range currentState.GetAllRunningHosts() {
 		if hostEntity.SpotInstance {
-			continue
-		}
-
-		if hostEntity.State == "terminating" {
 			continue
 		}
 
@@ -113,7 +123,7 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 
 		if !isMinSatisfied(applicationConfiguration, &currentState) {
 			foundServer := false
-			for _, hostEntity := range currentState.GetAllHosts() {
+			for _, hostEntity := range currentState.GetAllRunningHosts() {
 				/* Only use reserved instances when working with the min count */
 				if !hostIsSuitable(hostEntity, applicationConfiguration) {
 					continue
@@ -199,11 +209,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 		}
 
 		currentCount := 0
-		for _, hostEntity := range currentState.GetAllHosts() {
-			if hostEntity.State == "terminating" {
-				continue
-			}
-
+		for _, hostEntity := range currentState.GetAllRunningHosts() {
 			if hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
 				currentCount += 1
 			}
@@ -212,7 +218,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 		//spawn to desired
 		if currentCount >= applicationConfiguration.MinDeployment && currentCount < applicationConfiguration.DesiredDeployment {
 			foundServer := false
-			for _, hostEntity := range currentState.GetAllHosts() {
+			for _, hostEntity := range currentState.GetAllRunningHosts() {
 				if !hostIsSuitable(hostEntity, applicationConfiguration) {
 					continue
 				}
@@ -270,14 +276,14 @@ func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configur
 		}
 
 		currentCount := 0
-		for _, hostEntity := range currentState.GetAllHosts() {
+		for _, hostEntity := range currentState.GetAllRunningHosts() {
 			if hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
 				currentCount += 1
 			}
 		}
 
 		if currentCount >= applicationConfiguration.DesiredDeployment && currentCount >= applicationConfiguration.MinDeployment {
-			for _, hostEntity := range currentState.GetAllHosts() {
+			for _, hostEntity := range currentState.GetAllRunningHosts() {
 				if hostEntity.HasApp(name) && !hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
 					change := PlanningChange{
 						Type: "remove_application",
@@ -292,20 +298,6 @@ func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configur
 		}
 	}
 	return ret
-}
-
-type Hosts []*model.Host
-type ByApplicationCount struct{ Hosts }
-
-func (s Hosts) Len() int {
-	return len(s)
-}
-func (s Hosts) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s ByApplicationCount) Less(i, j int) bool {
-	return len(s.Hosts[i].Apps) < len(s.Hosts[j].Apps)
 }
 
 func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
@@ -349,7 +341,7 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 				}
 
 				if !terminateCandidateFound {
-					for _, hostEntity := range currentState.GetAllHosts() {
+					for _, hostEntity := range currentState.GetAllRunningHosts() {
 						if hostEntity.HasAppWithSameVersionRunning(name, applicationConfiguration.GetLatestPublishedVersion()) {
 							change := PlanningChange{
 								Type: "remove_application",
@@ -386,8 +378,8 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 func (planner *BoringPlanner) Plan_KullUnusedServers(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
 
-	for _, hostEntity := range currentState.GetAllHosts() {
-		if len(hostEntity.Apps) == 0 && hostEntity.State == "running" {
+	for _, hostEntity := range currentState.GetAllRunningHosts() {
+		if len(hostEntity.Apps) == 0 {
 			change := PlanningChange{
 				Type: "kill_server",
 				HostId: hostEntity.Id,
@@ -404,19 +396,17 @@ func (planner *BoringPlanner) Plan_KullUnusedServers(configurationStore configur
 func (planner *BoringPlanner) Plan_KullBrokenServers(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
 
-	for _, hostEntity := range currentState.GetAllHosts() {
-		if hostEntity.State == "running" {
-			/* This server is messing up, changes are failing for some reason */
-			if hostEntity.NumberOfChangeFailuresInRow >= configurationStore.GlobalSettings.HostChangeFailureLimit {
-				change := PlanningChange{
-					Type: "kill_server",
-					HostId: hostEntity.Id,
-					Id:uuid.NewV4().String(),
-					Reason: "Planner deemed this server to be broken, Plan_KullBrokenServers",
-				}
-
-				ret = append(ret, change)
+	for _, hostEntity := range currentState.GetAllRunningHosts() {
+		/* This server is messing up, changes are failing for some reason */
+		if hostEntity.NumberOfChangeFailuresInRow >= configurationStore.GlobalSettings.HostChangeFailureLimit {
+			change := PlanningChange{
+				Type: "kill_server",
+				HostId: hostEntity.Id,
+				Id:uuid.NewV4().String(),
+				Reason: "Planner deemed this server to be broken, Plan_KullBrokenServers",
 			}
+
+			ret = append(ret, change)
 		}
 	}
 	return ret
@@ -425,7 +415,7 @@ func (planner *BoringPlanner) Plan_KullBrokenServers(configurationStore configur
 func (planner *BoringPlanner) Plan_KullBrokenApplications(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
 
-	for _, hostEntity := range currentState.GetAllHosts() {
+	for _, hostEntity := range currentState.GetAllRunningHosts() {
 		for _, application := range hostEntity.Apps {
 			if application.State != "running" {
 				/* This application is messing up, if we have gotten to this stage then the mins and desired have already been dealt with for it */
@@ -497,7 +487,7 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 func (planner *BoringPlanner) Plan_KullServersExceedingTTL(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
 	ret := make([]PlanningChange, 0)
 
-	for _, hostEntity := range currentState.GetAllHosts() {
+	for _, hostEntity := range currentState.GetAllRunningHosts() {
 		firstTimeParsed, _ := time.Parse(time.RFC3339Nano, hostEntity.FirstSeen)
 		if configurationStore.GlobalSettings.ServerTTL == 0 {
 			continue
