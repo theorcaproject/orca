@@ -19,15 +19,16 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package state
 
 import (
+	"orca/trainer/configuration"
 	"time"
+
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"orca/trainer/configuration"
 )
 
 type StatisticsDb struct {
-	session *mgo.Session
-	db      *mgo.Database
+	session            *mgo.Session
+	db                 *mgo.Database
 	configurationStore *configuration.ConfigurationStore
 }
 
@@ -50,11 +51,11 @@ func (a *StatisticsDb) Close() {
 }
 
 type ApplicationUtilisationStatistic struct {
-	Cpu       int64
-	Mbytes    int64
-	Network   int64
+	Cpu     int64
+	Mbytes  int64
+	Network int64
 
-	InstanceCount int64
+	InstanceCount        int64
 	DesiredInstanceCount int64
 
 	AppName   string
@@ -62,24 +63,24 @@ type ApplicationUtilisationStatistic struct {
 }
 
 type ApplicationHostUtilisationStatistic struct {
-	Cpu       int64
-	Mbytes    int64
-	Network   int64
+	Cpu     int64
+	Mbytes  int64
+	Network int64
 
-	AppName   string
-	Host   string
+	AppName string
+	Host    string
 
 	Timestamp time.Time
 }
 
 type HostUtilisationStatistic struct {
-	Cpu       int64
-	Mbytes    int64
-	Network   int64
+	Cpu                  int64
+	Mbytes               int64
+	Network              int64
 	HardDiskUsage        int64
 	HardDiskUsagePercent int64
 
-	Host   string
+	Host      string
 	Timestamp time.Time
 }
 
@@ -144,6 +145,16 @@ func (db *StatisticsDb) Query__HostUtilisationStatistic(host string) []HostUtili
 	return results
 }
 
+func (db *StatisticsDb) Query__LatestHostUtilisationStatistic(host string) []HostUtilisationStatistic {
+	c := db.db.C("host_utilisation")
+	var results []HostUtilisationStatistic
+	err := c.Find(bson.M{"host": host}).Sort("-Timestamp").One(&results)
+	if err != nil {
+		panic("error querying db")
+	}
+
+	return results
+}
 
 func (db *StatisticsDb) Query__ApplicationHostUtilisationStatistic(application string, host string) []ApplicationHostUtilisationStatistic {
 	c := db.db.C("app_host_utilisation")
@@ -155,5 +166,3 @@ func (db *StatisticsDb) Query__ApplicationHostUtilisationStatistic(application s
 
 	return results
 }
-
-

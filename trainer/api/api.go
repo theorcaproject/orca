@@ -19,18 +19,19 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package api
 
 import (
-	"github.com/gorilla/mux"
-	"net/http"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	"net/http"
+	"orca/trainer/cloud"
 	"orca/trainer/configuration"
 	"orca/trainer/model"
 	"orca/trainer/state"
 	log "orca/util/log"
-	"orca/trainer/cloud"
-	"time"
-	"github.com/twinj/uuid"
 	"strings"
+	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/twinj/uuid"
 )
 
 type Api struct {
@@ -38,7 +39,7 @@ type Api struct {
 	state              *state.StateStore
 	cloudProvider      *cloud.CloudProvider
 
-	sessions           map[string]bool
+	sessions map[string]bool
 }
 
 type Logs struct {
@@ -68,6 +69,7 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r.HandleFunc("/checkin", api.hostCheckin)
 
 	r.HandleFunc("/state/cloud/host/performance", api.getHostPerformance)
+	r.HandleFunc("/state/cloud/host/latest/performance", api.getHostLatestPerformance)
 	r.HandleFunc("/state/cloud/application/performance", api.getAppPerformance)
 	r.HandleFunc("/state/cloud/application/host/performance", api.getAppHostPerformance)
 
@@ -104,13 +106,13 @@ func returnJson(w http.ResponseWriter, obj interface{}) {
 }
 
 func (api *Api) getAllConfiguration(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		returnJson(w, api.configurationStore.GetAllConfiguration())
 	}
 }
 
 func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		if r.Method == "POST" {
 			applicationName := r.URL.Query().Get("application")
 
@@ -124,8 +126,8 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 				}
 
 				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-					Message:"Modified application " + applicationName + " in pool",
-					AppId: applicationName,
+					Message: "Modified application " + applicationName + " in pool",
+					AppId:   applicationName,
 				})
 
 				application.MinDeployment = object.MinDeployment
@@ -149,7 +151,7 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 }
 
 func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		applicationName := r.URL.Query().Get("application")
 		application, err := api.configurationStore.GetConfiguration(applicationName)
 		if err == nil {
@@ -163,8 +165,8 @@ func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.Res
 					application.Config[newVersion] = &object
 
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-						Message:"API: Modified application " + applicationName + ", created new configuration",
-						AppId: applicationName,
+						Message: "API: Modified application " + applicationName + ", created new configuration",
+						AppId:   applicationName,
 					})
 
 					api.configurationStore.Save()
@@ -180,14 +182,14 @@ func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.Res
 }
 
 func (api *Api) getAllRunningState(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		returnJson(w, api.state.GetAllHosts())
 	}
 }
 
 func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
-	if (api.configurationStore.GlobalSettings.HostToken == token) {
+	if api.configurationStore.GlobalSettings.HostToken == token {
 		var apps model.HostCheckinDataPackage
 		hostId := r.URL.Query().Get("host")
 
@@ -200,12 +202,12 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 
 		if err != nil {
 			host := &model.Host{
-				Id: hostId,
-				LastSeen: "",
+				Id:        hostId,
+				LastSeen:  "",
 				FirstSeen: time.Now().Format(time.RFC3339Nano),
-				State: "running",
-				Apps: []model.Application{},
-				Changes: []model.ChangeApplication{},
+				State:     "running",
+				Apps:      []model.Application{},
+				Changes:   []model.ChangeApplication{},
 				Resources: model.HostResources{},
 			}
 			ip, subnet, secGrps, isSpot, spotId := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
@@ -220,7 +222,7 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 
 			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 				Message: fmt.Sprintf("Discovered new server %s, ip: %s, subnet: %s spot: %t", hostId, ip, subnet, isSpot),
-				HostId: hostId,
+				HostId:  hostId,
 			})
 		}
 
@@ -231,13 +233,13 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 
 			/* Lets save some stats */
 			state.Stats.Insert__HostUtilisationStatistic(state.HostUtilisationStatistic{
-				Cpu: apps.HostMetrics.CpuUsage,
-				Mbytes: apps.HostMetrics.MemoryUsage,
-				Network: apps.HostMetrics.NetworkUsage,
-				HardDiskUsage: apps.HostMetrics.HardDiskUsage,
+				Cpu:                  apps.HostMetrics.CpuUsage,
+				Mbytes:               apps.HostMetrics.MemoryUsage,
+				Network:              apps.HostMetrics.NetworkUsage,
+				HardDiskUsage:        apps.HostMetrics.HardDiskUsage,
 				HardDiskUsagePercent: apps.HostMetrics.HardDiskUsagePercent,
-				Host: hostId,
-				Timestamp:time.Now(),
+				Host:                 hostId,
+				Timestamp:            time.Now(),
 			})
 
 			returnJson(w, result.Changes)
@@ -251,7 +253,7 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) getLogs(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		returnJson(w, state.Audit.Query__HostLog("", "100", ""))
 	}
 }
@@ -287,7 +289,7 @@ func (api *Api) pushLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) getApplicationLogs(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		application := r.URL.Query().Get("application")
 		limit := r.URL.Query().Get("limit")
 		search := r.URL.Query().Get("search")
@@ -297,13 +299,13 @@ func (api *Api) getApplicationLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) getAllLogs(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		//returnJson(w, state.Audit.Query__AuditEvents())
 	}
 }
 
 func (api *Api) getHostLogs(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		limit := r.URL.Query().Get("limit")
 		search := r.URL.Query().Get("search")
 		hostAudit := r.URL.Query().Get("host")
@@ -312,7 +314,7 @@ func (api *Api) getHostLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) getAudit(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		limit := r.URL.Query().Get("limit")
 		search := r.URL.Query().Get("search")
 		returnJson(w, state.Audit.Query__AuditEvents(limit, search))
@@ -320,7 +322,7 @@ func (api *Api) getAudit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) getHostAudit(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		hostAudit := r.URL.Query().Get("host")
 		limit := r.URL.Query().Get("limit")
 		search := r.URL.Query().Get("search")
@@ -329,7 +331,7 @@ func (api *Api) getHostAudit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) getApplicationAudit(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		application := r.URL.Query().Get("application")
 		limit := r.URL.Query().Get("limit")
 		search := r.URL.Query().Get("search")
@@ -338,14 +340,14 @@ func (api *Api) getApplicationAudit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) getAppPerformance(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		application := r.URL.Query().Get("application")
 		returnJson(w, state.Stats.Query__ApplicationUtilisationStatistic(application))
 	}
 }
 
 func (api *Api) getAppHostPerformance(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		application := r.URL.Query().Get("application")
 		host := r.URL.Query().Get("host")
 		returnJson(w, state.Stats.Query__ApplicationHostUtilisationStatistic(application, host))
@@ -353,9 +355,16 @@ func (api *Api) getAppHostPerformance(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) getHostPerformance(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		host := r.URL.Query().Get("host")
 		returnJson(w, state.Stats.Query__HostUtilisationStatistic(host))
+	}
+}
+
+func (api *Api) getHostLatestPerformance(w http.ResponseWriter, r *http.Request) {
+	if api.authenticate_user(w, r) {
+		host := r.URL.Query().Get("host")
+		returnJson(w, state.Stats.Query__LatestHostUtilisationStatistic(host))
 	}
 }
 
@@ -377,13 +386,13 @@ func (api *Api) authenticate_user(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		if r.Method == "POST" {
 			var object configuration.GlobalSettings
 			decoder := json.NewDecoder(r.Body)
 			if err := decoder.Decode(&object); err == nil {
 				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-					Message:"Global configuration was modified",
+					Message: "Global configuration was modified",
 				})
 
 				api.configurationStore.GlobalSettings = object
@@ -396,13 +405,13 @@ func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) getAllProperties(w http.ResponseWriter, r *http.Request) {
-	if (api.authenticate_user(w, r)) {
+	if api.authenticate_user(w, r) {
 		if r.Method == "POST" {
 			var object model.PropertyGroup
 			decoder := json.NewDecoder(r.Body)
 			if err := decoder.Decode(&object); err == nil {
 				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-					Message:"Updated property group",
+					Message: "Updated property group",
 				})
 
 				object.Version = 0
@@ -433,7 +442,7 @@ func (api *Api) authenticate(w http.ResponseWriter, r *http.Request) {
 			api.sessions[token] = true
 
 			ar := AuthenticationResponse{
-				Token:token,
+				Token: token,
 			}
 			returnJson(w, ar)
 			return
