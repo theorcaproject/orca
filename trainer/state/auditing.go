@@ -19,17 +19,18 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package state
 
 import (
-	"time"
-	"gopkg.in/olivere/elastic.v5"
-	"golang.org/x/net/context"
-	"orca/trainer/logs"
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"orca/trainer/configuration"
+	"orca/trainer/logs"
 	"reflect"
 	"strconv"
-	"orca/trainer/configuration"
-	"bytes"
-	"net/http"
-	"encoding/json"
+	"time"
+
+	"golang.org/x/net/context"
+	"gopkg.in/olivere/elastic.v5"
 )
 
 type OrcaDb struct {
@@ -60,10 +61,10 @@ type AuditMessage string
 
 const (
 	AUDIT__ERROR = AuditSeverity("error")
-	AUDIT__INFO = AuditSeverity("info")
+	AUDIT__INFO  = AuditSeverity("info")
 	AUDIT__DEBUG = AuditSeverity("debug")
-	LOG__STDOUT = "stdout"
-	LOG__STDERR = "stderr"
+	LOG__STDOUT  = "stdout"
+	LOG__STDERR  = "stderr"
 
 	LOG_MAPPING = `{
                         "mappings" : {
@@ -128,7 +129,7 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 		return
 	}
 
-	if (event.Severity == AUDIT__ERROR) {
+	if event.Severity == AUDIT__ERROR {
 		logs.AuditLogger.Errorln(event.Message)
 	} else if event.Severity == AUDIT__INFO {
 		logs.AuditLogger.Infoln(event.Message)
@@ -319,6 +320,33 @@ func (db *OrcaDb) Query__AppLog(app string, limit string, search string) []LogEv
 	if len(search) > 0 {
 		q.Must(elastic.NewWildcardQuery("Message", search))
 	}
+
+	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
+	var logType LogEvent
+	var results []LogEvent
+	if err != nil {
+		fmt.Println(err)
+		return results
+	}
+	for _, item := range logsRes.Each(reflect.TypeOf(logType)) {
+		if t, ok := item.(LogEvent); ok {
+			results = append(results, t)
+		}
+	}
+	return results
+}
+func (db *OrcaDb) Query__AppLogTail(app string, limit string, search string, lasttime string) []LogEvent {
+	if !db.enabled {
+		return []LogEvent{}
+	}
+
+	limitInteger, _ := strconv.Atoi(limit)
+	q := elastic.NewBoolQuery()
+	q.Must(elastic.NewTermQuery("AppId", app))
+	if len(search) > 0 {
+		q.Must(elastic.NewWildcardQuery("Message", search))
+	}
+	q.Must(elastic.NewRangeQuery("lasttime").Gt(lasttime))
 
 	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent

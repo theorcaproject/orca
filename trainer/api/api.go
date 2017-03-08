@@ -80,6 +80,7 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r.HandleFunc("/state/cloud/logs", api.getAllLogs)
 	r.HandleFunc("/state/cloud/host/logs", api.getHostLogs)
 	r.HandleFunc("/state/cloud/application/logs", api.getApplicationLogs)
+	r.HandleFunc("/state/cloud/application/logs/tail", api.getApplicationLogsTail)
 
 	r.HandleFunc("/log", api.getLogs)
 	r.HandleFunc("/log/apps", api.pushLogs)
@@ -295,6 +296,17 @@ func (api *Api) getApplicationLogs(w http.ResponseWriter, r *http.Request) {
 		search := r.URL.Query().Get("search")
 
 		returnJson(w, state.Audit.Query__AppLog(application, limit, search))
+	}
+}
+
+func (api *Api) getApplicationLogsTail(w http.ResponseWriter, r *http.Request) {
+	if api.authenticate_user(w, r) {
+		application := r.URL.Query().Get("application")
+		limit := r.URL.Query().Get("limit")
+		search := r.URL.Query().Get("search")
+		lasttime := r.URL.Query().Get("lasttime")
+
+		returnJson(w, state.Audit.Query__AppLogTail(application, limit, search, lasttime))
 	}
 }
 
