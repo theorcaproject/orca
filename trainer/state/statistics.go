@@ -126,7 +126,7 @@ func (db *StatisticsDb) Insert__HostUtilisationStatistic(event HostUtilisationSt
 func (db *StatisticsDb) Query__ApplicationUtilisationStatistic(application string) []ApplicationUtilisationStatistic {
 	c := db.db.C("app_utilisation")
 	var results []ApplicationUtilisationStatistic
-	err := c.Find(bson.M{"appname": application}).Sort("-Timestamp").All(&results)
+	err := c.Find(bson.M{"appname": application}).Sort("-timestamp").All(&results)
 	if err != nil {
 		panic("error querying db")
 	}
@@ -137,7 +137,7 @@ func (db *StatisticsDb) Query__ApplicationUtilisationStatistic(application strin
 func (db *StatisticsDb) Query__HostUtilisationStatistic(host string) []HostUtilisationStatistic {
 	c := db.db.C("host_utilisation")
 	var results []HostUtilisationStatistic
-	err := c.Find(bson.M{"host": host}).Sort("-Timestamp").All(&results)
+	err := c.Find(bson.M{"host": host}).Sort("-timestamp").All(&results)
 	if err != nil {
 		panic("error querying db")
 	}
@@ -145,10 +145,10 @@ func (db *StatisticsDb) Query__HostUtilisationStatistic(host string) []HostUtili
 	return results
 }
 
-func (db *StatisticsDb) Query__LatestHostUtilisationStatistic(host string) []HostUtilisationStatistic {
+func (db *StatisticsDb) Query__LatestHostUtilisationStatistic(host string) HostUtilisationStatistic {
 	c := db.db.C("host_utilisation")
-	var results []HostUtilisationStatistic
-	err := c.Find(bson.M{"host": host}).Sort("-Timestamp").One(&results)
+	var results HostUtilisationStatistic
+	err := c.Find(bson.M{"host": host}).Sort("-timestamp").One(&results)
 	if err != nil {
 		panic("error querying db")
 	}
@@ -159,7 +159,7 @@ func (db *StatisticsDb) Query__LatestHostUtilisationStatistic(host string) []Hos
 func (db *StatisticsDb) Query__ApplicationHostUtilisationStatistic(application string, host string) []ApplicationHostUtilisationStatistic {
 	c := db.db.C("app_host_utilisation")
 	var results []ApplicationHostUtilisationStatistic
-	err := c.Find(bson.M{"host": host, "appname": application}).Sort("-Timestamp").All(&results)
+	err := c.Find(bson.M{"host": host, "appname": application}).Sort("-timestamp").All(&results)
 	if err != nil {
 		panic("error querying db")
 	}
