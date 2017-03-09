@@ -80,7 +80,6 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r.HandleFunc("/state/cloud/logs", api.getAllLogs)
 	r.HandleFunc("/state/cloud/host/logs", api.getHostLogs)
 	r.HandleFunc("/state/cloud/application/logs", api.getApplicationLogs)
-	r.HandleFunc("/state/cloud/application/logs/tail", api.getApplicationLogsTail)
 
 	r.HandleFunc("/log", api.getLogs)
 	r.HandleFunc("/log/apps", api.pushLogs)
@@ -255,7 +254,7 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) getLogs(w http.ResponseWriter, r *http.Request) {
 	if api.authenticate_user(w, r) {
-		returnJson(w, state.Audit.Query__HostLog("", "100", ""))
+		returnJson(w, state.Audit.Query__HostLog("", "100", "", ""))
 	}
 }
 
@@ -294,19 +293,9 @@ func (api *Api) getApplicationLogs(w http.ResponseWriter, r *http.Request) {
 		application := r.URL.Query().Get("application")
 		limit := r.URL.Query().Get("limit")
 		search := r.URL.Query().Get("search")
-
-		returnJson(w, state.Audit.Query__AppLog(application, limit, search))
-	}
-}
-
-func (api *Api) getApplicationLogsTail(w http.ResponseWriter, r *http.Request) {
-	if api.authenticate_user(w, r) {
-		application := r.URL.Query().Get("application")
-		limit := r.URL.Query().Get("limit")
-		search := r.URL.Query().Get("search")
 		lasttime := r.URL.Query().Get("lasttime")
 
-		returnJson(w, state.Audit.Query__AppLogTail(application, limit, search, lasttime))
+		returnJson(w, state.Audit.Query__AppLog(application, limit, search, lasttime))
 	}
 }
 
@@ -321,7 +310,8 @@ func (api *Api) getHostLogs(w http.ResponseWriter, r *http.Request) {
 		limit := r.URL.Query().Get("limit")
 		search := r.URL.Query().Get("search")
 		hostAudit := r.URL.Query().Get("host")
-		returnJson(w, state.Audit.Query__HostLog(hostAudit, limit, search))
+		lasttime := r.URL.Query().Get("lasttime")
+		returnJson(w, state.Audit.Query__HostLog(hostAudit, limit, search, lasttime))
 	}
 }
 
@@ -329,7 +319,8 @@ func (api *Api) getAudit(w http.ResponseWriter, r *http.Request) {
 	if api.authenticate_user(w, r) {
 		limit := r.URL.Query().Get("limit")
 		search := r.URL.Query().Get("search")
-		returnJson(w, state.Audit.Query__AuditEvents(limit, search))
+		lasttime := r.URL.Query().Get("lasttime")
+		returnJson(w, state.Audit.Query__AuditEvents(limit, search, lasttime))
 	}
 }
 
@@ -338,7 +329,8 @@ func (api *Api) getHostAudit(w http.ResponseWriter, r *http.Request) {
 		hostAudit := r.URL.Query().Get("host")
 		limit := r.URL.Query().Get("limit")
 		search := r.URL.Query().Get("search")
-		returnJson(w, state.Audit.Query__AuditEventsHost(hostAudit, limit, search))
+		lasttime := r.URL.Query().Get("lasttime")
+		returnJson(w, state.Audit.Query__AuditEventsHost(hostAudit, limit, search, lasttime))
 	}
 }
 
@@ -347,7 +339,8 @@ func (api *Api) getApplicationAudit(w http.ResponseWriter, r *http.Request) {
 		application := r.URL.Query().Get("application")
 		limit := r.URL.Query().Get("limit")
 		search := r.URL.Query().Get("search")
-		returnJson(w, state.Audit.Query__AuditEventsApplication(application, limit, search))
+		lasttime := r.URL.Query().Get("lasttime")
+		returnJson(w, state.Audit.Query__AuditEventsApplication(application, limit, search, lasttime))
 	}
 }
 

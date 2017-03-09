@@ -168,7 +168,7 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 	}
 }
 
-func (db *OrcaDb) Query__AuditEvents(limit string, search string) []AuditEvent {
+func (db *OrcaDb) Query__AuditEvents(limit string, search string, lasttime string) []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
@@ -176,6 +176,9 @@ func (db *OrcaDb) Query__AuditEvents(limit string, search string) []AuditEvent {
 	q := elastic.NewBoolQuery()
 	if len(search) > 0 {
 		q.Must(elastic.NewWildcardQuery("Message", search))
+	}
+	if len(lasttime) > 0 {
+		q.Must(elastic.NewRangeQuery("Timestamp").Gt(lasttime))
 	}
 	events, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
@@ -191,7 +194,7 @@ func (db *OrcaDb) Query__AuditEvents(limit string, search string) []AuditEvent {
 	return results
 }
 
-func (db *OrcaDb) Query__AuditEventsHost(host string, limit string, search string) []AuditEvent {
+func (db *OrcaDb) Query__AuditEventsHost(host string, limit string, search string, lasttime string) []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
@@ -200,6 +203,9 @@ func (db *OrcaDb) Query__AuditEventsHost(host string, limit string, search strin
 	q.Must(elastic.NewTermQuery("HostId", host))
 	if len(search) > 0 {
 		q.Must(elastic.NewWildcardQuery("Message", search))
+	}
+	if len(lasttime) > 0 {
+		q.Must(elastic.NewRangeQuery("Timestamp").Gt(lasttime))
 	}
 
 	auditRes, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
@@ -216,7 +222,7 @@ func (db *OrcaDb) Query__AuditEventsHost(host string, limit string, search strin
 	return results
 }
 
-func (db *OrcaDb) Query__AuditEventsApplication(application string, limit string, search string) []AuditEvent {
+func (db *OrcaDb) Query__AuditEventsApplication(application string, limit string, search string, lasttime string) []AuditEvent {
 	if !db.enabled {
 		return []AuditEvent{}
 	}
@@ -227,7 +233,9 @@ func (db *OrcaDb) Query__AuditEventsApplication(application string, limit string
 	if len(search) > 0 {
 		q.Must(elastic.NewWildcardQuery("Message", search))
 	}
-
+	if len(lasttime) > 0 {
+		q.Must(elastic.NewRangeQuery("Timestamp").Gt(lasttime))
+	}
 	auditRes, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var eventType AuditEvent
 	var results []AuditEvent
@@ -282,7 +290,7 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 	}
 }
 
-func (db *OrcaDb) Query__HostLog(host string, limit string, search string) []LogEvent {
+func (db *OrcaDb) Query__HostLog(host string, limit string, search string, lasttime string) []LogEvent {
 	if !db.enabled {
 		return []LogEvent{}
 	}
@@ -294,6 +302,9 @@ func (db *OrcaDb) Query__HostLog(host string, limit string, search string) []Log
 	if len(search) > 0 {
 		q.Must(elastic.NewWildcardQuery("Message", search))
 	}
+	if len(lasttime) > 0 {
+		q.Must(elastic.NewRangeQuery("Timestamp").Gt(lasttime))
+	}
 	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
 	var results []LogEvent
@@ -309,7 +320,7 @@ func (db *OrcaDb) Query__HostLog(host string, limit string, search string) []Log
 	return results
 }
 
-func (db *OrcaDb) Query__AppLog(app string, limit string, search string) []LogEvent {
+func (db *OrcaDb) Query__AppLog(app string, limit string, search string, lasttime string) []LogEvent {
 	if !db.enabled {
 		return []LogEvent{}
 	}
@@ -320,34 +331,9 @@ func (db *OrcaDb) Query__AppLog(app string, limit string, search string) []LogEv
 	if len(search) > 0 {
 		q.Must(elastic.NewWildcardQuery("Message", search))
 	}
-
-	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
-	var logType LogEvent
-	var results []LogEvent
-	if err != nil {
-		fmt.Println(err)
-		return results
+	if len(lasttime) > 0 {
+		q.Must(elastic.NewRangeQuery("Timestamp").Gt(lasttime))
 	}
-	for _, item := range logsRes.Each(reflect.TypeOf(logType)) {
-		if t, ok := item.(LogEvent); ok {
-			results = append(results, t)
-		}
-	}
-	return results
-}
-func (db *OrcaDb) Query__AppLogTail(app string, limit string, search string, lasttime string) []LogEvent {
-	if !db.enabled {
-		return []LogEvent{}
-	}
-
-	limitInteger, _ := strconv.Atoi(limit)
-	q := elastic.NewBoolQuery()
-	q.Must(elastic.NewTermQuery("AppId", app))
-	if len(search) > 0 {
-		q.Must(elastic.NewWildcardQuery("Message", search))
-	}
-	q.Must(elastic.NewRangeQuery("Timestamp").Gt(lasttime))
-
 	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
 	var results []LogEvent
