@@ -346,7 +346,7 @@ func (db *OrcaDb) Query__AppLogTail(app string, limit string, search string, las
 	if len(search) > 0 {
 		q.Must(elastic.NewWildcardQuery("Message", search))
 	}
-	q.Must(elastic.NewRangeQuery("lasttime").Gt(lasttime))
+	q.Must(elastic.NewRangeQuery("Timestamp").Gt(lasttime))
 
 	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
 	var logType LogEvent
