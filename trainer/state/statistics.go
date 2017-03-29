@@ -20,6 +20,7 @@ package state
 
 import (
 	"orca/trainer/configuration"
+	"orca/trainer/logs"
 	"time"
 
 	"gopkg.in/mgo.v2"
@@ -150,7 +151,8 @@ func (db *StatisticsDb) Query__LatestHostUtilisationStatistic(host string) HostU
 	var results HostUtilisationStatistic
 	err := c.Find(bson.M{"host": host}).Sort("-timestamp").One(&results)
 	if err != nil {
-		panic("error querying db")
+		logs.AuditLogger.Errorln(err)
+		return HostUtilisationStatistic{}
 	}
 
 	return results
