@@ -27,48 +27,51 @@ type ApiToken struct {
 }
 
 type AuditWebhook struct {
-	Uri string
+	Uri      string
 	Severity string
 }
 
 type LoggingWebHook struct {
-	Uri string
+	Uri         string
+	Certificate string
+	User        string
+	Password    string
 }
 
 type GlobalSettings struct {
-	ApiPort                int
-	LoggingPort            int
-	CloudProvider          string
-	AWSAccessKeyId         string
-	AWSAccessKeySecret     string
-	AWSRegion              string
-	AWSBaseAmi             string
-	AWSSSHKey              string
-	AWSSSHKeyPath          string
-	PlanningAlg            string
-	InstanceUsername       string
-	Uri                    string
-	LoggingUri             string
-	AWSSpotPrice           float64
-	InstanceType           string
-	SpotInstanceType       string
+	ApiPort            int
+	LoggingPort        int
+	CloudProvider      string
+	AWSAccessKeyId     string
+	AWSAccessKeySecret string
+	AWSRegion          string
+	AWSBaseAmi         string
+	AWSSSHKey          string
+	AWSSSHKeyPath      string
+	PlanningAlg        string
+	InstanceUsername   string
+	Uri                string
+	LoggingUri         string
+	AWSSpotPrice       float64
+	InstanceType       string
+	SpotInstanceType   string
 
 	AppChangeTimeout       int64
 	ServerChangeTimeout    int64
 	ServerTimeout          int64
 	HostChangeFailureLimit int64
 
-	Users                  map[string]User
-	HostToken              string
+	Users     map[string]User
+	HostToken string
 
-	ApiTokens		[]ApiToken
-	AuditWebhooks		[]AuditWebhook
-	LoggingWebHooks		[]LoggingWebHook
+	ApiTokens       []ApiToken
+	AuditWebhooks   []AuditWebhook
+	LoggingWebHooks []LoggingWebHook
 
-	AuditDatabaseUri	string
-	StatsDatabaseUri	string
+	AuditDatabaseUri string
+	StatsDatabaseUri string
 
-	EnvName			string
-	PlanningDisabled	bool
-	ServerTTL		int64
+	EnvName          string
+	PlanningDisabled bool
+	ServerTTL        int64
 }
