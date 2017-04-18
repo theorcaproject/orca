@@ -270,9 +270,11 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 		b := new(bytes.Buffer)
 		b.Write(j)
 		if err != nil {
-
+			logs.AuditLogger.Errorf("Error while sending to LoggingWebHook %s.  %+v", hook.Uri, err)
+		} else {
 			req, _ := http.NewRequest("PUT", hook.Uri, b)
 			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Region", db.configurationStore.GlobalSettings.AWSRegion)
 			if len(hook.User) > 0 && len(hook.Password) > 0 {
 				req.SetBasicAuth(hook.User, hook.Password)
 			}
@@ -283,7 +285,7 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 				certPool := x509.NewCertPool()
 				certPool.AppendCertsFromPEM([]byte(hook.Certificate))
 
-				transport.TLSClientConfig = &tls.Config{RootCAs: certPool, InsecureSkipVerify: false}
+				transport.TLSClientConfig = &tls.Config{RootCAs: certPool, InsecureSkipVerify: true}
 			}
 			var client = &http.Client{
 				Transport: transport,
