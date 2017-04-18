@@ -20,6 +20,8 @@ package state
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -268,14 +270,32 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 		b := new(bytes.Buffer)
 		b.Write(j)
 		if err != nil {
-			res, err := http.Post(hook.Uri, "application/json; charset=utf-8", b)
+
+			req, _ := http.NewRequest("PUT", hook.Uri, b)
+			req.Header.Set("Content-Type", "application/json")
+			if len(hook.User) > 0 && len(hook.Password) > 0 {
+				req.SetBasicAuth(hook.User, hook.Password)
+			}
+
+			var transport = &http.Transport{}
+
+			if len(hook.Certificate) > 0 {
+				certPool := x509.NewCertPool()
+				certPool.AppendCertsFromPEM([]byte(hook.Certificate))
+
+				transport.TLSClientConfig = &tls.Config{RootCAs: certPool, InsecureSkipVerify: false}
+			}
+			var client = &http.Client{
+				Transport: transport,
+			}
+
+			res, err := client.Do(req)
 			if err != nil {
 				logs.AuditLogger.Errorf("Could not send event to webhook: %+v", err)
 			} else {
 				defer res.Body.Close()
 			}
 		}
-
 	}
 
 	log.Timestamp = time.Now()
