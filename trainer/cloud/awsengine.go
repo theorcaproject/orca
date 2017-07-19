@@ -469,7 +469,7 @@ func (engine *AwsCloudEngine) RemoveNameTag(newHostId string, appName string) {
 func (engine *AwsCloudEngine) BackupConfiguration(configuration string) bool {
 	uploader := s3manager.NewUploader(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 	reader := strings.NewReader(configuration)
-	key := time.Now().Format("2006/01/02/150405/") + "trainer.conf"
+	key := time.Now().Format("/2006/01/02/150405/") + "trainer.conf"
 	_, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(engine.trainerConfigBackupBucket),
 		Key:    aws.String(key),
