@@ -20,6 +20,7 @@ package state
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -27,16 +28,18 @@ import (
 	"net/http"
 	"orca/trainer/configuration"
 	"orca/trainer/logs"
-	"reflect"
 	"strconv"
 	"time"
 
-	"golang.org/x/net/context"
-	"gopkg.in/olivere/elastic.v5"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
+	elastic "gopkg.in/olivere/elastic.v5"
 )
 
 type OrcaDb struct {
 	enabled            bool
+	session            *mgo.Session
+	db                 *mgo.Database
 	client             *elastic.Client
 	ctx                context.Context
 	configurationStore *configuration.ConfigurationStore
@@ -95,7 +98,6 @@ const (
 
 var Audit OrcaDb
 
-//"http://127.0.0.1:9200"
 func (a *OrcaDb) Init(configurationStore *configuration.ConfigurationStore) {
 	a.configurationStore = configurationStore
 	if configurationStore.GlobalSettings.AuditDatabaseUri == "" {
@@ -103,27 +105,31 @@ func (a *OrcaDb) Init(configurationStore *configuration.ConfigurationStore) {
 		return
 	}
 	a.enabled = true
-	ctx := context.Background()
-	a.ctx = ctx
-	cli, err := elastic.NewClient(elastic.SetURL(configurationStore.GlobalSettings.AuditDatabaseUri))
+	session, err := mgo.Dial(a.configurationStore.GlobalSettings.StatsDatabaseUri)
 	if err != nil {
-		fmt.Println("Cloud not connect to elasticsearch")
 		panic(err)
 	}
-	a.client = cli
-	exists, _ := a.client.IndexExists("audit").Do(ctx)
-	if !exists {
-		a.client.CreateIndex("audit").Body(AUDIT_MAPPING).Do(ctx)
-	}
 
-	existsLogs, _ := a.client.IndexExists("logs").Do(ctx)
-	if !existsLogs {
-		a.client.CreateIndex("logs").Body(LOG_MAPPING).Do(ctx)
-	}
+	a.session = session
+	a.db = session.DB("orca")
 
+	indexTTL := mgo.Index{
+		Key:         []string{"timestamp"},
+		Unique:      false,
+		DropDups:    false,
+		Background:  true,
+		ExpireAfter: time.Hour * 24}
+
+	if err := a.db.C("audit").EnsureIndex(indexTTL); err != nil {
+		panic(err)
+	}
+	if err := a.db.C("logs").EnsureIndex(indexTTL); err != nil {
+		panic(err)
+	}
 }
 
 func (a *OrcaDb) Close() {
+	a.session.Close()
 }
 
 func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
@@ -154,19 +160,33 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 		}
 	}
 
-	if db.client == nil {
-		return
+	event.Timestamp = time.Now()
+	c := db.db.C("audit")
+	if err := c.Insert(&event); err != nil {
+		fmt.Println(err)
+	}
+}
+
+func (db *OrcaDb) query(collection string, results interface{}, appid string, hostid string, limit string, search string, lasttime string) {
+	limitInteger, _ := strconv.Atoi(limit)
+	c := db.db.C(collection)
+	conditions := make(bson.M, 0)
+	if len(hostid) > 0 {
+		conditions["hostid"] = hostid
+	}
+	if len(appid) > 0 {
+		conditions["appid"] = appid
+	}
+	if len(search) > 0 {
+		conditions["message"] = bson.RegEx{Pattern: search, Options: "i"}
+	}
+	if len(lasttime) > 0 {
+		lt, _ := time.Parse("2006-01-02T15:04:05.999Z", lasttime)
+		conditions["timestamp"] = bson.M{"$gt": lt}
 	}
 
-	event.Timestamp = time.Now()
-	_, err := db.client.Index().
-		Index("audit").
-		Type("event").
-		BodyJson(event).
-		TTL("24h").
-		Do(db.ctx)
-	if err != nil {
-		fmt.Println(err)
+	if err := c.Find(conditions).Sort("-timestamp").Limit(limitInteger).All(results); err != nil {
+		panic("error querying db")
 	}
 }
 
@@ -174,25 +194,8 @@ func (db *OrcaDb) Query__AuditEvents(limit string, search string, lasttime strin
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	limitInteger, _ := strconv.Atoi(limit)
-	q := elastic.NewBoolQuery()
-	if len(search) > 0 {
-		q.Must(elastic.NewWildcardQuery("Message", search))
-	}
-	if len(lasttime) > 0 {
-		q.Must(elastic.NewRangeQuery("Timestamp").Gt(lasttime))
-	}
-	events, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
-	var eventType AuditEvent
 	var results []AuditEvent
-	if err != nil {
-		return results
-	}
-	for _, item := range events.Each(reflect.TypeOf(eventType)) {
-		if t, ok := item.(AuditEvent); ok {
-			results = append(results, t)
-		}
-	}
+	db.query("audit", &results, "", "", limit, search, lasttime)
 	return results
 }
 
@@ -200,27 +203,8 @@ func (db *OrcaDb) Query__AuditEventsHost(host string, limit string, search strin
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-	limitInteger, _ := strconv.Atoi(limit)
-	q := elastic.NewBoolQuery()
-	q.Must(elastic.NewTermQuery("HostId", host))
-	if len(search) > 0 {
-		q.Must(elastic.NewWildcardQuery("Message", search))
-	}
-	if len(lasttime) > 0 {
-		q.Must(elastic.NewRangeQuery("Timestamp").Gt(lasttime))
-	}
-
-	auditRes, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
-	var eventType AuditEvent
 	var results []AuditEvent
-	if err != nil {
-		return results
-	}
-	for _, item := range auditRes.Each(reflect.TypeOf(eventType)) {
-		if t, ok := item.(AuditEvent); ok {
-			results = append(results, t)
-		}
-	}
+	db.query("audit", &results, host, "", limit, search, lasttime)
 	return results
 }
 
@@ -228,27 +212,8 @@ func (db *OrcaDb) Query__AuditEventsApplication(application string, limit string
 	if !db.enabled {
 		return []AuditEvent{}
 	}
-
-	limitInteger, _ := strconv.Atoi(limit)
-	q := elastic.NewBoolQuery()
-	q.Must(elastic.NewTermQuery("AppId", application))
-	if len(search) > 0 {
-		q.Must(elastic.NewWildcardQuery("Message", search))
-	}
-	if len(lasttime) > 0 {
-		q.Must(elastic.NewRangeQuery("Timestamp").Gt(lasttime))
-	}
-	auditRes, err := db.client.Search().Index("audit").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
-	var eventType AuditEvent
 	var results []AuditEvent
-	if err != nil {
-		return results
-	}
-	for _, item := range auditRes.Each(reflect.TypeOf(eventType)) {
-		if t, ok := item.(AuditEvent); ok {
-			results = append(results, t)
-		}
-	}
+	db.query("audit", &results, "", application, limit, search, lasttime)
 	return results
 }
 
@@ -299,15 +264,9 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 			}
 		}
 	}
-
 	log.Timestamp = time.Now()
-	_, err := db.client.Index().
-		Index("logs").
-		Type("log").
-		BodyJson(log).
-		TTL("24h").
-		Do(db.ctx)
-	if err != nil {
+	c := db.db.C("logs")
+	if err := c.Insert(&log); err != nil {
 		fmt.Println(err)
 	}
 }
@@ -316,29 +275,8 @@ func (db *OrcaDb) Query__HostLog(host string, limit string, search string, lastt
 	if !db.enabled {
 		return []LogEvent{}
 	}
-
-	limitInteger, _ := strconv.Atoi(limit)
-	q := elastic.NewBoolQuery()
-	q.Must(elastic.NewTermQuery("HostId", host))
-
-	if len(search) > 0 {
-		q.Must(elastic.NewWildcardQuery("Message", search))
-	}
-	if len(lasttime) > 0 {
-		q.Must(elastic.NewRangeQuery("Timestamp").Gt(lasttime))
-	}
-	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
-	var logType LogEvent
 	var results []LogEvent
-	if err != nil {
-		fmt.Println(err)
-		return results
-	}
-	for _, item := range logsRes.Each(reflect.TypeOf(logType)) {
-		if t, ok := item.(LogEvent); ok {
-			results = append(results, t)
-		}
-	}
+	db.query("logs", &results, host, "", limit, search, lasttime)
 	return results
 }
 
@@ -346,27 +284,7 @@ func (db *OrcaDb) Query__AppLog(app string, limit string, search string, lasttim
 	if !db.enabled {
 		return []LogEvent{}
 	}
-
-	limitInteger, _ := strconv.Atoi(limit)
-	q := elastic.NewBoolQuery()
-	q.Must(elastic.NewTermQuery("AppId", app))
-	if len(search) > 0 {
-		q.Must(elastic.NewWildcardQuery("Message", search))
-	}
-	if len(lasttime) > 0 {
-		q.Must(elastic.NewRangeQuery("Timestamp").Gt(lasttime))
-	}
-	logsRes, err := db.client.Search().Index("logs").Query(q).Sort("Timestamp", false).Size(limitInteger).Do(db.ctx)
-	var logType LogEvent
 	var results []LogEvent
-	if err != nil {
-		fmt.Println(err)
-		return results
-	}
-	for _, item := range logsRes.Each(reflect.TypeOf(logType)) {
-		if t, ok := item.(LogEvent); ok {
-			results = append(results, t)
-		}
-	}
+	db.query("logs", &results, "", app, limit, search, lasttime)
 	return results
 }
