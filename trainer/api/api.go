@@ -105,6 +105,11 @@ func returnJson(w http.ResponseWriter, obj interface{}) {
 	w.Write(j)
 }
 
+func (api *Api) persistConfiguration() {
+	api.configurationStore.Save()
+	api.cloudProvider.BackupConfiguration(api.configurationStore.GetConfigAsString())
+}
+
 func (api *Api) getAllConfiguration(w http.ResponseWriter, r *http.Request) {
 	if api.authenticate_user(w, r) {
 		returnJson(w, api.configurationStore.GetAllConfiguration())
@@ -137,7 +142,7 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 				application.DeploymentSchedule = object.DeploymentSchedule
 				application.PropertyGroups = object.PropertyGroups
 				application.ScheduleParts = object.ScheduleParts
-				api.configurationStore.Save()
+				api.persistConfiguration()
 			}
 
 		}
@@ -169,7 +174,7 @@ func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.Res
 						AppId:   applicationName,
 					})
 
-					api.configurationStore.Save()
+					api.persistConfiguration()
 				}
 			}
 
@@ -401,7 +406,7 @@ func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
 				})
 
 				api.configurationStore.GlobalSettings = object
-				api.configurationStore.Save()
+				api.persistConfiguration()
 			}
 		}
 
@@ -425,7 +430,7 @@ func (api *Api) getAllProperties(w http.ResponseWriter, r *http.Request) {
 				}
 
 				api.configurationStore.Properties[object.Name] = &object
-				api.configurationStore.Save()
+				api.persistConfiguration()
 			}
 		}
 

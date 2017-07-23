@@ -19,37 +19,37 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package cloud
 
 import (
-	"os"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/aws"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/elb"
-	"strconv"
-	"time"
-
 	"orca/trainer/model"
 	"orca/trainer/state"
+	"os"
+	"strconv"
 	"strings"
+	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/elb"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 type AwsCloudEngine struct {
-	awsAccessKeyId     string
-	awsAccessKeySecret string
-	awsRegion          string
-	awsBaseAmi         string
-	sshKey             string
-	sshKeyPath         string
-	spotPrice          float64
-
-	instanceType       string
-	spotInstanceType   string
+	awsAccessKeyId            string
+	awsAccessKeySecret        string
+	awsRegion                 string
+	awsBaseAmi                string
+	sshKey                    string
+	sshKeyPath                string
+	spotPrice                 float64
+	instanceType              string
+	spotInstanceType          string
+	trainerConfigBackupBucket string
 }
 
 func (aws *AwsCloudEngine) Init(awsAccessKeyId string, awsAccessKeySecret string, awsRegion string, awsBaseAmi string,
-sshKey string, sshKeyPath string, spotPrice float64, instanceType string, spotInstanceType string) {
-
+	sshKey string, sshKeyPath string, spotPrice float64, instanceType string, spotInstanceType string, trainerConfigBackupBucket string) {
 
 	aws.awsAccessKeySecret = awsAccessKeySecret
 	aws.awsAccessKeyId = awsAccessKeyId
@@ -60,6 +60,7 @@ sshKey string, sshKeyPath string, spotPrice float64, instanceType string, spotIn
 	aws.spotPrice = spotPrice
 	aws.instanceType = instanceType
 	aws.spotInstanceType = spotInstanceType
+	aws.trainerConfigBackupBucket = trainerConfigBackupBucket
 
 	//TODO: This is amazingly shitty, but because the aws api sucks and I have no patience its the approach for now
 	os.Setenv("AWS_ACCESS_KEY_ID", aws.awsAccessKeyId)
@@ -68,7 +69,7 @@ sshKey string, sshKeyPath string, spotPrice float64, instanceType string, spotIn
 
 func (a *AwsCloudEngine) getInstanceInfo(hostId HostId) (*ec2.Instance, error) {
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.awsRegion)}))
-	res, err := svc.DescribeInstances(&ec2.DescribeInstancesInput{InstanceIds: aws.StringSlice([]string{string(hostId)}), })
+	res, err := svc.DescribeInstances(&ec2.DescribeInstancesInput{InstanceIds: aws.StringSlice([]string{string(hostId)})})
 	if err != nil {
 		return &ec2.Instance{}, err
 	}
@@ -80,14 +81,14 @@ func (a *AwsCloudEngine) getInstanceInfo(hostId HostId) (*ec2.Instance, error) {
 
 func (a *AwsCloudEngine) GetIp(hostId string) string {
 	info, err := a.getInstanceInfo(HostId(hostId))
-	if err != nil || info == nil || (info.PublicIpAddress == nil && info.PrivateIpAddress == nil ){
+	if err != nil || info == nil || (info.PublicIpAddress == nil && info.PrivateIpAddress == nil) {
 		return ""
 	}
 
-	var ipAddress *string;
+	var ipAddress *string
 	if info.PublicIpAddress != nil {
 		ipAddress = info.PublicIpAddress
-	}else if info.PrivateIpAddress != nil {
+	} else if info.PrivateIpAddress != nil {
 		ipAddress = info.PrivateIpAddress
 	}
 
@@ -106,17 +107,17 @@ func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.Sec
 
 	isSpot := false
 	spotId := ""
-	if (info.InstanceLifecycle != nil){
+	if info.InstanceLifecycle != nil {
 		isSpot = string(*info.InstanceLifecycle) == "spot"
 		if isSpot {
 			spotId = string(*info.SpotInstanceRequestId)
 		}
 	}
 
-	var ipAddress *string;
+	var ipAddress *string
 	if info.PublicIpAddress != nil {
 		ipAddress = info.PublicIpAddress
-	}else if info.PrivateIpAddress != nil {
+	} else if info.PrivateIpAddress != nil {
 		ipAddress = info.PrivateIpAddress
 	}
 
@@ -126,12 +127,11 @@ func (a *AwsCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.Sec
 func (a *AwsCloudEngine) waitOnInstanceReady(hostId HostId) bool {
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(a.awsRegion)}))
 
-	if err := svc.WaitUntilInstanceRunning(&ec2.DescribeInstancesInput{InstanceIds: aws.StringSlice([]string{string(hostId)}), }); err != nil {
+	if err := svc.WaitUntilInstanceRunning(&ec2.DescribeInstancesInput{InstanceIds: aws.StringSlice([]string{string(hostId)})}); err != nil {
 		fmt.Println("WaitOnInstanceReady for %s failed: %s", hostId, err)
 	}
 	return true
 }
-
 
 func (engine *AwsCloudEngine) SpawnInstanceSync(change *model.ChangeServer) *model.Host {
 	securityGroupsStrings := make([]string, 0)
@@ -150,7 +150,7 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(change *model.ChangeServer) *mod
 		conf.SubnetId = aws.String(change.Network)
 	}
 	if len(change.SecurityGroups) > 0 {
-		for _, grp := range change.SecurityGroups{
+		for _, grp := range change.SecurityGroups {
 			securityGroupsStrings = append(securityGroupsStrings, grp.Group)
 		}
 		conf.SecurityGroupIds = aws.StringSlice(securityGroupsStrings)
@@ -172,9 +172,9 @@ func (engine *AwsCloudEngine) SpawnInstanceSync(change *model.ChangeServer) *mod
 	}
 
 	host := &model.Host{
-		Id: string(id),
+		Id:             string(id),
 		SecurityGroups: change.SecurityGroups,
-		Network: change.Network,
+		Network:        change.Network,
 	}
 	return host
 }
@@ -220,7 +220,7 @@ func (engine *AwsCloudEngine) DeRegisterWithLb(hostId string, lbId string) {
 	svc := elb.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 
 	params := &elb.DeregisterInstancesFromLoadBalancerInput{
-		Instances: []*elb.Instance{{InstanceId: aws.String(string(hostId))}},
+		Instances:        []*elb.Instance{{InstanceId: aws.String(string(hostId))}},
 		LoadBalancerName: aws.String(string(lbId)),
 	}
 	_, err := svc.DeregisterInstancesFromLoadBalancer(params)
@@ -241,15 +241,15 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(change *model.ChangeServer) 
 			KeyName:      &engine.sshKey,
 		},
 
-		Type: aws.String("one-time"),
+		Type:          aws.String("one-time"),
 		InstanceCount: aws.Int64(1),
-		SpotPrice: aws.String(strconv.FormatFloat(float64(engine.spotPrice), 'f', 4, 32)),
+		SpotPrice:     aws.String(strconv.FormatFloat(float64(engine.spotPrice), 'f', 4, 32)),
 	}
 
-	if change.Network!= "" {
+	if change.Network != "" {
 		params.LaunchSpecification.SubnetId = aws.String(change.Network)
 	}
-	if len(change.SecurityGroups) >0 {
+	if len(change.SecurityGroups) > 0 {
 		for _, grp := range change.SecurityGroups {
 			securityGroupsStrings = append(securityGroupsStrings, grp.Group)
 		}
@@ -267,7 +267,7 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(change *model.ChangeServer) 
 	if len(runResult.SpotInstanceRequests) == 1 {
 		change.SpotInstanceId = (*runResult.SpotInstanceRequests[0].SpotInstanceRequestId)
 
-		time.Sleep(2* time.Second)
+		time.Sleep(2 * time.Second)
 		var hostId HostId
 		for {
 			hostId, err := engine.GetSpotInstanceHostId(change.SpotInstanceId)
@@ -279,10 +279,10 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(change *model.ChangeServer) 
 				time.Sleep(2 * time.Second)
 				continue
 			}
-			return  &model.Host{
-				Id: string(hostId),
+			return &model.Host{
+				Id:             string(hostId),
 				SecurityGroups: change.SecurityGroups,
-				Network: change.Network,
+				Network:        change.Network,
 				SpotInstanceId: change.SpotInstanceId,
 			}
 		}
@@ -293,11 +293,11 @@ func (engine *AwsCloudEngine) SpawnSpotInstanceSync(change *model.ChangeServer) 
 			})
 			return &model.Host{}
 		}
-		return  &model.Host{
-			Id: string(hostId),
+		return &model.Host{
+			Id:             string(hostId),
 			SecurityGroups: change.SecurityGroups,
-			Network: change.Network,
-			SpotInstanceId:change.SpotInstanceId,
+			Network:        change.Network,
+			SpotInstanceId: change.SpotInstanceId,
 		}
 	}
 	return &model.Host{}
@@ -346,7 +346,7 @@ func (engine *AwsCloudEngine) doSanityCheck(host *model.Host) {
 		host.Network = network
 		host.SpotInstance = isSpot
 		host.SecurityGroups = securityGroups
-		host.SpotInstanceId= spotId
+		host.SpotInstanceId = spotId
 	}
 }
 
@@ -375,14 +375,14 @@ func (engine *AwsCloudEngine) WasSpotInstanceTerminatedDueToPrice(spotRequestId 
 		},
 	}
 
-	req, resp:= svc.DescribeSpotInstanceRequestsRequest(params)
+	req, resp := svc.DescribeSpotInstanceRequestsRequest(params)
 	req.Send()
 
 	if req.Error != nil {
 		return false, ""
 	}
 
-	for _, instance := range resp.SpotInstanceRequests{
+	for _, instance := range resp.SpotInstanceRequests {
 		reason := (*instance.Status.Code)
 		if reason == "instance-terminated-by-price" {
 			return true, reason
@@ -408,7 +408,7 @@ func (engine *AwsCloudEngine) GetTag(tagKey string, newHostId string) string {
 	name := string("resource-id")
 	values := make([]*string, 1)
 	values[0] = &newHostId
-	filters[0]= &ec2.Filter{Name: &name, Values: values}
+	filters[0] = &ec2.Filter{Name: &name, Values: values}
 
 	tags, err := svc.DescribeTags(&ec2.DescribeTagsInput{
 		Filters: filters,
@@ -426,7 +426,6 @@ func (engine *AwsCloudEngine) GetTag(tagKey string, newHostId string) string {
 	return ""
 }
 
-
 func (engine *AwsCloudEngine) SetTag(newHostId string, tagKey string, tagValue string) {
 	svc := ec2.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
 
@@ -437,14 +436,13 @@ func (engine *AwsCloudEngine) SetTag(newHostId string, tagKey string, tagValue s
 	resouces[0] = &newHostId
 
 	tags := make([]*ec2.Tag, 1)
-	tags[0] = &ec2.Tag{Key:&name, Value: &value}
+	tags[0] = &ec2.Tag{Key: &name, Value: &value}
 
 	svc.CreateTags(&ec2.CreateTagsInput{
 		Resources: resouces,
-		Tags: tags,
+		Tags:      tags,
 	})
 }
-
 
 func (engine *AwsCloudEngine) AddNameTag(newHostId string, appName string) {
 	currentTag := engine.GetTag("Name", newHostId)
@@ -453,7 +451,6 @@ func (engine *AwsCloudEngine) AddNameTag(newHostId string, appName string) {
 
 	engine.SetTag(newHostId, "Name", strings.Join(splices, "_"))
 }
-
 
 func (engine *AwsCloudEngine) RemoveNameTag(newHostId string, appName string) {
 	newTags := make([]string, 0)
@@ -467,4 +464,20 @@ func (engine *AwsCloudEngine) RemoveNameTag(newHostId string, appName string) {
 	}
 
 	engine.SetTag(newHostId, "Name", strings.Join(newTags, "_"))
+}
+
+func (engine *AwsCloudEngine) BackupConfiguration(configuration string) bool {
+	uploader := s3manager.NewUploader(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+	reader := strings.NewReader(configuration)
+	key := time.Now().Format("/2006/01/02/150405/") + "trainer.conf"
+	_, err := uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(engine.trainerConfigBackupBucket),
+		Key:    aws.String(key),
+		Body:   reader,
+	})
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+	return true
 }

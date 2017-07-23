@@ -39,22 +39,23 @@ type LoggingWebHook struct {
 }
 
 type GlobalSettings struct {
-	ApiPort            int
-	LoggingPort        int
-	CloudProvider      string
-	AWSAccessKeyId     string
-	AWSAccessKeySecret string
-	AWSRegion          string
-	AWSBaseAmi         string
-	AWSSSHKey          string
-	AWSSSHKeyPath      string
-	PlanningAlg        string
-	InstanceUsername   string
-	Uri                string
-	LoggingUri         string
-	AWSSpotPrice       float64
-	InstanceType       string
-	SpotInstanceType   string
+	ApiPort                   int
+	LoggingPort               int
+	CloudProvider             string
+	AWSAccessKeyId            string
+	AWSAccessKeySecret        string
+	AWSRegion                 string
+	AWSBaseAmi                string
+	AWSSSHKey                 string
+	AWSSSHKeyPath             string
+	PlanningAlg               string
+	InstanceUsername          string
+	Uri                       string
+	LoggingUri                string
+	AWSSpotPrice              float64
+	InstanceType              string
+	SpotInstanceType          string
+	TrainerConfigBackupBucket string
 
 	AppChangeTimeout       int64
 	ServerChangeTimeout    int64

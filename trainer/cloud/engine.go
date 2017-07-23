@@ -26,23 +26,18 @@ type HostId string
 type CloudEngine interface {
 	SpawnInstanceSync(change *model.ChangeServer) *model.Host
 	SpawnSpotInstanceSync(change *model.ChangeServer) *model.Host
-
 	GetInstanceType(HostId) InstanceType
 	TerminateInstance(HostId) bool
 	GetHostInfo(HostId) (string, string, []model.SecurityGroup, bool, string)
 	WasSpotInstanceTerminatedDueToPrice(spotRequestId string) (bool, string)
-
 	GetIp(hostId string) string
-
 	GetPem() string
 	RegisterWithLb(hostId string, elb string)
 	DeRegisterWithLb(hostId string, elb string)
 	SanityCheckHosts(map[string]*model.Host)
-
 	AddNameTag(newHostId string, appName string)
 	RemoveNameTag(newHostId string, appName string)
-
 	SetTag(newHostId string, tagKey string, tagValue string)
 	GetTag(tagKey string, newHostId string) string
+	BackupConfiguration(configuration string) bool
 }
-
