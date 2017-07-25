@@ -64,6 +64,7 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r.HandleFunc("/properties", api.getAllProperties)
 	r.HandleFunc("/config", api.getAllConfiguration)
 	r.HandleFunc("/config/applications", api.getAllConfigurationApplications)
+	r.HandleFunc("/config/applications/status", api.getAllConfigurationApplications_Status)
 	r.HandleFunc("/config/applications/configuration/latest", api.getAllConfigurationApplications_Configurations_Latest)
 	r.HandleFunc("/state", api.getAllRunningState)
 	r.HandleFunc("/checkin", api.hostCheckin)
@@ -113,6 +114,26 @@ func (api *Api) persistConfiguration() {
 func (api *Api) getAllConfiguration(w http.ResponseWriter, r *http.Request) {
 	if api.authenticate_user(w, r) {
 		returnJson(w, api.configurationStore.GetAllConfiguration())
+	}
+}
+
+func (api *Api) getAllConfigurationApplications_Status(w http.ResponseWriter, r *http.Request) {
+	if api.authenticate_user(w, r) {
+		listOfApplications := []*model.ApplicationConfiguration{}
+		for _, application := range api.configurationStore.GetAllConfiguration() {
+			var app_stats = &model.ApplicationConfiguration{}
+			app_stats.Name = application.Name
+			app_stats.MinDeployment = application.MinDeployment
+			app_stats.DesiredDeployment = application.DesiredDeployment
+			app_stats.DisableSchedule = application.DisableSchedule
+			app_stats.DeploymentSchedule = application.DeploymentSchedule
+			app_stats.ScheduleParts = application.ScheduleParts
+			app_stats.Enabled = application.Enabled
+			app_stats.Publish = application.Publish
+			app_stats.PropertyGroups = application.PropertyGroups
+			listOfApplications = append(listOfApplications, app_stats)
+		}
+		returnJson(w, listOfApplications)
 	}
 }
 
