@@ -165,7 +165,15 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 				application.ScheduleParts = object.ScheduleParts
 				api.persistConfiguration()
 			}
-
+		} else if r.Method == "DELETE" {
+			applicationName := r.URL.Query().Get("application")
+			application, err := api.configurationStore.GetConfiguration(applicationName)
+			if err == nil && !application.Enabled {
+				api.configurationStore.Remove(applicationName)
+				api.persistConfiguration()
+			} else {
+				fmt.Println(err)
+			}
 		}
 
 		listOfApplications := []*model.ApplicationConfiguration{}

@@ -111,6 +111,10 @@ func (store *ConfigurationStore) Add(name string, config *model.ApplicationConfi
 	return config
 }
 
+func (store *ConfigurationStore) Remove(name string) {
+	delete(store.ApplicationConfigurations, name)
+}
+
 func (store *ConfigurationStore) saveConfigToFile(filename string) {
 	res, err := json.MarshalIndent(store, "", "  ")
 	if err != nil {
