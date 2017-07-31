@@ -189,7 +189,9 @@ func (store *ConfigurationStore) RequestPublishConfiguration(config *model.Appli
 
 	for _, templateName := range config.PropertyGroups {
 		templateObject := store.Properties[templateName.Name]
-		publishedConfiguration.ApplyPropertyGroup(templateName.Name, templateObject)
+		if templateObject != nil {
+			publishedConfiguration.ApplyPropertyGroup(templateName.Name, templateObject)
+		}
 	}
 
 	if config.PublishedConfig == nil {
