@@ -19,13 +19,15 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package util
 
 import (
-ssh "golang.org/x/crypto/ssh"
-"fmt"
-log "orca/util/log"
-"github.com/Sirupsen/logrus"
-"io"
-"time"
-"io/ioutil"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net"
+	log "orca/util/log"
+	"time"
+
+	"github.com/Sirupsen/logrus"
+	ssh "golang.org/x/crypto/ssh"
 )
 
 const (
@@ -50,9 +52,12 @@ func Connect(sshUser string, hostAndPort string, sshKey string) (*ssh.Client, st
 
 	SSHLogger.Info("Connecting...")
 	sshConfig := &ssh.ClientConfig{
-		User: sshUser,
-		Auth: []ssh.AuthMethod{ssh.PublicKeys(signer)},
+		User:    sshUser,
+		Auth:    []ssh.AuthMethod{ssh.PublicKeys(signer)},
 		Timeout: time.Second * 3,
+		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+			return nil
+		},
 	}
 
 	var connection *ssh.Client
@@ -97,7 +102,7 @@ func accquireSession(connection *ssh.Client, SSHLogger *logrus.Entry, stdWriter 
 	return session
 }
 
-func doExecuteSshCommand(conn *ssh.Client, addr string, cmd string) bool{
+func doExecuteSshCommand(conn *ssh.Client, addr string, cmd string) bool {
 	var SSHLogger = log.LoggerWithField(log.LoggerWithField(log.AuditLogger, "Type", "ssh"), "target", addr)
 	SSHLogger.Info(fmt.Sprintf("Executing command: [%s]", cmd))
 	stdWriter := SSHLogger.Logger.Writer()
