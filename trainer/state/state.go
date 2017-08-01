@@ -20,20 +20,20 @@ package state
 
 import (
 	"errors"
-	"time"
-	"orca/trainer/model"
 	"fmt"
 	"orca/trainer/configuration"
+	"orca/trainer/model"
+	"time"
 )
 
 type StateStore struct {
-	hosts              map[string]*model.Host;
-	configurationStore *configuration.ConfigurationStore;
+	hosts              map[string]*model.Host
+	configurationStore *configuration.ConfigurationStore
 }
 
 func (store *StateStore) Init(configurationStore *configuration.ConfigurationStore) {
-	store.configurationStore = configurationStore;
-	store.hosts = make(map[string]*model.Host);
+	store.configurationStore = configurationStore
+	store.hosts = make(map[string]*model.Host)
 }
 
 func (store *StateStore) Add(hostId string, host *model.Host) {
@@ -42,9 +42,9 @@ func (store *StateStore) Add(hostId string, host *model.Host) {
 
 func (store *StateStore) GetConfiguration(hostId string) (*model.Host, error) {
 	if app, ok := store.hosts[hostId]; ok {
-		return app, nil;
+		return app, nil
 	}
-	return nil, errors.New("Could not ");
+	return nil, errors.New("Could not ")
 }
 
 func (store *StateStore) GetAllHosts() map[string]*model.Host {
@@ -79,7 +79,11 @@ func (store *StateStore) HostInit(host *model.Host) {
 }
 
 func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDataPackage) (*model.Host, error) {
-	host, _ := store.GetConfiguration(hostId)
+	host, err := store.GetConfiguration(hostId)
+
+	if err != nil {
+		return nil, err
+	}
 
 	for change, contains := range checkin.ChangesApplied {
 		if contains {
@@ -88,15 +92,15 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 				if changeObject.Type == "add_application" {
 					Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 						Message: fmt.Sprintf("Application %s was installed on host %s", changeObject.Name, changeObject.HostId),
-						HostId: hostId,
-						AppId: changeObject.Name,
+						HostId:  hostId,
+						AppId:   changeObject.Name,
 					})
 
 				} else if changeObject.Type == "remove_application" {
 					Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 						Message: fmt.Sprintf("Application %s was uninstalled from host %s", changeObject.Name, changeObject.HostId),
-						HostId: hostId,
-						AppId: changeObject.Name,
+						HostId:  hostId,
+						AppId:   changeObject.Name,
 					})
 				}
 
@@ -111,7 +115,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 	if host.State == "initializing" {
 		Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 			Message: fmt.Sprintf("Server %s state changed to running", hostId),
-			HostId: hostId,
+			HostId:  hostId,
 		})
 		host.State = "running"
 	}
@@ -133,7 +137,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 						Message: fmt.Sprintf("Application %s was updated from version %s to version %s on host %s",
 							appStateFromHost.Name, oldAppState.Version, appStateFromHost.Application.Version, hostId),
 						HostId: hostId,
-						AppId: appStateFromHost.Name,
+						AppId:  appStateFromHost.Name,
 					})
 				}
 
@@ -144,7 +148,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 							Message: fmt.Sprintf("Application %s on host %s is running, all checks are succeeding",
 								appStateFromHost.Name, hostId),
 							HostId: hostId,
-							AppId: appStateFromHost.Name,
+							AppId:  appStateFromHost.Name,
 						})
 
 						appConfigurationVersion.DeploymentSuccess += 1
@@ -153,7 +157,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 							Message: fmt.Sprintf("Application %s on host %s has failed, docker is reporting the container is no longer active",
 								appStateFromHost.Name, hostId),
 							HostId: hostId,
-							AppId: appStateFromHost.Name,
+							AppId:  appStateFromHost.Name,
 						})
 
 						appConfigurationVersion.DeploymentFailures += 1
@@ -162,7 +166,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 							Message: fmt.Sprintf("Application %s on host %s has failed, the application checks have failed",
 								appStateFromHost.Name, hostId),
 							HostId: hostId,
-							AppId: appStateFromHost.Name,
+							AppId:  appStateFromHost.Name,
 						})
 						appConfigurationVersion.DeploymentFailures += 1
 					}
@@ -175,14 +179,14 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 					Message: fmt.Sprintf("Application %s was installed to version %s on host %s",
 						appStateFromHost.Name, appStateFromHost.Application.Version, hostId),
 					HostId: hostId,
-					AppId: appStateFromHost.Name,
+					AppId:  appStateFromHost.Name,
 				})
 
 				Audit.Insert__AuditEvent(AuditEvent{Severity: AUDIT__INFO,
 					Message: fmt.Sprintf("Application %s on host %s is running, all checks are succeeding",
 						appStateFromHost.Name, hostId),
 					HostId: hostId,
-					AppId: appStateFromHost.Name,
+					AppId:  appStateFromHost.Name,
 				})
 				appConfigurationVersion.DeploymentSuccess += 1
 
@@ -191,7 +195,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 					Message: fmt.Sprintf("Application %s on host %s version %s has failed to install under docker",
 						appStateFromHost.Name, hostId, appStateFromHost.Application.Version),
 					HostId: hostId,
-					AppId: appStateFromHost.Name,
+					AppId:  appStateFromHost.Name,
 				})
 				appConfigurationVersion.DeploymentFailures += 1
 
@@ -200,7 +204,7 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 					Message: fmt.Sprintf("Application %s on host %s version %s has failed to install, the checks have failed",
 						appStateFromHost.Name, hostId, appStateFromHost.Application.Version),
 					HostId: hostId,
-					AppId: appStateFromHost.Name,
+					AppId:  appStateFromHost.Name,
 				})
 
 				appConfigurationVersion.DeploymentFailures += 1
@@ -218,11 +222,11 @@ func (store *StateStore) HostCheckin(hostId string, checkin model.HostCheckinDat
 func (store *StateStore) HasChanges() bool {
 	for _, host := range store.hosts {
 		if len(host.Changes) > 0 {
-			return true;
+			return true
 		}
 	}
 
-	return false;
+	return false
 }
 
 func (store *StateStore) RemoveChange(hostId string, changeId string) {
