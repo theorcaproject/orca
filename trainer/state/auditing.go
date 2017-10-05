@@ -221,13 +221,6 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 	if !db.enabled {
 		return
 	}
-	if log.Message == "" {
-		return
-	}
-
-	if db.client == nil {
-		return
-	}
 
 	/* Run hooks */
 	for _, hook := range db.configurationStore.GlobalSettings.LoggingWebHooks {
