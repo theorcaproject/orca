@@ -167,7 +167,7 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 	}
 }
 
-func (db *OrcaDb) query(collection string, results interface{}, appid string, hostid string, limit string, search string, lasttime string) {
+func (db *OrcaDb) query(collection string, results interface{}, hostid string, appid string, limit string, search string, lasttime string) {
 	limitInteger, _ := strconv.Atoi(limit)
 	c := db.db.C(collection)
 	conditions := make(bson.M, 0)
