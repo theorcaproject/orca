@@ -109,6 +109,7 @@ func (a *OrcaDb) Init(configurationStore *configuration.ConfigurationStore) {
 	if err != nil {
 		panic(err)
 	}
+	session.SetSocketTimeout(10 * time.Minute)
 
 	a.session = session
 	a.db = session.DB("orca")
