@@ -98,39 +98,62 @@ const (
 
 var Audit OrcaDb
 
-func (a *OrcaDb) Init(configurationStore *configuration.ConfigurationStore) {
-	a.configurationStore = configurationStore
+func (db *OrcaDb) Init(configurationStore *configuration.ConfigurationStore) {
+	db.configurationStore = configurationStore
 	if configurationStore.GlobalSettings.AuditDatabaseUri == "" {
-		a.enabled = false
+		db.enabled = false
 		return
 	}
-	a.enabled = true
-	session, err := mgo.Dial(a.configurationStore.GlobalSettings.StatsDatabaseUri)
+	db.enabled = true
+	session, err := mgo.Dial(db.configurationStore.GlobalSettings.StatsDatabaseUri)
 	if err != nil {
 		panic(err)
 	}
-	session.SetSocketTimeout(10 * time.Minute)
+	session.SetSocketTimeout(1 * time.Minute)
 
-	a.session = session
-	a.db = session.DB("orca")
+	db.session = session
+	s := db.session.Copy()
+	defer s.Close()
 
-	indexTTL := mgo.Index{
+	indexAuditTTL := mgo.Index{
 		Key:         []string{"timestamp"},
 		Unique:      false,
 		DropDups:    false,
 		Background:  true,
 		ExpireAfter: time.Hour * 24}
 
-	if err := a.db.C("audit").EnsureIndex(indexTTL); err != nil {
+	if err := s.DB("orca").C("audit").EnsureIndex(indexAuditTTL); err != nil {
 		panic(err)
 	}
-	if err := a.db.C("logs").EnsureIndex(indexTTL); err != nil {
-		panic(err)
-	}
-}
 
-func (a *OrcaDb) Close() {
-	a.session.Close()
+	indexLogTTL := mgo.Index{
+		Key:         []string{"timestamp"},
+		Unique:      false,
+		DropDups:    false,
+		Background:  true,
+		ExpireAfter: time.Hour * 24}
+
+	if err := s.DB("orca").C("logs").EnsureIndex(indexLogTTL); err != nil {
+		panic(err)
+	}
+
+	indexApps := mgo.Index{
+		Key:        []string{"timestamp", "appid"},
+		Unique:     false,
+		DropDups:   false,
+		Background: true}
+	if err := s.DB("orca").C("audit").EnsureIndex(indexApps); err != nil {
+		panic(err)
+	}
+
+	indexHosts := mgo.Index{
+		Key:        []string{"timestamp", "hostid"},
+		Unique:     false,
+		DropDups:   false,
+		Background: true}
+	if err := s.DB("orca").C("audit").EnsureIndex(indexHosts); err != nil {
+		panic(err)
+	}
 }
 
 func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
@@ -160,9 +183,10 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 			}
 		}
 	}
-
 	event.Timestamp = time.Now()
-	c := db.db.C("audit")
+	s := db.session.Copy()
+	defer s.Close()
+	c := s.DB("orca").C("audit")
 	if err := c.Insert(&event); err != nil {
 		fmt.Println(err)
 	}
@@ -170,7 +194,9 @@ func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 
 func (db *OrcaDb) query(collection string, results interface{}, hostid string, appid string, limit string, search string, lasttime string) {
 	limitInteger, _ := strconv.Atoi(limit)
-	c := db.db.C(collection)
+	s := db.session.Copy()
+	defer s.Close()
+	c := s.DB("orca").C(collection)
 	conditions := make(bson.M, 0)
 	if len(hostid) > 0 {
 		conditions["hostid"] = hostid
@@ -259,7 +285,9 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 		}
 	}
 	log.Timestamp = time.Now()
-	c := db.db.C("logs")
+	s := db.session.Copy()
+	defer s.Close()
+	c := s.DB("orca").C("logs")
 	if err := c.Insert(&log); err != nil {
 		fmt.Println(err)
 	}
