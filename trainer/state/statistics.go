@@ -101,11 +101,10 @@ func (db *StatisticsDb) Init(configurationStore *configuration.ConfigurationStor
 	}
 
 	indexHostUtilisation := mgo.Index{
-		Key:         []string{"timestamp", "host"},
-		Unique:      false,
-		DropDups:    false,
-		Background:  true,
-		ExpireAfter: time.Hour * 24 * 7}
+		Key:        []string{"timestamp", "host"},
+		Unique:     false,
+		DropDups:   false,
+		Background: true}
 
 	if err := s.DB("orca").C("host_utilisation").EnsureIndex(indexHostUtilisation); err != nil {
 		panic(err)
