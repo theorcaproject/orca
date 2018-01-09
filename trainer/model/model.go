@@ -372,6 +372,15 @@ func (config *VersionConfig) ApplyPropertyGroup(name string, prop *PropertyGroup
 		config.Network = strings.Replace(config.Network, "%" + property.Key + "%", property.Value, -1)
 
 		/* Iterate over the files and perform replacement */
+		for i, envVariables := range config.EnvironmentVariables {
+			config.EnvironmentVariables[i].Key = strings.Replace(envVariables.Key, "%" + property.Key + "%", property.Value, -1)
+			config.EnvironmentVariables[i].Value = strings.Replace(envVariables.Value, "%" + property.Key + "%", property.Value, -1)
+		}
+
+		for i, securityGroup := range config.SecurityGroups {
+			config.SecurityGroups[i].Group = strings.Replace(securityGroup.Group, "%" + property.Key + "%", property.Value, -1)
+		}
+
 		for i, file := range config.Files {
 			config.Files[i].Base64FileContents = strings.Replace(file.Base64FileContents, "%" + property.Key + "%", property.Value, -1)
 		}
