@@ -370,6 +370,11 @@ func (config *VersionConfig) ApplyPropertyGroup(name string, prop *PropertyGroup
 
 		config.GroupingTag = strings.Replace(config.GroupingTag, "%" + property.Key + "%", property.Value, -1)
 		config.Network = strings.Replace(config.Network, "%" + property.Key + "%", property.Value, -1)
+
+		/* Iterate over the files and perform replacement */
+		for _, file := range config.Files {
+			file.Base64FileContents = strings.Replace(file.Base64FileContents, "%" + property.Key + "%", property.Value, -1)
+		}
 	}
 
 	config.AppliedPropertyGroups[name] = prop.Version
