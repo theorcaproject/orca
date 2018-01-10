@@ -28,6 +28,7 @@ import (
 	"orca/util"
 	"os"
 	"time"
+	"strings"
 )
 
 type ConfigurationStore struct {
@@ -207,4 +208,46 @@ func (store *ConfigurationStore) RequestPublishConfiguration(config *model.Appli
 	}
 	config.PublishedConfig[publishedConfiguration.Version] = &publishedConfiguration
 	store.Save()
+}
+
+
+func (store *ConfigurationStore) DoesRequestPublishConfigurationMakeSense(config *model.ApplicationConfiguration) bool {
+	templateForConfiguration := config.GetLatestConfiguration()
+
+	publishedConfiguration := model.VersionConfig{
+		Version:              templateForConfiguration.Version,
+		DockerConfig:         templateForConfiguration.DockerConfig,
+		Needs:                templateForConfiguration.Needs,
+		LoadBalancer:         templateForConfiguration.LoadBalancer,
+		Network:              templateForConfiguration.Network,
+		SecurityGroups:       templateForConfiguration.SecurityGroups,
+		PortMappings:         templateForConfiguration.PortMappings,
+		VolumeMappings:       templateForConfiguration.VolumeMappings,
+		EnvironmentVariables: templateForConfiguration.EnvironmentVariables,
+		Checks:               templateForConfiguration.Checks,
+		GroupingTag:          templateForConfiguration.GroupingTag,
+
+		AppliedPropertyGroups: templateForConfiguration.AppliedPropertyGroups,
+		DeploymentFailures:    templateForConfiguration.DeploymentFailures,
+		DeploymentSuccess:    templateForConfiguration.DeploymentSuccess,
+	}
+
+	publishedConfiguration.Files = make([]model.File, len(templateForConfiguration.Files))
+	copy(publishedConfiguration.Files, templateForConfiguration.Files)
+
+	publishedConfiguration.SecurityGroups = make([]model.SecurityGroup, len(templateForConfiguration.SecurityGroups))
+	copy(publishedConfiguration.SecurityGroups, templateForConfiguration.SecurityGroups)
+
+	publishedConfiguration.EnvironmentVariables = make([]model.EnvironmentVariable, len(templateForConfiguration.EnvironmentVariables))
+	copy(publishedConfiguration.EnvironmentVariables, templateForConfiguration.EnvironmentVariables)
+
+	for _, templateName := range config.PropertyGroups {
+		templateObject := store.Properties[templateName.Name]
+		if templateObject != nil {
+			publishedConfiguration.ApplyPropertyGroup(templateName.Name, templateObject)
+		}
+	}
+
+	/* The hackiest and probably easiest way is to simply stringify it */
+	return strings.Compare(templateForConfiguration.AsString(), publishedConfiguration.AsString()) == 0
 }

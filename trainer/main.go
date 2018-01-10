@@ -110,7 +110,9 @@ func main() {
 								AppId:   app.Name,
 							})
 
-							store.RequestPublishConfiguration(app)
+							if(store.DoesRequestPublishConfigurationMakeSense(app)){
+								store.RequestPublishConfiguration(app)
+							}
 							continue
 						}
 					} else {

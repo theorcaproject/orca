@@ -23,6 +23,7 @@ import (
 	"orca/trainer/schedule"
 	"strings"
 	"errors"
+	"json"
 )
 
 type ChangeApplication struct {
@@ -267,6 +268,11 @@ type VersionConfig struct {
 func (config *VersionConfig) GetVersion() int {
 	version, _ := strconv.Atoi(config.Version)
 	return version
+}
+
+func (config *VersionConfig) AsString() string {
+	res, _ := json.MarshalIndent(config, "", "  ")
+	return string(res)
 }
 
 type Property struct {
