@@ -178,7 +178,6 @@ func (store *ConfigurationStore) RequestPublishConfiguration(config *model.Appli
 		PortMappings:         templateForConfiguration.PortMappings,
 		VolumeMappings:       templateForConfiguration.VolumeMappings,
 		EnvironmentVariables: templateForConfiguration.EnvironmentVariables,
-		Files:                templateForConfiguration.Files,
 		Checks:               templateForConfiguration.Checks,
 		GroupingTag:          templateForConfiguration.GroupingTag,
 
@@ -186,6 +185,15 @@ func (store *ConfigurationStore) RequestPublishConfiguration(config *model.Appli
 		DeploymentFailures:    0,
 		DeploymentSuccess:     0,
 	}
+
+	publishedConfiguration.Files = make([]model.File, len(templateForConfiguration.Files))
+	copy(publishedConfiguration.Files, templateForConfiguration.Files)
+
+	publishedConfiguration.SecurityGroups = make([]model.SecurityGroup, len(templateForConfiguration.SecurityGroups))
+	copy(publishedConfiguration.SecurityGroups, templateForConfiguration.SecurityGroups)
+
+	publishedConfiguration.EnvironmentVariables = make([]model.EnvironmentVariable, len(templateForConfiguration.EnvironmentVariables))
+	copy(publishedConfiguration.EnvironmentVariables, templateForConfiguration.EnvironmentVariables)
 
 	for _, templateName := range config.PropertyGroups {
 		templateObject := store.Properties[templateName.Name]
