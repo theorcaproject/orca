@@ -1159,3 +1159,65 @@ func TestPlan__Plan_HostWithFailedAppsAndErrors_Terminated(t *testing.T) {
 		t.Errorf("%+v", changes);
 	}
 }
+
+func Test_OrderingByDependencies(t *testing.T) {
+	planner := BoringPlanner{}
+	planner.Init()
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	stateStore := state.StateStore{}
+	stateStore.Init(&config)
+
+	config.Add("mylinewize", &model.ApplicationConfiguration{
+		Name: "mylinewize",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Enabled:true,
+		Depends: []model.Dependency{{Name:"api"}},
+	})
+
+	config.Add("surfwizeauth", &model.ApplicationConfiguration{
+		Name: "surfwizeauth",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Enabled:true,
+		Depends: []model.Dependency{{Name:"api"}},
+	})
+
+	config.Add("api", &model.ApplicationConfiguration{
+		Name: "api",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Enabled:true,
+		Depends: []model.Dependency{{Name:"acm"}},
+	})
+
+	config.Add("acm", &model.ApplicationConfiguration{
+		Name: "acm",
+		MinDeployment: 1,
+		DesiredDeployment: 2,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		Enabled:true,
+	})
+
+	items := config.GetAllConfigurationAsOrderedList()
+	if (items[0].Name != "acm") {
+		t.Errorf("ordering is wrong, acm not first %+v", items);
+	}
+	if (items[1].Name != "api") {
+		t.Errorf("ordering is wrong, api not first %+v", items);
+	}
+	if (items[2].Name != "mylinewize" && items[2].Name != "surfwizeauth") {
+		t.Errorf("ordering is wrong, mylinewize not first %+v", items);
+	}
+	if (items[3].Name != "mylinewize" && items[3].Name != "surfwizeauth") {
+		t.Errorf("ordering is wrong, mylinewize not first %+v", items);
+	}
+	for _, app := range config.GetAllConfigurationAsOrderedList() {
+		fmt.Printf("app: %s\n", app.Name)
+	}
+}

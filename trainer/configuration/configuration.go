@@ -29,12 +29,13 @@ import (
 	"os"
 	"time"
 	"strings"
+	"reflect"
 )
 
 type ConfigurationStore struct {
-	ApplicationConfigurations map[string]*model.ApplicationConfiguration
-	Properties                map[string]*model.PropertyGroup
-	GlobalSettings            GlobalSettings
+	ApplicationConfigurations    map[string]*model.ApplicationConfiguration
+	Properties                   map[string]*model.PropertyGroup
+	GlobalSettings               GlobalSettings
 
 	trainerConfigurationFilePath string
 }
@@ -136,6 +137,49 @@ func (store *ConfigurationStore) GetConfiguration(application string) (*model.Ap
 	return nil, errors.New("Could not find application")
 }
 
+func AppExistsInList(items []*model.ApplicationConfiguration, appName string) bool {
+	for _, app := range items {
+		if (strings.Compare(app.Name, appName) == 0) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+func (store *ConfigurationStore) GetAllConfigurations_MoveLeft(items []*model.ApplicationConfiguration) []*model.ApplicationConfiguration {
+	ret := make([]*model.ApplicationConfiguration, 0)
+	for _, app := range items {
+		/* Check dependencies */
+		for _, dependency := range app.Depends {
+			if !AppExistsInList(ret, dependency.Name) {
+				dependency_app, err := store.GetConfiguration(dependency.Name)
+				if (err == nil) {
+					ret = append(ret, dependency_app);
+				}
+			}
+		}
+
+		if(!AppExistsInList(ret, app.Name)){
+			ret = append(ret, app);
+		}
+	}
+
+	if(!reflect.DeepEqual(items, ret)){
+		return store.GetAllConfigurations_MoveLeft(ret)
+	}
+
+	return ret
+}
+
+func (store *ConfigurationStore) GetAllConfigurationAsOrderedList() []*model.ApplicationConfiguration {
+	ret := make([]*model.ApplicationConfiguration, 0)
+	for _, applicationConfiguration := range store.GetAllConfiguration() {
+		ret = append(ret, applicationConfiguration);
+	}
+
+	return store.GetAllConfigurations_MoveLeft(ret)
+}
 func (store *ConfigurationStore) GetAllConfiguration() map[string]*model.ApplicationConfiguration {
 	return store.ApplicationConfigurations
 }
@@ -209,7 +253,6 @@ func (store *ConfigurationStore) RequestPublishConfiguration(config *model.Appli
 	config.PublishedConfig[publishedConfiguration.Version] = &publishedConfiguration
 	store.Save()
 }
-
 
 func (store *ConfigurationStore) DoesRequestPublishConfigurationMakeSense(config *model.ApplicationConfiguration) bool {
 	templateForConfiguration := config.GetLatestConfiguration()

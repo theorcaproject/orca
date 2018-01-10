@@ -131,6 +131,7 @@ func (api *Api) getAllConfigurationApplications_Status(w http.ResponseWriter, r 
 			app_stats.Enabled = application.Enabled
 			app_stats.Publish = application.Publish
 			app_stats.PropertyGroups = application.PropertyGroups
+			app_stats.Depends= application.Depends
 			listOfApplications = append(listOfApplications, app_stats)
 		}
 		returnJson(w, listOfApplications)
@@ -163,6 +164,7 @@ func (api *Api) getAllConfigurationApplications(w http.ResponseWriter, r *http.R
 				application.DeploymentSchedule = object.DeploymentSchedule
 				application.PropertyGroups = object.PropertyGroups
 				application.ScheduleParts = object.ScheduleParts
+				application.Depends = object.Depends
 				api.persistConfiguration()
 			}
 		} else if r.Method == "DELETE" {

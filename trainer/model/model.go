@@ -290,6 +290,10 @@ type UsedPropertyGroup struct {
 	Name string
 }
 
+type Dependency struct {
+	Name string
+}
+
 type ApplicationConfiguration struct {
 	Name               string
 	MinDeployment      int
@@ -304,6 +308,7 @@ type ApplicationConfiguration struct {
 	Publish            bool
 
 	PropertyGroups     []UsedPropertyGroup
+	Depends		   []Dependency
 }
 
 func (app *ApplicationConfiguration) GetLatestVersion() string {
