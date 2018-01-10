@@ -23,7 +23,7 @@ import (
 	"orca/trainer/schedule"
 	"strings"
 	"errors"
-	"json"
+	"encoding/json"
 )
 
 type ChangeApplication struct {
