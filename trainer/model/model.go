@@ -49,7 +49,7 @@ type ChangeServer struct {
 	// Internal Status Information
 	InstanceLaunched         bool
 	InstalledPackages        bool
-	SpotInstanceId		 string
+	SpotInstanceId           string
 	SpotInstanceRequested    bool
 
 	//Load balancer add task
@@ -130,7 +130,6 @@ func (host *Host) HasApp(name string) bool {
 	}
 	return false;
 }
-
 
 func (host *Host) GetApp(name string) (Application, error) {
 	for _, runningApplicationState := range host.Apps {
@@ -308,7 +307,7 @@ type ApplicationConfiguration struct {
 	Publish            bool
 
 	PropertyGroups     []UsedPropertyGroup
-	Depends		   []Dependency
+	Depends            []Dependency
 }
 
 func (app *ApplicationConfiguration) GetLatestVersion() string {
@@ -395,6 +394,10 @@ func (config *VersionConfig) ApplyPropertyGroup(name string, prop *PropertyGroup
 		for i, file := range config.Files {
 			config.Files[i].Base64FileContents = strings.Replace(file.Base64FileContents, "%" + property.Key + "%", property.Value, -1)
 		}
+	}
+
+	if(config.AppliedPropertyGroups == nil){
+		config.AppliedPropertyGroups = make(map[string]int)
 	}
 
 	config.AppliedPropertyGroups[name] = prop.Version
