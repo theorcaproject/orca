@@ -110,8 +110,8 @@ func main() {
 									AppId:   app.Name,
 								})
 								store.RequestPublishConfiguration(app)
+								continue
 							}
-							continue
 						}
 					} else {
 						/* Publish */
