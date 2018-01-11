@@ -104,13 +104,11 @@ func main() {
 				for _, propertyGroupName := range app.PropertyGroups {
 					if item, ok := latestPublishedVersion.AppliedPropertyGroups[propertyGroupName.Name]; ok {
 						if item != store.Properties[propertyGroupName.Name].Version {
-							/* Publish */
-							state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-								Message: fmt.Sprintf("Publishing app configuration %s for app %s. Properties have been updated/modified", latestConfiguredVersion.Version, app.Name),
-								AppId:   app.Name,
-							})
-
 							if(store.DoesRequestPublishConfigurationMakeSense(app)){
+								state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+									Message: fmt.Sprintf("Publishing app configuration %s for app %s. Properties have been updated/modified", latestConfiguredVersion.Version, app.Name),
+									AppId:   app.Name,
+								})
 								store.RequestPublishConfiguration(app)
 							}
 							continue
