@@ -292,5 +292,5 @@ func (store *ConfigurationStore) DoesRequestPublishConfigurationMakeSense(config
 	}
 
 	/* The hackiest and probably easiest way is to simply stringify it */
-	return strings.Compare(templateForConfiguration.AsString(), publishedConfiguration.AsString()) == 0
+	return strings.Compare(config.GetLatestPublishedConfiguration().AsString(), publishedConfiguration.AsString()) == 0
 }
