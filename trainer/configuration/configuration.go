@@ -271,9 +271,9 @@ func (store *ConfigurationStore) DoesRequestPublishConfigurationMakeSense(config
 		Checks:               templateForConfiguration.Checks,
 		GroupingTag:          templateForConfiguration.GroupingTag,
 
-		AppliedPropertyGroups: templateForConfiguration.AppliedPropertyGroups,
-		DeploymentFailures:    templateForConfiguration.DeploymentFailures,
-		DeploymentSuccess:    templateForConfiguration.DeploymentSuccess,
+		AppliedPropertyGroups: lastPublishedConfiguration.AppliedPropertyGroups,
+		DeploymentFailures:    lastPublishedConfiguration.DeploymentFailures,
+		DeploymentSuccess:    lastPublishedConfiguration.DeploymentSuccess,
 	}
 
 	publishedConfiguration.Files = make([]model.File, len(templateForConfiguration.Files))
