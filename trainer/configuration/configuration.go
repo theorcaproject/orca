@@ -256,9 +256,10 @@ func (store *ConfigurationStore) RequestPublishConfiguration(config *model.Appli
 
 func (store *ConfigurationStore) DoesRequestPublishConfigurationMakeSense(config *model.ApplicationConfiguration) bool {
 	templateForConfiguration := config.GetLatestConfiguration()
+	lastPublishedConfiguration := config.GetLatestPublishedConfiguration()
 
 	publishedConfiguration := model.VersionConfig{
-		Version:              templateForConfiguration.Version,
+		Version:              lastPublishedConfiguration.Version,
 		DockerConfig:         templateForConfiguration.DockerConfig,
 		Needs:                templateForConfiguration.Needs,
 		LoadBalancer:         templateForConfiguration.LoadBalancer,
@@ -292,5 +293,5 @@ func (store *ConfigurationStore) DoesRequestPublishConfigurationMakeSense(config
 	}
 
 	/* The hackiest and probably easiest way is to simply stringify it */
-	return strings.Compare(config.GetLatestPublishedConfiguration().AsString(), publishedConfiguration.AsString()) == 0
+	return strings.Compare(lastPublishedConfiguration.AsString(), publishedConfiguration.AsString()) == 0
 }
