@@ -79,11 +79,11 @@ func Connect(sshUser string, hostAndPort string, sshKey string) (*ssh.Client, st
 	return nil, ""
 }
 
-func accquireSession(connection *ssh.Client, SSHLogger *logrus.Entry, stdWriter io.Writer) *ssh.Session {
+func accquireSession(connection *ssh.Client, SSHLogger *logrus.Entry, stdWriter io.Writer) (*ssh.Session, error) {
 	session, err := connection.NewSession()
 	if err != nil {
 		SSHLogger.Error(fmt.Sprintf("Failed to create session: %v", err))
-		return nil
+		return nil, err
 	}
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          0,     // disable echoing
@@ -94,22 +94,25 @@ func accquireSession(connection *ssh.Client, SSHLogger *logrus.Entry, stdWriter 
 	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
 		session.Close()
 		SSHLogger.Error(fmt.Sprintf("Request for pseudo terminal failed: %v", err))
-		return nil
+		return nil, err
 	}
 	session.Stdout = stdWriter
 	session.Stderr = stdWriter
 	SSHLogger.Info("Created session.")
-	return session
+	return session, nil
 }
 
 func doExecuteSshCommand(conn *ssh.Client, addr string, cmd string) bool {
 	var SSHLogger = log.LoggerWithField(log.LoggerWithField(log.AuditLogger, "Type", "ssh"), "target", addr)
 	SSHLogger.Info(fmt.Sprintf("Executing command: [%s]", cmd))
 	stdWriter := SSHLogger.Logger.Writer()
-	session := accquireSession(conn, SSHLogger, stdWriter)
-	defer session.Close()
 	defer stdWriter.Close()
-	err := session.Run(cmd)
+	session, err := accquireSession(conn, SSHLogger, stdWriter)
+	if err != nil {
+		return false
+	}
+	defer session.Close()
+	err = session.Run(cmd)
 	if err != nil {
 		SSHLogger.Error(fmt.Sprintf("Command failed - %s", err))
 		return false
