@@ -32,7 +32,7 @@ import (
 
 const (
 	CONNECT_RETRY_AMOUNT = 60
-	EXECUTE_RETRY_AMOUNT = 20
+	EXECUTE_RETRY_AMOUNT = 50
 )
 
 var Logger = log.LoggerWithField(log.AuditLogger, "Type", "ssh")
