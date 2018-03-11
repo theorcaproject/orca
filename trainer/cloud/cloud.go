@@ -129,6 +129,7 @@ func (cloud *CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 							state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 								Message: fmt.Sprintf("Could not execute command '%s' on host '%s'. Giving up now!", cmd, newHost.Id),
 							})
+							return
 						}
 					}
 
