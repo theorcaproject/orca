@@ -257,6 +257,10 @@ func main() {
 						Time:      time.Now().Format(time.RFC3339Nano),
 					})
 
+					for _, queue := range app.GetLatestConfiguration().DataQueue {
+						cloud_provider.CreateQueue(queue.Name, queue.RogueName)
+					}
+
 					for _, elb := range app.GetLatestConfiguration().LoadBalancer {
 						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 							Message: fmt.Sprintf("Registering host %s with load balancer %s for application %s", change.HostId, elb.Domain, change.ApplicationName),

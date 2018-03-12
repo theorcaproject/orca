@@ -484,21 +484,86 @@ func (engine *AwsCloudEngine) BackupConfiguration(configuration string) bool {
 	return true
 }
 
-func (engine *AwsCloudEngine) CreateDataQueue(name string) {
+func (engine *AwsCloudEngine) CreateDataQueue(name string, rogueName string) {
 	svc := sqs.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+
+	rogueQueueARN := ""
+
+	// create rogue queue first - we need this to configure redrive policy of main queue
+	if rogueName != "" {
+		_, err := svc.GetQueueUrl(&sqs.GetQueueUrlInput{
+			QueueName: aws.String(rogueName),
+		})
+		// lets only try to create a queue if we don't have one already for this
+		if err != nil {
+			if aerr, ok := err.(awserr.Error); ok && aerr.Code() == sqs.ErrCodeQueueDoesNotExist {
+				attributes := map[string]*string{
+					"VisibilityTimeout":             aws.String("600"),
+					"ReceiveMessageWaitTimeSeconds": aws.String("20"),
+				}
+				_, err := svc.CreateQueue(&sqs.CreateQueueInput{
+					QueueName:  aws.String(rogueName),
+					Attributes: attributes,
+				})
+				if err != nil {
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+						Message: fmt.Sprintf("Could not create SQS queue '%s': '%s'", rogueName, err),
+					})
+					return
+				}
+			} else {
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+					Message: fmt.Sprintf("Could not check for SQS queue '%s': '%s'", rogueName, err),
+				})
+				return
+			}
+		}
+	}
+
 	_, err := svc.GetQueueUrl(&sqs.GetQueueUrlInput{
 		QueueName: aws.String(name),
 	})
 	// lets only try to create a queue if we don't have one already for this
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == sqs.ErrCodeQueueDoesNotExist {
+			if rogueName != "" {
+				// get ARN for rogue queue for redrive configuration
+				queueUrlOutput, err := svc.GetQueueUrl(&sqs.GetQueueUrlInput{
+					QueueName: aws.String(rogueName),
+				})
+				if err != nil {
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+						Message: fmt.Sprintf("Could not get SQS rogue queue URL '%s': '%s'", rogueName, err),
+					})
+					return
+				}
+				rogueQueueAttr := &sqs.GetQueueAttributesInput{
+					QueueUrl: queueUrlOutput.QueueUrl,
+					AttributeNames: []*string{
+						aws.String("QueueArn"),
+					},
+				}
+				resp, attrerr := svc.GetQueueAttributes(rogueQueueAttr)
+				if attrerr != nil {
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+						Message: fmt.Sprintf("Could not get SQS rogue queue ARN '%s': '%s'", rogueName, err),
+					})
+					return
+				}
+				rogueQueueARN = *resp.Attributes["QueueArn"]
+			}
+
+			attributes := map[string]*string{
+				"VisibilityTimeout":             aws.String("600"),
+				"ReceiveMessageWaitTimeSeconds": aws.String("20"),
+			}
+			if rogueQueueARN != "" {
+				attributes["RedrivePolicy"] = aws.String("{'deadLetterTargetArn': '" + rogueQueueARN + "','maxReceiveCount': 5'}")
+			}
+
 			_, err := svc.CreateQueue(&sqs.CreateQueueInput{
-				QueueName: aws.String(name),
-				Attributes: map[string]*string{
-					"VisibilityTimeout":             aws.String("600"),
-					"ReceiveMessageWaitTimeSeconds": aws.String("86400"),
-					"RedrivePolicy":                 aws.String("{'deadLetterTargetArn': 'SQS_QUEUE_ARN','maxReceiveCount': 10'}"),
-				},
+				QueueName:  aws.String(name),
+				Attributes: attributes,
 			})
 			if err != nil {
 				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,

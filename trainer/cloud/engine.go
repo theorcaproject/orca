@@ -40,6 +40,6 @@ type CloudEngine interface {
 	SetTag(newHostId string, tagKey string, tagValue string)
 	GetTag(tagKey string, newHostId string) string
 	BackupConfiguration(configuration string) bool
-	CreateDataQueue(name string)
+	CreateDataQueue(name string, rogueName string)
 	MonitorDataQueue(name string) int
 }

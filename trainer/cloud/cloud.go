@@ -257,3 +257,7 @@ func (cloud *CloudProvider) BackupConfiguration(configuration string) bool {
 func (cloud *CloudProvider) MonitorQueue(queueName string) int {
 	return cloud.Engine.MonitorDataQueue(queueName)
 }
+
+func (cloud *CloudProvider) CreateQueue(queueName string, rogueQueueName string) {
+	cloud.Engine.CreateDataQueue(queueName, rogueQueueName)
+}
