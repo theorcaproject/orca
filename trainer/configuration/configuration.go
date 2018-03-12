@@ -27,15 +27,15 @@ import (
 	"orca/trainer/model"
 	"orca/util"
 	"os"
-	"time"
-	"strings"
 	"reflect"
+	"strings"
+	"time"
 )
 
 type ConfigurationStore struct {
-	ApplicationConfigurations    map[string]*model.ApplicationConfiguration
-	Properties                   map[string]*model.PropertyGroup
-	GlobalSettings               GlobalSettings
+	ApplicationConfigurations map[string]*model.ApplicationConfiguration
+	Properties                map[string]*model.PropertyGroup
+	GlobalSettings            GlobalSettings
 
 	trainerConfigurationFilePath string
 }
@@ -139,12 +139,12 @@ func (store *ConfigurationStore) GetConfiguration(application string) (*model.Ap
 
 func AppExistsInList(items []*model.ApplicationConfiguration, appName string) bool {
 	for _, app := range items {
-		if (strings.Compare(app.Name, appName) == 0) {
-			return true;
+		if strings.Compare(app.Name, appName) == 0 {
+			return true
 		}
 	}
 
-	return false;
+	return false
 }
 
 func (store *ConfigurationStore) GetAllConfigurations_MoveLeft(items []*model.ApplicationConfiguration) []*model.ApplicationConfiguration {
@@ -154,18 +154,18 @@ func (store *ConfigurationStore) GetAllConfigurations_MoveLeft(items []*model.Ap
 		for _, dependency := range app.Depends {
 			if !AppExistsInList(ret, dependency.Name) {
 				dependency_app, err := store.GetConfiguration(dependency.Name)
-				if (err == nil) {
-					ret = append(ret, dependency_app);
+				if err == nil {
+					ret = append(ret, dependency_app)
 				}
 			}
 		}
 
-		if(!AppExistsInList(ret, app.Name)){
-			ret = append(ret, app);
+		if !AppExistsInList(ret, app.Name) {
+			ret = append(ret, app)
 		}
 	}
 
-	if(!reflect.DeepEqual(items, ret)){
+	if !reflect.DeepEqual(items, ret) {
 		return store.GetAllConfigurations_MoveLeft(ret)
 	}
 
@@ -175,7 +175,7 @@ func (store *ConfigurationStore) GetAllConfigurations_MoveLeft(items []*model.Ap
 func (store *ConfigurationStore) GetAllConfigurationAsOrderedList() []*model.ApplicationConfiguration {
 	ret := make([]*model.ApplicationConfiguration, 0)
 	for _, applicationConfiguration := range store.GetAllConfiguration() {
-		ret = append(ret, applicationConfiguration);
+		ret = append(ret, applicationConfiguration)
 	}
 
 	return store.GetAllConfigurations_MoveLeft(ret)
@@ -273,7 +273,7 @@ func (store *ConfigurationStore) DoesRequestPublishConfigurationMakeSense(config
 
 		AppliedPropertyGroups: lastPublishedConfiguration.AppliedPropertyGroups,
 		DeploymentFailures:    lastPublishedConfiguration.DeploymentFailures,
-		DeploymentSuccess:    lastPublishedConfiguration.DeploymentSuccess,
+		DeploymentSuccess:     lastPublishedConfiguration.DeploymentSuccess,
 	}
 
 	publishedConfiguration.Files = make([]model.File, len(templateForConfiguration.Files))

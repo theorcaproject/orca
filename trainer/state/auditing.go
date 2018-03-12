@@ -65,11 +65,12 @@ type AuditSeverity string
 type AuditMessage string
 
 const (
-	AUDIT__ERROR = AuditSeverity("error")
-	AUDIT__INFO  = AuditSeverity("info")
-	AUDIT__DEBUG = AuditSeverity("debug")
-	LOG__STDOUT  = "stdout"
-	LOG__STDERR  = "stderr"
+	AUDIT__ERROR   = AuditSeverity("error")
+	AUDIT__INFO    = AuditSeverity("info")
+	AUDIT__DEBUG   = AuditSeverity("debug")
+	AUDIT__MONITOR = AuditSeverity("monitor")
+	LOG__STDOUT    = "stdout"
+	LOG__STDERR    = "stderr"
 
 	LOG_MAPPING = `{
                         "mappings" : {

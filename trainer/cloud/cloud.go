@@ -253,3 +253,7 @@ func (cloud *CloudProvider) canLaunchSpotInstance() bool {
 func (cloud *CloudProvider) BackupConfiguration(configuration string) bool {
 	return cloud.Engine.BackupConfiguration(configuration)
 }
+
+func (cloud *CloudProvider) MonitorQueue(queueName string) int {
+	return cloud.Engine.MonitorDataQueue(queueName)
+}

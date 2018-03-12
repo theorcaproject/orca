@@ -19,19 +19,19 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package model
 
 import (
-	"strconv"
-	"orca/trainer/schedule"
-	"strings"
-	"errors"
 	"encoding/json"
+	"errors"
+	"orca/trainer/schedule"
+	"strconv"
+	"strings"
 )
 
 type ChangeApplication struct {
-	Id        string
-	Type      string
-	HostId    string
-	Time      string
-	Name      string
+	Id     string
+	Type   string
+	HostId string
+	Time   string
+	Name   string
 
 	/* This could be nil/empty if not needed */
 	AppConfig VersionConfig
@@ -47,22 +47,21 @@ type ChangeServer struct {
 	SecurityGroups           []SecurityGroup
 
 	// Internal Status Information
-	InstanceLaunched         bool
-	InstalledPackages        bool
-	SpotInstanceId           string
-	SpotInstanceRequested    bool
+	InstanceLaunched      bool
+	InstalledPackages     bool
+	SpotInstanceId        string
+	SpotInstanceRequested bool
 
 	//Load balancer add task
-	LoadBalancerName         string
-	LoadBalancerAppTarget    string
-	LoadBalancerAppVersion   string
+	LoadBalancerName       string
+	LoadBalancerAppTarget  string
+	LoadBalancerAppVersion string
 
 	//Other stuff
-	GroupingTag              string
+	GroupingTag string
 }
 
 type HostResources struct {
-
 }
 
 type Application struct {
@@ -71,7 +70,7 @@ type Application struct {
 	Version  string
 	ChangeId string
 
-	Metrics  Metric
+	Metrics Metric
 }
 
 type ApplicationStateFromHost struct {
@@ -108,27 +107,27 @@ type Host struct {
 	SecurityGroups              []SecurityGroup
 	NumberOfChangeFailuresInRow int64
 
-	InstanceType                string
-	SpotInstanceId              string
-	GroupingTag                 string
+	InstanceType   string
+	SpotInstanceId string
+	GroupingTag    string
 }
 
 func (host *Host) HasAppRunning(name string) bool {
 	for _, runningApplicationState := range host.Apps {
-		if (runningApplicationState.Name == name && runningApplicationState.State == "running") {
+		if runningApplicationState.Name == name && runningApplicationState.State == "running" {
 			return true
 		}
 	}
-	return false;
+	return false
 }
 
 func (host *Host) HasApp(name string) bool {
 	for _, runningApplicationState := range host.Apps {
-		if (runningApplicationState.Name == name) {
+		if runningApplicationState.Name == name {
 			return true
 		}
 	}
-	return false;
+	return false
 }
 
 func (host *Host) GetApp(name string) (Application, error) {
@@ -143,47 +142,47 @@ func (host *Host) GetApp(name string) (Application, error) {
 
 func (host *Host) GetChange(id string) *ChangeApplication {
 	for _, change := range host.Changes {
-		if (change.Id == id) {
+		if change.Id == id {
 			return &change
 		}
 	}
-	return nil;
+	return nil
 }
 
 func (host *Host) HasAppWithSameVersionRunning(name string, version string) bool {
 	for _, runningApplicationState := range host.Apps {
-		if (runningApplicationState.Name == name && runningApplicationState.Version == version && runningApplicationState.State == "running") {
+		if runningApplicationState.Name == name && runningApplicationState.Version == version && runningApplicationState.State == "running" {
 			return true
 		}
 	}
-	return false;
+	return false
 }
 
 func (host *Host) HasAppWithSameVersion(name string, version string) bool {
 	for _, runningApplicationState := range host.Apps {
-		if (runningApplicationState.Name == name && runningApplicationState.Version == version) {
+		if runningApplicationState.Name == name && runningApplicationState.Version == version {
 			return true
 		}
 	}
-	return false;
+	return false
 }
 
 func (host *Host) HasAppWithDifferentVersion(name string, version string) bool {
 	for _, runningApplicationState := range host.Apps {
-		if (runningApplicationState.Name == name && runningApplicationState.Version != version) {
+		if runningApplicationState.Name == name && runningApplicationState.Version != version {
 			return true
 		}
 	}
-	return false;
+	return false
 }
 
 func (host *Host) HasAppWithSameVersionFailing(name string, version string) bool {
 	for _, runningApplicationState := range host.Apps {
-		if (runningApplicationState.Name == name && runningApplicationState.Version == version && runningApplicationState.State != "running") {
+		if runningApplicationState.Name == name && runningApplicationState.Version == version && runningApplicationState.State != "running" {
 			return true
 		}
 	}
-	return false;
+	return false
 }
 
 type DockerConfig struct {
@@ -216,6 +215,12 @@ type EnvironmentVariable struct {
 	Value string
 }
 
+type DataQueue struct {
+	Name           string
+	AlertThreshold string
+	Producer       bool
+}
+
 type Needs float32
 type MemoryNeeds Needs
 type CpuNeeds Needs
@@ -245,23 +250,24 @@ type AffinityTag struct {
 }
 
 type VersionConfig struct {
-	Version               string
-	DockerConfig          DockerConfig
-	Needs                 AppNeeds
-	LoadBalancer          []LoadBalancerEntry
-	Network               string
-	SecurityGroups        []SecurityGroup
-	PortMappings          []PortMapping
-	VolumeMappings        []VolumeMapping
-	EnvironmentVariables  []EnvironmentVariable
-	Files                 []File
-	Checks                []ApplicationChecks
-	GroupingTag           string
+	Version              string
+	DockerConfig         DockerConfig
+	Needs                AppNeeds
+	LoadBalancer         []LoadBalancerEntry
+	Network              string
+	SecurityGroups       []SecurityGroup
+	PortMappings         []PortMapping
+	VolumeMappings       []VolumeMapping
+	EnvironmentVariables []EnvironmentVariable
+	DataQueue            []DataQueue
+	Files                []File
+	Checks               []ApplicationChecks
+	GroupingTag          string
 
 	AppliedPropertyGroups map[string]int
 
-	DeploymentFailures    int
-	DeploymentSuccess     int
+	DeploymentFailures int
+	DeploymentSuccess  int
 }
 
 func (config *VersionConfig) GetVersion() int {
@@ -303,11 +309,11 @@ type ApplicationConfiguration struct {
 	Config             map[string]*VersionConfig
 	PublishedConfig    map[string]*VersionConfig
 
-	Enabled            bool
-	Publish            bool
+	Enabled bool
+	Publish bool
 
-	PropertyGroups     []UsedPropertyGroup
-	Depends            []Dependency
+	PropertyGroups []UsedPropertyGroup
+	Depends        []Dependency
 }
 
 func (app *ApplicationConfiguration) GetLatestVersion() string {
@@ -334,7 +340,7 @@ func (app *ApplicationConfiguration) GetLatestPublishedVersion() string {
 	return strconv.Itoa(version)
 }
 
-func (app*ApplicationConfiguration) GetSuitableNextVersion() string {
+func (app *ApplicationConfiguration) GetSuitableNextVersion() string {
 	version := 0
 	for v, _ := range app.Config {
 		iversion, _ := strconv.Atoi(v)
@@ -358,45 +364,50 @@ func (app *ApplicationConfiguration) GetNextVersion() string {
 	return strconv.Itoa(ivalue + 1)
 }
 
-func (app *ApplicationConfiguration) GetLatestConfiguration() (*VersionConfig) {
+func (app *ApplicationConfiguration) GetLatestConfiguration() *VersionConfig {
 	last_version := app.GetLatestVersion()
 	return app.Config[last_version]
 }
 
-func (app *ApplicationConfiguration) GetLatestPublishedConfiguration() (*VersionConfig) {
+func (app *ApplicationConfiguration) GetLatestPublishedConfiguration() *VersionConfig {
 	last_version := app.GetLatestPublishedVersion()
 	return app.PublishedConfig[last_version]
 }
 
 func (config *VersionConfig) ApplyPropertyGroup(name string, prop *PropertyGroup) {
 	for _, property := range prop.Properties {
-		config.DockerConfig.Repository = strings.Replace(config.DockerConfig.Repository, "%" + property.Key + "%", property.Value, -1)
-		config.DockerConfig.Email = strings.Replace(config.DockerConfig.Email, "%" + property.Key + "%", property.Value, -1)
-		config.DockerConfig.Password = strings.Replace(config.DockerConfig.Password, "%" + property.Key + "%", property.Value, -1)
-		config.DockerConfig.Reference = strings.Replace(config.DockerConfig.Reference, "%" + property.Key + "%", property.Value, -1)
-		config.DockerConfig.Server = strings.Replace(config.DockerConfig.Server, "%" + property.Key + "%", property.Value, -1)
-		config.DockerConfig.Tag = strings.Replace(config.DockerConfig.Tag, "%" + property.Key + "%", property.Value, -1)
-		config.DockerConfig.Username = strings.Replace(config.DockerConfig.Username, "%" + property.Key + "%", property.Value, -1)
+		config.DockerConfig.Repository = strings.Replace(config.DockerConfig.Repository, "%"+property.Key+"%", property.Value, -1)
+		config.DockerConfig.Email = strings.Replace(config.DockerConfig.Email, "%"+property.Key+"%", property.Value, -1)
+		config.DockerConfig.Password = strings.Replace(config.DockerConfig.Password, "%"+property.Key+"%", property.Value, -1)
+		config.DockerConfig.Reference = strings.Replace(config.DockerConfig.Reference, "%"+property.Key+"%", property.Value, -1)
+		config.DockerConfig.Server = strings.Replace(config.DockerConfig.Server, "%"+property.Key+"%", property.Value, -1)
+		config.DockerConfig.Tag = strings.Replace(config.DockerConfig.Tag, "%"+property.Key+"%", property.Value, -1)
+		config.DockerConfig.Username = strings.Replace(config.DockerConfig.Username, "%"+property.Key+"%", property.Value, -1)
 
-		config.GroupingTag = strings.Replace(config.GroupingTag, "%" + property.Key + "%", property.Value, -1)
-		config.Network = strings.Replace(config.Network, "%" + property.Key + "%", property.Value, -1)
+		config.GroupingTag = strings.Replace(config.GroupingTag, "%"+property.Key+"%", property.Value, -1)
+		config.Network = strings.Replace(config.Network, "%"+property.Key+"%", property.Value, -1)
 
 		/* Iterate over the files and perform replacement */
 		for i, envVariables := range config.EnvironmentVariables {
-			config.EnvironmentVariables[i].Key = strings.Replace(envVariables.Key, "%" + property.Key + "%", property.Value, -1)
-			config.EnvironmentVariables[i].Value = strings.Replace(envVariables.Value, "%" + property.Key + "%", property.Value, -1)
+			config.EnvironmentVariables[i].Key = strings.Replace(envVariables.Key, "%"+property.Key+"%", property.Value, -1)
+			config.EnvironmentVariables[i].Value = strings.Replace(envVariables.Value, "%"+property.Key+"%", property.Value, -1)
+		}
+
+		for i, dataQueues := range config.DataQueue {
+			config.DataQueue[i].Name = strings.Replace(dataQueues.Name, "%"+property.Key+"%", property.Value, -1)
+			config.DataQueue[i].AlertThreshold = strings.Replace(dataQueues.AlertThreshold, "%"+property.Key+"%", property.Value, -1)
 		}
 
 		for i, securityGroup := range config.SecurityGroups {
-			config.SecurityGroups[i].Group = strings.Replace(securityGroup.Group, "%" + property.Key + "%", property.Value, -1)
+			config.SecurityGroups[i].Group = strings.Replace(securityGroup.Group, "%"+property.Key+"%", property.Value, -1)
 		}
 
 		for i, file := range config.Files {
-			config.Files[i].Base64FileContents = strings.Replace(file.Base64FileContents, "%" + property.Key + "%", property.Value, -1)
+			config.Files[i].Base64FileContents = strings.Replace(file.Base64FileContents, "%"+property.Key+"%", property.Value, -1)
 		}
 	}
 
-	if(config.AppliedPropertyGroups == nil){
+	if config.AppliedPropertyGroups == nil {
 		config.AppliedPropertyGroups = make(map[string]int)
 	}
 

@@ -22,6 +22,7 @@ import (
 	"orca/trainer/cloud"
 	"orca/trainer/configuration"
 	"orca/trainer/model"
+	"orca/trainer/monitor"
 	"orca/trainer/planner"
 	"orca/trainer/state"
 	"strings"
@@ -50,6 +51,7 @@ func main() {
 	/* Init connection to the database for auditing */
 	state.Audit.Init(store)
 	state.Stats.Init(store)
+	monitor.Monit.Init()
 
 	var plannerEngine planner.Planner
 	if store.GlobalSettings.PlanningAlg == "boringplanner" {
@@ -104,7 +106,7 @@ func main() {
 				for _, propertyGroupName := range app.PropertyGroups {
 					if item, ok := latestPublishedVersion.AppliedPropertyGroups[propertyGroupName.Name]; ok {
 						if item != store.Properties[propertyGroupName.Name].Version {
-							if(store.DoesRequestPublishConfigurationMakeSense(app)){
+							if store.DoesRequestPublishConfigurationMakeSense(app) {
 								state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 									Message: fmt.Sprintf("Publishing app configuration %s for app %s. Properties have been updated/modified", latestConfiguredVersion.Version, app.Name),
 									AppId:   app.Name,
@@ -385,6 +387,19 @@ func main() {
 					}
 				}
 				state.Stats.Insert__ApplicationUtilisationStatistic(metric)
+			}
+		}
+	}()
+
+	monitorTicker := time.NewTicker(time.Second * 10)
+	go func() {
+		for {
+			<-monitorTicker.C
+			for _, appConfig := range store.GetAllConfiguration() {
+				config := appConfig.GetLatestConfiguration()
+				for _, queue := range config.DataQueue {
+					monitor.Monit.DataQueue(&cloud_provider, queue)
+				}
 			}
 		}
 	}()
