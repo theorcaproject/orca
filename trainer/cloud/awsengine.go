@@ -29,10 +29,12 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/elb"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go/service/sqs"
 )
 
 type AwsCloudEngine struct {
@@ -480,4 +482,58 @@ func (engine *AwsCloudEngine) BackupConfiguration(configuration string) bool {
 		return false
 	}
 	return true
+}
+
+func (engine *AwsCloudEngine) CreateDataQueue(name string) {
+	svc := sqs.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+	_, err := svc.GetQueueUrl(&sqs.GetQueueUrlInput{
+		QueueName: aws.String(name),
+	})
+	// lets only try to create a queue if we don't have one already for this
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == sqs.ErrCodeQueueDoesNotExist {
+			_, err := svc.CreateQueue(&sqs.CreateQueueInput{
+				QueueName: aws.String(name),
+				Attributes: map[string]*string{
+					"VisibilityTimeout":             aws.String("600"),
+					"ReceiveMessageWaitTimeSeconds": aws.String("86400"),
+					"RedrivePolicy":                 aws.String("{'deadLetterTargetArn': 'SQS_QUEUE_ARN','maxReceiveCount': 10'}"),
+				},
+			})
+			if err != nil {
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+					Message: fmt.Sprintf("Could not create SQS queue '%s': '%s'", name, err),
+				})
+			}
+		} else {
+			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+				Message: fmt.Sprintf("Could not check for SQS queue '%s': '%s'", name, err),
+			})
+		}
+	}
+}
+
+func (engine *AwsCloudEngine) MonitorDataQueue(name string) int {
+	result := -1
+	svc := sqs.New(session.New(&aws.Config{Region: aws.String(engine.awsRegion)}))
+	queueUrl, err := svc.GetQueueUrl(&sqs.GetQueueUrlInput{
+		QueueName: aws.String(name),
+	})
+	if err != nil {
+		fmt.Println(err.Error())
+		return result
+	}
+	queueAttr, err := svc.GetQueueAttributes(&sqs.GetQueueAttributesInput{
+		QueueUrl: queueUrl.QueueUrl,
+		AttributeNames: []*string{
+			aws.String("ApproximateNumberOfMessages"),
+		},
+	})
+	if err != nil {
+		fmt.Println(err.Error())
+		return result
+	}
+	prop := queueAttr.Attributes["ApproximateNumberOfMessages"]
+	result, _ = strconv.Atoi(*prop)
+	return result
 }
