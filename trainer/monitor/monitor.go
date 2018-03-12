@@ -52,27 +52,39 @@ func (monitor *Monitor) Alert(monitorState *MonitorState) {
 	})
 }
 
+func (monitor *Monitor) monitDataQueue(name string, alertThreshold int, numMsgs int) {
+	if state, ok := monitor.monitorStates[name]; !ok {
+		state = &MonitorState{}
+		state.Alarm = false
+		state.Name = name
+		state.CountValue = 0
+		monitor.monitorStates[name] = state
+	}
+
+	alarmState := numMsgs >= alertThreshold
+	if alarmState != monitor.monitorStates[name].Alarm {
+		monitor.monitorStates[name].Alarm = alarmState
+		monitor.Alert(monitor.monitorStates[name])
+	}
+
+}
+
 func (monitor *Monitor) DataQueue(cloudProvider *cloud.CloudProvider, queue model.DataQueue) {
-	numMsgs := cloudProvider.MonitorQueue(queue.Name)
+	// monitor main queue
 	alertThreshold, err := strconv.Atoi(queue.AlertThreshold)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+	numMsgs := cloudProvider.MonitorQueue(queue.Name)
+	monitor.monitDataQueue(queue.Name, alertThreshold, numMsgs)
 
-	if state, ok := monitor.monitorStates[queue.Name]; !ok {
-		state = &MonitorState{}
-		state.Alarm = false
-		state.Name = queue.Name
-		state.CountValue = 0
-		monitor.monitorStates[queue.Name] = state
+	// monitor corresponding rogue queue
+	rogueAlertThreshold, err := strconv.Atoi(queue.RogueAlertThreshold)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
-
-	alarmState := numMsgs >= alertThreshold
-	if alarmState != monitor.monitorStates[queue.Name].Alarm {
-		monitor.monitorStates[queue.Name].Alarm = alarmState
-		monitor.monitorStates[queue.Name].Alarm = alarmState
-		monitor.Alert(monitor.monitorStates[queue.Name])
-	}
-
+	rogueNumMsgs := cloudProvider.MonitorQueue(queue.RogueName)
+	monitor.monitDataQueue(queue.RogueName, rogueAlertThreshold, rogueNumMsgs)
 }
