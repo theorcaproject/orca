@@ -216,9 +216,11 @@ type EnvironmentVariable struct {
 }
 
 type DataQueue struct {
-	Name           string
-	AlertThreshold string
-	Producer       bool
+	Name                string
+	AlertThreshold      string
+	RogueName           string
+	RogueAlertThreshold string
+	Producer            bool
 }
 
 type Needs float32
@@ -396,6 +398,8 @@ func (config *VersionConfig) ApplyPropertyGroup(name string, prop *PropertyGroup
 		for i, dataQueues := range config.DataQueue {
 			config.DataQueue[i].Name = strings.Replace(dataQueues.Name, "%"+property.Key+"%", property.Value, -1)
 			config.DataQueue[i].AlertThreshold = strings.Replace(dataQueues.AlertThreshold, "%"+property.Key+"%", property.Value, -1)
+			config.DataQueue[i].RogueName = strings.Replace(dataQueues.RogueName, "%"+property.Key+"%", property.Value, -1)
+			config.DataQueue[i].RogueAlertThreshold = strings.Replace(dataQueues.RogueAlertThreshold, "%"+property.Key+"%", property.Value, -1)
 		}
 
 		for i, securityGroup := range config.SecurityGroups {
