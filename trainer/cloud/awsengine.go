@@ -511,6 +511,9 @@ func (engine *AwsCloudEngine) CreateDataQueue(name string, rogueName string) {
 					})
 					return
 				}
+				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+					Message: fmt.Sprintf("Created SQS queue '%s'", rogueName),
+				})
 			} else {
 				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 					Message: fmt.Sprintf("Could not check for SQS queue '%s': '%s'", rogueName, err),
@@ -558,7 +561,7 @@ func (engine *AwsCloudEngine) CreateDataQueue(name string, rogueName string) {
 				"ReceiveMessageWaitTimeSeconds": aws.String("20"),
 			}
 			if rogueQueueARN != "" {
-				attributes["RedrivePolicy"] = aws.String("{'deadLetterTargetArn': '" + rogueQueueARN + "','maxReceiveCount': 5'}")
+				attributes["RedrivePolicy"] = aws.String("{\"deadLetterTargetArn\": \"" + rogueQueueARN + "\",\"maxReceiveCount\": 5}")
 			}
 
 			_, err := svc.CreateQueue(&sqs.CreateQueueInput{
@@ -569,7 +572,11 @@ func (engine *AwsCloudEngine) CreateDataQueue(name string, rogueName string) {
 				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 					Message: fmt.Sprintf("Could not create SQS queue '%s': '%s'", name, err),
 				})
+				return
 			}
+			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+				Message: fmt.Sprintf("Created SQS queue '%s'", name),
+			})
 		} else {
 			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 				Message: fmt.Sprintf("Could not check for SQS queue '%s': '%s'", name, err),
@@ -599,6 +606,10 @@ func (engine *AwsCloudEngine) MonitorDataQueue(name string) int {
 		return result
 	}
 	prop := queueAttr.Attributes["ApproximateNumberOfMessages"]
-	result, _ = strconv.Atoi(*prop)
+	result, err = strconv.Atoi(*prop)
+	if err != nil {
+		fmt.Println(err.Error())
+		result = -1
+	}
 	return result
 }
