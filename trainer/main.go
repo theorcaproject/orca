@@ -99,6 +99,11 @@ func main() {
 					})
 
 					store.RequestPublishConfiguration(app)
+
+					// Create DataQueues
+					for _, queue := range app.GetLatestConfiguration().DataQueue {
+						cloud_provider.CreateQueue(queue.Name, queue.RogueName)
+					}
 					continue
 				}
 
@@ -256,10 +261,6 @@ func main() {
 						Name:      change.ApplicationName,
 						Time:      time.Now().Format(time.RFC3339Nano),
 					})
-
-					for _, queue := range app.GetLatestConfiguration().DataQueue {
-						cloud_provider.CreateQueue(queue.Name, queue.RogueName)
-					}
 
 					for _, elb := range app.GetLatestConfiguration().LoadBalancer {
 						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
