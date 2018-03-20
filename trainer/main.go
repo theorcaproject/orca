@@ -402,8 +402,10 @@ func main() {
 			<-monitorTicker.C
 			for _, appConfig := range store.GetAllConfiguration() {
 				config := appConfig.GetLatestConfiguration()
-				for _, queue := range config.DataQueue {
-					monitor.Monit.DataQueue(&cloud_provider, queue)
+				if config != nil {
+					for _, queue := range config.DataQueue {
+						monitor.Monit.DataQueue(&cloud_provider, queue)
+					}
 				}
 			}
 		}
