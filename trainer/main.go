@@ -91,7 +91,10 @@ func main() {
 
 				latestConfiguredVersion := app.GetLatestConfiguration()
 				latestPublishedVersion := app.GetLatestPublishedConfiguration()
-				if latestConfiguredVersion != nil && (latestPublishedVersion == nil || latestConfiguredVersion.GetVersion() > latestPublishedVersion.GetVersion()) {
+				if latestConfiguredVersion == nil {
+					continue
+				}
+				if latestPublishedVersion == nil || latestConfiguredVersion.GetVersion() > latestPublishedVersion.GetVersion() {
 					/* Publish */
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 						Message: fmt.Sprintf("Publishing application configuration %s for app %s", latestConfiguredVersion.Version, app.Name),
