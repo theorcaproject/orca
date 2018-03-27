@@ -592,7 +592,9 @@ func (engine *AwsCloudEngine) MonitorDataQueue(name string) int {
 		QueueName: aws.String(name),
 	})
 	if err != nil {
-		fmt.Println(err.Error())
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
+			Message: fmt.Sprintf("Could not monitor SQS queue '%s': '%s'", name, err),
+		})
 		return result
 	}
 	queueAttr, err := svc.GetQueueAttributes(&sqs.GetQueueAttributesInput{
