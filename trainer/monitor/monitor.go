@@ -70,22 +70,26 @@ func (monitor *Monitor) monitDataQueue(name string, alertThreshold int, numMsgs 
 
 func (monitor *Monitor) DataQueue(cloudProvider *cloud.CloudProvider, queue model.DataQueue) {
 	// monitor main queue
-	alertThreshold, err := strconv.Atoi(queue.AlertThreshold)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	numMsgs := cloudProvider.MonitorQueue(queue.Name)
-	if numMsgs >= 0 {
-		monitor.monitDataQueue(queue.Name, alertThreshold, numMsgs)
-
-		// monitor corresponding rogue queue
-		rogueAlertThreshold, err := strconv.Atoi(queue.RogueAlertThreshold)
+	if len(queue.AlertThreshold) > 0 {
+		alertThreshold, err := strconv.Atoi(queue.AlertThreshold)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		rogueNumMsgs := cloudProvider.MonitorQueue(queue.RogueName)
-		monitor.monitDataQueue(queue.RogueName, rogueAlertThreshold, rogueNumMsgs)
+		numMsgs := cloudProvider.MonitorQueue(queue.Name)
+		if numMsgs >= 0 {
+			monitor.monitDataQueue(queue.Name, alertThreshold, numMsgs)
+
+			// monitor corresponding rogue queue
+			if len(queue.RogueAlertThreshold) > 0 {
+				rogueAlertThreshold, err := strconv.Atoi(queue.RogueAlertThreshold)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				rogueNumMsgs := cloudProvider.MonitorQueue(queue.RogueName)
+				monitor.monitDataQueue(queue.RogueName, rogueAlertThreshold, rogueNumMsgs)
+			}
+		}
 	}
 }
