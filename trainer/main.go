@@ -403,6 +403,7 @@ func main() {
 	go func() {
 		for {
 			<-monitorTicker.C
+			// monitor queues
 			for _, appConfig := range store.GetAllConfiguration() {
 				config := appConfig.GetLatestConfiguration()
 				if config != nil {
@@ -410,6 +411,11 @@ func main() {
 						monitor.Monit.DataQueue(&cloud_provider, queue)
 					}
 				}
+			}
+
+			// monitor hosts
+			for _, host := range state_store.GetAllRunningHosts() {
+				monitor.Monit.HostHDD(host)
 			}
 		}
 	}()

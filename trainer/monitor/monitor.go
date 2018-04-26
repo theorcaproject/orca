@@ -93,3 +93,28 @@ func (monitor *Monitor) DataQueue(cloudProvider *cloud.CloudProvider, queue mode
 		}
 	}
 }
+
+func (monitor *Monitor) monitHostHDD(monitorKey string, usage int64, usageThreshold int64) {
+	if state, ok := monitor.monitorStates[monitorKey]; !ok {
+		state = &MonitorState{}
+		state.Alarm = false
+		state.Name = monitorKey
+		state.CountValue = 0
+		monitor.monitorStates[monitorKey] = state
+	}
+	alarmState := usage >= usageThreshold
+	if alarmState != monitor.monitorStates[monitorKey].Alarm {
+		monitor.monitorStates[monitorKey].Alarm = alarmState
+		monitor.Alert(monitor.monitorStates[monitorKey])
+	}
+}
+
+func (monitor *Monitor) HostHDD(host *model.Host) {
+	hostStats := state.Stats.Query__LatestHostUtilisationStatistic(host.Id)
+	usage := hostStats.HardDiskUsagePercent / 100
+	monitor.monitHostHDD("HDD_70%_"+host.Id, usage, 70)
+	if usage >= 90 {
+		monitor.monitHostHDD("HDD_90%_"+host.Id, usage, 90)
+		host.State = "resourceExceeded"
+	}
+}

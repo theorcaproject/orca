@@ -20,11 +20,12 @@ package planner
 
 import (
 	"orca/trainer/configuration"
-	"orca/trainer/state"
-	"github.com/twinj/uuid"
 	"orca/trainer/model"
+	"orca/trainer/state"
 	"sort"
 	"time"
+
+	"github.com/twinj/uuid"
 )
 
 type Hosts []*model.Host
@@ -77,7 +78,7 @@ func hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguratio
 }
 
 func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, currentState *state.StateStore) bool {
-	instanceCount := 0;
+	instanceCount := 0
 	for _, hostEntity := range currentState.GetAllRunningHosts() {
 		if hostEntity.SpotInstance {
 			continue
@@ -104,7 +105,7 @@ func canDeploy(applicationConfiguration *model.ApplicationConfiguration) bool {
 	return true
 }
 
-func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 
 	requiresMinServer := false
@@ -138,27 +139,27 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 				}
 
 				/* If this host already has this application version and its running avoid */
-				if (hostEntity.HasAppWithSameVersionRunning(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion())) {
+				if hostEntity.HasAppWithSameVersionRunning(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) {
 					continue
 				}
 
 				/* If this host has an older version of the app running, avoid */
-				if (hostEntity.HasAppWithDifferentVersion(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) && hostEntity.HasAppRunning(applicationConfiguration.Name)) {
+				if hostEntity.HasAppWithDifferentVersion(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) && hostEntity.HasAppRunning(applicationConfiguration.Name) {
 					continue
 				}
 
 				/*
-				If we are here this means:
-				1) This host does not have an older version of the app running
-				2) This host does not have the same version of the app running
-				3) This means either the app is not installed on this host, or a failing version is
-				4) This host is not a spot instance
+					If we are here this means:
+					1) This host does not have an older version of the app running
+					2) This host does not have the same version of the app running
+					3) This means either the app is not installed on this host, or a failing version is
+					4) This host is not a spot instance
 				*/
 				change := PlanningChange{
-					Type: "add_application",
+					Type:            "add_application",
 					ApplicationName: applicationConfiguration.Name,
-					HostId: hostEntity.Id,
-					Id:uuid.NewV4().String(),
+					HostId:          hostEntity.Id,
+					Id:              uuid.NewV4().String(),
 				}
 
 				ret = append(ret, change)
@@ -178,11 +179,11 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 	if requiresMinServer {
 		change := PlanningChange{
 			Type: "new_server",
-			Id:uuid.NewV4().String(),
+			Id:   uuid.NewV4().String(),
 			RequiresReliableInstance: true,
-			Network: serverNetwork,
-			SecurityGroups: serverSecurityGroups,
-			GroupingTag: groupingTag,
+			Network:                  serverNetwork,
+			SecurityGroups:           serverSecurityGroups,
+			GroupingTag:              groupingTag,
 		}
 
 		ret = append(ret, change)
@@ -191,7 +192,7 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 	return ret
 }
 
-func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 
 	requiresSpotServer := false
@@ -232,10 +233,10 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 				}
 
 				change := PlanningChange{
-					Type: "add_application",
+					Type:            "add_application",
 					ApplicationName: applicationConfiguration.Name,
-					HostId: hostEntity.Id,
-					Id:uuid.NewV4().String(),
+					HostId:          hostEntity.Id,
+					Id:              uuid.NewV4().String(),
 				}
 
 				ret = append(ret, change)
@@ -255,11 +256,11 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 	if requiresSpotServer {
 		change := PlanningChange{
 			Type: "new_server",
-			Id:uuid.NewV4().String(),
+			Id:   uuid.NewV4().String(),
 			RequiresReliableInstance: false,
-			Network: serverNetwork,
-			SecurityGroups: serverSecurityGroups,
-			GroupingTag:groupingTag,
+			Network:                  serverNetwork,
+			SecurityGroups:           serverSecurityGroups,
+			GroupingTag:              groupingTag,
 		}
 
 		ret = append(ret, change)
@@ -268,7 +269,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 	return ret
 }
 
-func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 	for _, applicationConfiguration := range configurationStore.GetAllConfigurationAsOrderedList() {
 		if !applicationConfiguration.Enabled {
@@ -286,10 +287,10 @@ func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configur
 			for _, hostEntity := range currentState.GetAllRunningHosts() {
 				if hostEntity.HasApp(applicationConfiguration.Name) && !hostEntity.HasAppWithSameVersionRunning(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) {
 					change := PlanningChange{
-						Type: "remove_application",
+						Type:            "remove_application",
 						ApplicationName: applicationConfiguration.Name,
-						HostId: hostEntity.Id,
-						Id:uuid.NewV4().String(),
+						HostId:          hostEntity.Id,
+						Id:              uuid.NewV4().String(),
 					}
 
 					ret = append(ret, change)
@@ -300,7 +301,7 @@ func (planner *BoringPlanner) Plan_RemoveOldVersions(configurationStore configur
 	return ret
 }
 
-func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 
 	sortedHosts := currentState.ListOfHosts()
@@ -327,10 +328,10 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 					if hostEntity.HasAppWithSameVersionRunning(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) {
 						if hostEntity.SpotInstance {
 							change := PlanningChange{
-								Type: "remove_application",
+								Type:            "remove_application",
 								ApplicationName: applicationConfiguration.Name,
-								HostId: hostEntity.Id,
-								Id:uuid.NewV4().String(),
+								HostId:          hostEntity.Id,
+								Id:              uuid.NewV4().String(),
 							}
 
 							ret = append(ret, change)
@@ -344,10 +345,10 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 					for _, hostEntity := range currentState.GetAllRunningHosts() {
 						if hostEntity.HasAppWithSameVersionRunning(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) {
 							change := PlanningChange{
-								Type: "remove_application",
+								Type:            "remove_application",
 								ApplicationName: applicationConfiguration.Name,
-								HostId: hostEntity.Id,
-								Id:uuid.NewV4().String(),
+								HostId:          hostEntity.Id,
+								Id:              uuid.NewV4().String(),
 							}
 
 							ret = append(ret, change)
@@ -359,10 +360,10 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 				for _, hostEntity := range sortedHosts {
 					if hostEntity.HasAppWithSameVersionRunning(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) {
 						change := PlanningChange{
-							Type: "remove_application",
+							Type:            "remove_application",
 							ApplicationName: applicationConfiguration.Name,
-							HostId: hostEntity.Id,
-							Id:uuid.NewV4().String(),
+							HostId:          hostEntity.Id,
+							Id:              uuid.NewV4().String(),
 						}
 
 						ret = append(ret, change)
@@ -375,15 +376,15 @@ func (planner *BoringPlanner) Plan_RemoveOldDesired(configurationStore configura
 	return ret
 }
 
-func (planner *BoringPlanner) Plan_KullUnusedServers(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+func (planner *BoringPlanner) Plan_KullUnusedServers(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 
 	for _, hostEntity := range currentState.GetAllRunningHosts() {
 		if len(hostEntity.Apps) == 0 {
 			change := PlanningChange{
-				Type: "kill_server",
+				Type:   "kill_server",
 				HostId: hostEntity.Id,
-				Id:uuid.NewV4().String(),
+				Id:     uuid.NewV4().String(),
 				Reason: "Planner deemed this server to be unused, Plan_KullUnusedServers",
 			}
 
@@ -393,16 +394,16 @@ func (planner *BoringPlanner) Plan_KullUnusedServers(configurationStore configur
 	return ret
 }
 
-func (planner *BoringPlanner) Plan_KullBrokenServers(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+func (planner *BoringPlanner) Plan_KullBrokenServers(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 
 	for _, hostEntity := range currentState.GetAllRunningHosts() {
 		/* This server is messing up, changes are failing for some reason */
 		if hostEntity.NumberOfChangeFailuresInRow >= configurationStore.GlobalSettings.HostChangeFailureLimit {
 			change := PlanningChange{
-				Type: "kill_server",
+				Type:   "kill_server",
 				HostId: hostEntity.Id,
-				Id:uuid.NewV4().String(),
+				Id:     uuid.NewV4().String(),
 				Reason: "Planner deemed this server to be broken, Plan_KullBrokenServers",
 			}
 
@@ -412,7 +413,7 @@ func (planner *BoringPlanner) Plan_KullBrokenServers(configurationStore configur
 	return ret
 }
 
-func (planner *BoringPlanner) Plan_KullBrokenApplications(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+func (planner *BoringPlanner) Plan_KullBrokenApplications(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 
 	for _, hostEntity := range currentState.GetAllRunningHosts() {
@@ -421,10 +422,10 @@ func (planner *BoringPlanner) Plan_KullBrokenApplications(configurationStore con
 				/* This application is messing up, if we have gotten to this stage then the mins and desired have already been dealt with for it */
 				if hostEntity.NumberOfChangeFailuresInRow >= configurationStore.GlobalSettings.HostChangeFailureLimit {
 					change := PlanningChange{
-						Type: "remove_application",
+						Type:            "remove_application",
 						ApplicationName: application.Name,
-						HostId: hostEntity.Id,
-						Id:uuid.NewV4().String(),
+						HostId:          hostEntity.Id,
+						Id:              uuid.NewV4().String(),
 					}
 
 					ret = append(ret, change)
@@ -435,7 +436,7 @@ func (planner *BoringPlanner) Plan_KullBrokenApplications(configurationStore con
 	return ret
 }
 
-func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 
 	sortedHosts := currentState.ListOfHosts()
@@ -458,19 +459,19 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 				if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersionRunning(app.Name, app.Version) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
 					if hostIsSuitable(potentialHost, appConfiguration) && hostHasCorrectAffinity(potentialHost, appConfiguration) {
 						change := PlanningChange{
-							Type: "add_application",
+							Type:            "add_application",
 							ApplicationName: app.Name,
-							HostId: potentialHost.Id,
-							Id:uuid.NewV4().String(),
+							HostId:          potentialHost.Id,
+							Id:              uuid.NewV4().String(),
 						}
 
 						ret = append(ret, change)
 
 						change2 := PlanningChange{
-							Type: "remove_application",
+							Type:            "remove_application",
 							ApplicationName: app.Name,
-							HostId: hostEntity.Id,
-							Id:uuid.NewV4().String(),
+							HostId:          hostEntity.Id,
+							Id:              uuid.NewV4().String(),
 						}
 
 						ret = append(ret, change2)
@@ -484,7 +485,7 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 	return ret
 }
 
-func (planner *BoringPlanner) Plan_KullServersExceedingTTL(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+func (planner *BoringPlanner) Plan_KullServersExceedingTTL(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 
 	for _, hostEntity := range currentState.GetAllRunningHosts() {
@@ -493,11 +494,11 @@ func (planner *BoringPlanner) Plan_KullServersExceedingTTL(configurationStore co
 			continue
 		}
 
-		if ((time.Now().Unix() - firstTimeParsed.Unix()) > configurationStore.GlobalSettings.ServerTTL) {
+		if (time.Now().Unix() - firstTimeParsed.Unix()) > configurationStore.GlobalSettings.ServerTTL {
 			change := PlanningChange{
-				Type: "retire_server",
+				Type:   "retire_server",
 				HostId: hostEntity.Id,
-				Id:uuid.NewV4().String(),
+				Id:     uuid.NewV4().String(),
 				Reason: "Server has exceeded the TTL configured, Plan_KullServersExceedingTTL",
 			}
 
@@ -508,16 +509,34 @@ func (planner *BoringPlanner) Plan_KullServersExceedingTTL(configurationStore co
 	return ret
 }
 
-func (planner *BoringPlanner) Plan_KullServersInTerminatingState(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+func (planner *BoringPlanner) Plan_KullServersInTerminatingState(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 
 	for _, hostEntity := range currentState.GetAllHosts() {
 		if hostEntity.State == "terminating" {
 			change := PlanningChange{
-				Type: "kill_server",
+				Type:   "kill_server",
 				HostId: hostEntity.Id,
-				Id:uuid.NewV4().String(),
+				Id:     uuid.NewV4().String(),
 				Reason: "Server has exceeded the TTL configured, Plan_KullServersInTerminatingState",
+			}
+
+			ret = append(ret, change)
+		}
+	}
+	return ret
+}
+
+func (planner *BoringPlanner) Plan_KullServersResourceExceededState(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
+	ret := make([]PlanningChange, 0)
+
+	for _, hostEntity := range currentState.GetAllHosts() {
+		if hostEntity.State == "resourceExceeded" {
+			change := PlanningChange{
+				Type:   "retire_server",
+				HostId: hostEntity.Id,
+				Id:     uuid.NewV4().String(),
+				Reason: "Server has exceeded one of it's resources (most likely HDD), Plan_KullServersResourceExceededState",
 			}
 
 			ret = append(ret, change)
@@ -538,7 +557,7 @@ func extend(existing []PlanningChange, changes []PlanningChange) []PlanningChang
 	return ret
 }
 
-func (planner *BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange) {
+func (planner *BoringPlanner) Plan(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 
 	/* First step, deal with servers that are broken ? */
@@ -588,9 +607,14 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 		return ret
 	}
 
-
 	/* Kull servers that are terminating. If we reach this step, MINS/DESIRED are meet so we can kill them of */
 	ret = extend(ret, planner.Plan_KullServersInTerminatingState(configurationStore, currentState))
+	if len(ret) > 0 {
+		return ret
+	}
+
+	/* Kull servers that have their resources exeeded. If we reach this step, MINS/DESIRED are meet so we can kill them of */
+	ret = extend(ret, planner.Plan_KullServersResourceExceededState(configurationStore, currentState))
 	if len(ret) > 0 {
 		return ret
 	}
