@@ -103,7 +103,7 @@ func (cloud *CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 					instance := []string{
 						"echo orca | sudo -S addgroup --system supervisor",
 						"echo orca | sudo -S apt-get update",
-						"echo orca | sudo -S apt-get install -y git golang supervisor docker.io rsyslog",
+						"echo orca | sudo -S apt-get install -y git golang-1.10 supervisor docker.io rsyslog",
 						"echo orca | sudo -S sh -c \"echo " + SUPERVISOR_CONFIG + "\"",
 						"echo orca | sudo -S sh -c \"echo " + ORCA_SUPERVISOR_CONFIG + "\"",
 						"echo orca | sudo -S sh -c \"echo " + RSYSLOG_CONFIG + "\"",
