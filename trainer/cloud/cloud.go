@@ -116,10 +116,9 @@ func (cloud *CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 						"echo orca | sudo -S mkdir -p /orca/client/data",
 						"echo orca | sudo -S mkdir -p /orca/client/config",
 						"echo orca | sudo -S chmod -R 777 /orca",
-
 						"rm -rf /orca/src && mkdir -p /orca/src && cd /orca/src && git clone https://github.com/theorcaproject/orcahostd.git",
-						"GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/gorilla/mux'",
-						"GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go get orcahostd && go build && go install'",
+						"PATH=/usr/lib/go-1.10/bin:$PATH GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/gorilla/mux'",
+						"PATH=/usr/lib/go-1.10/bin:$PATH GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go get orcahostd && go build && go install'",
 						"echo orca | sudo -S service supervisor restart",
 					}
 
