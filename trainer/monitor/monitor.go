@@ -62,8 +62,15 @@ func (monitor *Monitor) monitDataQueue(name string, alertThreshold int, numMsgs 
 	}
 	alarmState := numMsgs >= alertThreshold
 	if alarmState != monitor.monitorStates[name].Alarm {
-		monitor.monitorStates[name].Alarm = alarmState
-		monitor.Alert(monitor.monitorStates[name])
+		if monitor.monitorStates[name].CountValue >= 2 {
+			monitor.monitorStates[name].Alarm = alarmState
+			monitor.monitorStates[name].CountValue = 0
+			monitor.Alert(monitor.monitorStates[name])
+		} else {
+			monitor.monitorStates[name].CountValue++
+		}
+	} else {
+		monitor.monitorStates[name].CountValue = 0
 	}
 
 }
