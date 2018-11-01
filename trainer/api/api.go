@@ -131,7 +131,7 @@ func (api *Api) getAllConfigurationApplications_Status(w http.ResponseWriter, r 
 			app_stats.Enabled = application.Enabled
 			app_stats.Publish = application.Publish
 			app_stats.PropertyGroups = application.PropertyGroups
-			app_stats.Depends= application.Depends
+			app_stats.Depends = application.Depends
 			listOfApplications = append(listOfApplications, app_stats)
 		}
 		returnJson(w, listOfApplications)
@@ -435,9 +435,10 @@ func (api *Api) getSettings(w http.ResponseWriter, r *http.Request) {
 				state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 					Message: "Global configuration was modified",
 				})
-
 				api.configurationStore.GlobalSettings = object
 				api.persistConfiguration()
+			} else {
+				fmt.Println(fmt.Sprintf("Config update error: %s", err))
 			}
 		}
 

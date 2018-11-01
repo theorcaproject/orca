@@ -77,6 +77,10 @@ func hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguratio
 	return host.GroupingTag == app.GetLatestPublishedConfiguration().GroupingTag
 }
 
+func hostHasCapacity(host *model.Host, configurationStore configuration.ConfigurationStore) bool {
+	return int64(len(host.Apps)) < configurationStore.GlobalSettings.ServerCapacity
+}
+
 func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, currentState *state.StateStore) bool {
 	instanceCount := 0
 	for _, hostEntity := range currentState.GetAllRunningHosts() {
@@ -135,6 +139,10 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 				}
 
 				if !hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
+					continue
+				}
+
+				if !hostHasCapacity(hostEntity, configurationStore) {
 					continue
 				}
 
@@ -225,6 +233,10 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 				}
 
 				if !hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
+					continue
+				}
+
+				if !hostHasCapacity(hostEntity, configurationStore) {
 					continue
 				}
 
@@ -456,7 +468,8 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 					continue
 				}
 
-				if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersionRunning(app.Name, app.Version) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
+				// if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersionRunning(app.Name, app.Version) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
+				if hostIsSuitable(potentialHost, appConfiguration) && hostHasCorrectAffinity(potentialHost, appConfiguration) && hostHasCapacity(potentialHost, configurationStore) {
 					if hostIsSuitable(potentialHost, appConfiguration) && hostHasCorrectAffinity(potentialHost, appConfiguration) {
 						change := PlanningChange{
 							Type:            "add_application",

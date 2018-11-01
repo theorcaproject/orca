@@ -54,12 +54,13 @@ func (store *ConfigurationStore) Init(trainerConfigurationFilePath string) {
 		ServerChangeTimeout:    300,
 		ServerTimeout:          300,
 		HostChangeFailureLimit: 10,
-		Users:            map[string]User{"admin": defaultUserAccount},
-		PlanningAlg:      "boringplanner",
-		CloudProvider:    "aws",
-		AuditDatabaseUri: "http://localhost:9200",
-		StatsDatabaseUri: "localhost",
-		ServerTTL:        86400,
+		ServerCapacity:         10,
+		Users:                  map[string]User{"admin": defaultUserAccount},
+		PlanningAlg:            "boringplanner",
+		CloudProvider:          "aws",
+		AuditDatabaseUri:       "http://localhost:9200",
+		StatsDatabaseUri:       "localhost",
+		ServerTTL:              86400,
 	}
 }
 
