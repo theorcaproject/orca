@@ -132,7 +132,7 @@ func (db *OrcaDb) Init(configurationStore *configuration.ConfigurationStore) {
 		Unique:      false,
 		DropDups:    false,
 		Background:  true,
-		ExpireAfter: time.Hour * 24}
+		ExpireAfter: time.Hour * 6}
 
 	if err := s.DB("orca").C("logs").EnsureIndex(indexLogTTL); err != nil {
 		panic(err)
