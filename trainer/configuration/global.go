@@ -57,10 +57,16 @@ type GlobalSettings struct {
 	SpotInstanceType          string
 	TrainerConfigBackupBucket string
 
+	/* Immutable configuration for the boring planner.
+	---> Much like AWS settings, must restart trainer for these
+	---> to take effect
+	*/
 	AppChangeTimeout       int64
 	ServerChangeTimeout    int64
 	ServerTimeout          int64
 	HostChangeFailureLimit int64
+	ServerTTL              int64
+	ServerCapacity         int64
 
 	Users     map[string]User
 	HostToken string
@@ -74,6 +80,4 @@ type GlobalSettings struct {
 
 	EnvName          string
 	PlanningDisabled bool
-	ServerTTL        int64
-	ServerCapacity   int64
 }

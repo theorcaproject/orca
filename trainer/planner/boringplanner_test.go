@@ -29,10 +29,10 @@ import (
 
 func TestPlan_spawnMinHosts(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -92,10 +92,11 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 
 func TestPlan_spawnMinZeroDesiredOneHosts(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -125,10 +126,11 @@ func TestPlan_spawnMinZeroDesiredOneHosts(t *testing.T) {
 
 func TestPlan_spawnMinHosts__OverrideFailing(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -172,10 +174,11 @@ func TestPlan_spawnMinHosts__OverrideFailing(t *testing.T) {
 
 func TestPlan_spawnMinHosts__DontOverrideRunning(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -218,10 +221,11 @@ func TestPlan_spawnMinHosts__DontOverrideRunning(t *testing.T) {
 
 func TestPlan_spawnMinHosts__DontOverrideRunningOldVersion(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -264,10 +268,11 @@ func TestPlan_spawnMinHosts__DontOverrideRunningOldVersion(t *testing.T) {
 
 func TestPlan_spawnMinHosts__DontUseSpotInstance(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -306,10 +311,11 @@ func TestPlan_spawnMinHosts__DontUseSpotInstance(t *testing.T) {
 
 func TestPlan_spawnDesiredHosts(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -368,10 +374,11 @@ func TestPlan_spawnDesiredHosts(t *testing.T) {
 
 func TestPlan_DesiredOverrideFailingInstance(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 
@@ -430,10 +437,11 @@ func TestPlan_DesiredOverrideFailingInstance(t *testing.T) {
 
 func TestPlan_DesiredOverrideOldInstance(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 
@@ -471,10 +479,11 @@ func TestPlan_DesiredOverrideOldInstance(t *testing.T) {
 
 func TestPlan_DesiredOverrideOldInstance_Failing(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 
@@ -512,10 +521,11 @@ func TestPlan_DesiredOverrideOldInstance_Failing(t *testing.T) {
 
 func TestPlan_DesiredIgnoreExistingVersionRunning(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 
@@ -553,10 +563,11 @@ func TestPlan_DesiredIgnoreExistingVersionRunning(t *testing.T) {
 
 func TestPlan_scaleDown(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -612,10 +623,11 @@ func TestPlan_scaleDown(t *testing.T) {
 
 func TestPlan_scaleUp(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	versionConfigApp1 := make(map[string]*model.VersionConfig)
@@ -669,10 +681,11 @@ func TestPlan_scaleUp(t *testing.T) {
 
 func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -757,11 +770,12 @@ func TestPlan_scaleUp_UsingAffinity(t *testing.T) {
 
 func TestPlan_scaleUp_HitCapacity(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	config.GlobalSettings.ServerCapacity = 2
+
+	planner.Init(config.GlobalSettings)
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 
@@ -824,12 +838,13 @@ func TestPlan_scaleUp_HitCapacity(t *testing.T) {
 
 func TestPlan__Plan_RemoveOldDesired(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
+
+	planner.Init(config.GlobalSettings)
 	//state.Audit.Init(&config)
 
 	versionConfigApp1 := make(map[string]*model.VersionConfig)
@@ -883,10 +898,10 @@ func TestPlan__Plan_RemoveOldDesired(t *testing.T) {
 
 func TestPlan__Plan_KullUnusedServers(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -936,10 +951,11 @@ func TestPlan__Plan_KullUnusedServers(t *testing.T) {
 
 func TestPlan__Plan_BasicOptimise(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -1016,10 +1032,11 @@ func TestPlan__Plan_BasicOptimise(t *testing.T) {
 
 func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -1106,10 +1123,11 @@ func TestPlan__Plan_ComplexOptimise_Step1(t *testing.T) {
 
 func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 	//state.Audit.Init(&config)
@@ -1194,10 +1212,11 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T) {
 
 func TestPlan__Plan_HostWithFailedAppsAndErrors_Terminated(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 
@@ -1221,10 +1240,11 @@ func TestPlan__Plan_HostWithFailedAppsAndErrors_Terminated(t *testing.T) {
 
 func Test_OrderingByDependencies(t *testing.T) {
 	planner := BoringPlanner{}
-	planner.Init()
 
 	config := configuration.ConfigurationStore{}
 	config.Init("")
+	planner.Init(config.GlobalSettings)
+
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
 

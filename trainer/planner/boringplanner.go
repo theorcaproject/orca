@@ -43,10 +43,21 @@ func (s ByApplicationCount) Less(i, j int) bool {
 }
 
 type BoringPlanner struct {
+	AppChangeTimeout       int64
+	ServerChangeTimeout    int64
+	ServerTimeout          int64
+	HostChangeFailureLimit int64
+	ServerTTL              int64
+	ServerCapacity         int64
 }
 
-func (*BoringPlanner) Init() {
-
+func (bp *BoringPlanner) Init(globalConfig configuration.GlobalSettings) {
+	bp.AppChangeTimeout =  globalConfig.AppChangeTimeout
+	bp.ServerTimeout = globalConfig.ServerChangeTimeout
+	bp.ServerChangeTimeout = globalConfig.ServerChangeTimeout
+	bp.HostChangeFailureLimit = globalConfig.HostChangeFailureLimit
+	bp.ServerTTL = globalConfig.ServerTTL
+	bp.ServerCapacity = globalConfig.ServerCapacity
 }
 
 func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool {
@@ -73,15 +84,15 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 }
 
 /* Well this is rather nasty aint it */
-func hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguration) bool {
+func (planner *BoringPlanner) hostHasCorrectAffinity(host *model.Host, app *model.ApplicationConfiguration) bool {
 	return host.GroupingTag == app.GetLatestPublishedConfiguration().GroupingTag
 }
 
-func hostHasCapacity(host *model.Host, configurationStore configuration.ConfigurationStore) bool {
-	return int64(len(host.Apps)) < configurationStore.GlobalSettings.ServerCapacity
+func (planner *BoringPlanner) hostHasCapacity(host *model.Host, configurationStore configuration.ConfigurationStore) bool {
+	return int64(len(host.Apps)) < planner.ServerCapacity
 }
 
-func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, currentState *state.StateStore) bool {
+func (planner *BoringPlanner) isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, currentState *state.StateStore) bool {
 	instanceCount := 0
 	for _, hostEntity := range currentState.GetAllRunningHosts() {
 		if hostEntity.SpotInstance {
@@ -97,7 +108,7 @@ func isMinSatisfied(applicationConfiguration *model.ApplicationConfiguration, cu
 	return instanceCount >= applicationConfiguration.MinDeployment
 }
 
-func canDeploy(applicationConfiguration *model.ApplicationConfiguration) bool {
+func (planner *BoringPlanner) canDeploy(applicationConfiguration *model.ApplicationConfiguration) bool {
 	if applicationConfiguration.GetLatestPublishedConfiguration() == nil {
 		return false
 	}
@@ -122,11 +133,11 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 			continue
 		}
 
-		if !canDeploy(applicationConfiguration) {
+		if !planner.canDeploy(applicationConfiguration) {
 			continue
 		}
 
-		if !isMinSatisfied(applicationConfiguration, &currentState) {
+		if !planner.isMinSatisfied(applicationConfiguration, &currentState) {
 			foundServer := false
 			for _, hostEntity := range currentState.GetAllRunningHosts() {
 				/* Only use reserved instances when working with the min count */
@@ -138,11 +149,11 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 					continue
 				}
 
-				if !hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
+				if !planner.hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
 					continue
 				}
 
-				if !hostHasCapacity(hostEntity, configurationStore) {
+				if !planner.hostHasCapacity(hostEntity, configurationStore) {
 					continue
 				}
 
@@ -213,7 +224,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 			continue
 		}
 
-		if !canDeploy(applicationConfiguration) {
+		if !planner.canDeploy(applicationConfiguration) {
 			continue
 		}
 
@@ -232,11 +243,11 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 					continue
 				}
 
-				if !hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
+				if !planner.hostHasCorrectAffinity(hostEntity, applicationConfiguration) {
 					continue
 				}
 
-				if !hostHasCapacity(hostEntity, configurationStore) {
+				if !planner.hostHasCapacity(hostEntity, configurationStore) {
 					continue
 				}
 
@@ -411,7 +422,7 @@ func (planner *BoringPlanner) Plan_KullBrokenServers(configurationStore configur
 
 	for _, hostEntity := range currentState.GetAllRunningHosts() {
 		/* This server is messing up, changes are failing for some reason */
-		if hostEntity.NumberOfChangeFailuresInRow >= configurationStore.GlobalSettings.HostChangeFailureLimit {
+		if hostEntity.NumberOfChangeFailuresInRow >= planner.HostChangeFailureLimit {
 			change := PlanningChange{
 				Type:   "kill_server",
 				HostId: hostEntity.Id,
@@ -432,7 +443,7 @@ func (planner *BoringPlanner) Plan_KullBrokenApplications(configurationStore con
 		for _, application := range hostEntity.Apps {
 			if application.State != "running" {
 				/* This application is messing up, if we have gotten to this stage then the mins and desired have already been dealt with for it */
-				if hostEntity.NumberOfChangeFailuresInRow >= configurationStore.GlobalSettings.HostChangeFailureLimit {
+				if hostEntity.NumberOfChangeFailuresInRow >= planner.HostChangeFailureLimit {
 					change := PlanningChange{
 						Type:            "remove_application",
 						ApplicationName: application.Name,
@@ -469,8 +480,8 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 				}
 
 				// if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersionRunning(app.Name, app.Version) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
-				if hostIsSuitable(potentialHost, appConfiguration) && hostHasCorrectAffinity(potentialHost, appConfiguration) && hostHasCapacity(potentialHost, configurationStore) {
-					if hostIsSuitable(potentialHost, appConfiguration) && hostHasCorrectAffinity(potentialHost, appConfiguration) {
+				if hostIsSuitable(potentialHost, appConfiguration) && planner.hostHasCorrectAffinity(potentialHost, appConfiguration) && planner.hostHasCapacity(potentialHost, configurationStore) {
+					if hostIsSuitable(potentialHost, appConfiguration) && planner.hostHasCorrectAffinity(potentialHost, appConfiguration) {
 						change := PlanningChange{
 							Type:            "add_application",
 							ApplicationName: app.Name,
@@ -503,11 +514,11 @@ func (planner *BoringPlanner) Plan_KullServersExceedingTTL(configurationStore co
 
 	for _, hostEntity := range currentState.GetAllRunningHosts() {
 		firstTimeParsed, _ := time.Parse(time.RFC3339Nano, hostEntity.FirstSeen)
-		if configurationStore.GlobalSettings.ServerTTL == 0 {
+		if planner.ServerTTL == 0 {
 			continue
 		}
 
-		if (time.Now().Unix() - firstTimeParsed.Unix()) > configurationStore.GlobalSettings.ServerTTL {
+		if (time.Now().Unix() - firstTimeParsed.Unix()) > planner.ServerTTL {
 			change := PlanningChange{
 				Type:   "retire_server",
 				HostId: hostEntity.Id,

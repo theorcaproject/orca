@@ -19,8 +19,6 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package planner
 
 import (
-	"orca/trainer/configuration"
-	"orca/trainer/state"
 	"orca/trainer/model"
 )
 
@@ -43,8 +41,3 @@ type PlanningChange struct {
 	Reason	string
 }
 
-type Planner interface {
-	Init()
-
-	Plan (configurationStore configuration.ConfigurationStore, currentState state.StateStore) ([]PlanningChange)
-}

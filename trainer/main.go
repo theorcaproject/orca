@@ -53,16 +53,12 @@ func main() {
 	state.Stats.Init(store)
 	monitor.Monit.Init()
 
-	var plannerEngine planner.Planner
-	if store.GlobalSettings.PlanningAlg == "boringplanner" {
-		plannerEngine = &planner.BoringPlanner{}
+	/* Setup the planning engine */
+	plannerEngine := planner.BoringPlanner{}
+	plannerEngine.Init(store.GlobalSettings)
 
-	} else if store.GlobalSettings.PlanningAlg == "diffplan" {
-		plannerEngine = &planner.DiffPlan{}
-	}
-
+	/* Setup the cloud provider */
 	cloud_provider := cloud.CloudProvider{}
-
 	if store.GlobalSettings.CloudProvider == "aws" {
 		awsEngine := cloud.AwsCloudEngine{}
 		awsEngine.Init(store.GlobalSettings.AWSAccessKeyId, store.GlobalSettings.AWSAccessKeySecret, store.GlobalSettings.AWSRegion, store.GlobalSettings.AWSBaseAmi, store.GlobalSettings.AWSSSHKey, store.GlobalSettings.AWSSSHKeyPath,
@@ -140,7 +136,7 @@ func main() {
 			for _, host := range state_store.GetAllHosts() {
 				for _, change := range host.Changes {
 					parsedTime, _ := time.Parse(time.RFC3339Nano, change.Time)
-					if (time.Now().Unix() - parsedTime.Unix()) > store.GlobalSettings.AppChangeTimeout {
+					if (time.Now().Unix() - parsedTime.Unix()) > plannerEngine.AppChangeTimeout {
 						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 							Message: fmt.Sprintf("Application change event %s timed out, event type was %s for application %s on host %s", change.Id, change.Type, change.Name, change.HostId),
 							AppId:   change.Name,
@@ -161,7 +157,7 @@ func main() {
 
 			for _, change := range cloud_provider.GetAllChanges() {
 				parsedTime, _ := time.Parse(time.RFC3339Nano, change.Time)
-				if (time.Now().Unix() - parsedTime.Unix()) > store.GlobalSettings.ServerChangeTimeout {
+				if (time.Now().Unix() - parsedTime.Unix()) > plannerEngine.ServerChangeTimeout {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{
 						Severity: state.AUDIT__ERROR,
 						Message:  fmt.Sprintf("Server change event %s timed out, event type was %s with hostid %s", change.Id, change.Type, change.NewHostId),
@@ -199,7 +195,7 @@ func main() {
 					continue
 				}
 				parsedTime, _ := time.Parse(time.RFC3339Nano, host.LastSeen)
-				if (time.Now().Unix() - parsedTime.Unix()) > store.GlobalSettings.ServerTimeout {
+				if (time.Now().Unix() - parsedTime.Unix()) > plannerEngine.ServerTimeout {
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__ERROR,
 						Message: fmt.Sprintf("Host timed out, we have not heard from host %s since %s", host.Id, host.LastSeen),
 						HostId:  host.Id,
