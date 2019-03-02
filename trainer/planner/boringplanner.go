@@ -52,7 +52,7 @@ type BoringPlanner struct {
 }
 
 func (bp *BoringPlanner) Init(globalConfig configuration.GlobalSettings) {
-	bp.AppChangeTimeout =  globalConfig.AppChangeTimeout
+	bp.AppChangeTimeout = globalConfig.AppChangeTimeout
 	bp.ServerTimeout = globalConfig.ServerChangeTimeout
 	bp.ServerChangeTimeout = globalConfig.ServerChangeTimeout
 	bp.HostChangeFailureLimit = globalConfig.HostChangeFailureLimit
@@ -81,6 +81,20 @@ func hostIsSuitable(host *model.Host, app *model.ApplicationConfiguration) bool 
 		return true
 	}
 	return false
+}
+
+func securityGroupsMatch(a []model.SecurityGroup, b []model.SecurityGroup) bool {
+	for i, x := range a {
+		if x.Group != b[i].Group {
+			return false
+		}
+	}
+
+	if len(a) != len(b) {
+		return false
+	}
+
+	return true
 }
 
 /* Well this is rather nasty aint it */
@@ -123,11 +137,6 @@ func (planner *BoringPlanner) canDeploy(applicationConfiguration *model.Applicat
 func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 
-	requiresMinServer := false
-	serverNetwork := ""
-	groupingTag := ""
-
-	var serverSecurityGroups []model.SecurityGroup
 	for _, applicationConfiguration := range configurationStore.GetAllConfigurationAsOrderedList() {
 		if !applicationConfiguration.Enabled {
 			continue
@@ -187,25 +196,39 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 			}
 
 			if !foundServer {
-				requiresMinServer = true
-				serverNetwork = applicationConfiguration.GetLatestPublishedConfiguration().Network
-				serverSecurityGroups = applicationConfiguration.GetLatestPublishedConfiguration().SecurityGroups
-				groupingTag = applicationConfiguration.GetLatestPublishedConfiguration().GroupingTag
+				/* Its possible that we have already asked for a new server, lets see if there is one that matches */
+
+				for _, newServerChange := range ret {
+					if (newServerChange.Network != applicationConfiguration.GetLatestPublishedConfiguration().Network) {
+						continue
+					}
+
+					if (!securityGroupsMatch(newServerChange.SecurityGroups, applicationConfiguration.GetLatestPublishedConfiguration().SecurityGroups)) {
+						continue
+					}
+
+					if (newServerChange.GroupingTag != applicationConfiguration.GetLatestPublishedConfiguration().GroupingTag) {
+						continue
+					}
+
+					foundServer = true
+				}
+
+				if !foundServer {
+					/* Search through the current changes and check to see if it will work */
+					change := PlanningChange{
+						Type: "new_server",
+						Id:   uuid.NewV4().String(),
+						RequiresReliableInstance: true,
+						Network:                  applicationConfiguration.GetLatestPublishedConfiguration().Network,
+						SecurityGroups:           applicationConfiguration.GetLatestPublishedConfiguration().SecurityGroups,
+						GroupingTag:              applicationConfiguration.GetLatestPublishedConfiguration().GroupingTag,
+					}
+
+					ret = append(ret, change)
+				}
 			}
 		}
-	}
-
-	if requiresMinServer {
-		change := PlanningChange{
-			Type: "new_server",
-			Id:   uuid.NewV4().String(),
-			RequiresReliableInstance: true,
-			Network:                  serverNetwork,
-			SecurityGroups:           serverSecurityGroups,
-			GroupingTag:              groupingTag,
-		}
-
-		ret = append(ret, change)
 	}
 
 	return ret

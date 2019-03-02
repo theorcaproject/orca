@@ -242,6 +242,7 @@ func main() {
 
 					continue
 				}
+
 				if change.Type == "add_application" {
 					/* Add new server */
 					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,

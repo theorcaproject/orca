@@ -90,6 +90,70 @@ func TestPlan_spawnMinHosts(t *testing.T) {
 	}
 }
 
+
+func TestPlan_spawnMinHostsTwoNeeded(t *testing.T) {
+	planner := BoringPlanner{}
+
+	config := configuration.ConfigurationStore{}
+	config.Init("")
+	planner.Init(config.GlobalSettings)
+	stateStore := state.StateStore{}
+	stateStore.Init(&config)
+	//state.Audit.Init(&config)
+	versionConfigApp1 := make(map[string]*model.VersionConfig)
+	versionConfigApp1["1"] = &model.VersionConfig{
+		Version:        "1",
+		Network:        "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	versionConfigApp2 := make(map[string]*model.VersionConfig)
+	versionConfigApp2["2"] = &model.VersionConfig{
+		Version:        "2",
+		Network:        "network1",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp2"}}}
+
+	config.Add("app1", &model.ApplicationConfiguration{
+		Name:               "app1",
+		MinDeployment:      1,
+		DesiredDeployment:  0,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		PublishedConfig:    versionConfigApp1,
+		Enabled:            true,
+	})
+	config.Add("app2", &model.ApplicationConfiguration{
+		Name:               "app2",
+		MinDeployment:      2,
+		DesiredDeployment:  0,
+		DeploymentSchedule: schedule.DeploymentSchedule{},
+		PublishedConfig:    versionConfigApp2,
+		Enabled:            true,
+	})
+
+	res := planner.Plan(config, stateStore)
+	if len(res) != 2 || res[0].Type != "new_server" || res[0].Network == "" {
+		t.Errorf("%+v", res)
+	}
+
+	applied := make(map[string]bool)
+	applied[res[0].Id] = true
+	// create a appropriate host object and check in
+	host1 := &model.Host{
+		Id:             "host1",
+		Network:        "network1",
+		State:          "running",
+		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
+	}
+
+	stateStore.Add("host1", host1)
+
+	res2 := planner.Plan(config, stateStore)
+	if len(res2) != 2 || res2[0].Type != "add_application" || res2[0].RequiresReliableInstance {
+		t.Errorf("%+v", stateStore.GetAllHosts()["host1"])
+		t.Errorf("%+v", res2)
+	}
+}
+
 func TestPlan_spawnMinZeroDesiredOneHosts(t *testing.T) {
 	planner := BoringPlanner{}
 
@@ -118,7 +182,7 @@ func TestPlan_spawnMinZeroDesiredOneHosts(t *testing.T) {
 
 	res := planner.Plan(config, stateStore)
 
-	t.Errorf("%+v", res)
+	//t.Errorf("%+v", res)
 	if len(res) != 1 || res[0].Type != "new_server" || res[0].Network == "" {
 		t.Errorf("%+v", res)
 	}
