@@ -96,30 +96,9 @@ func (cloud *CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 						return
 					}
 
-					SUPERVISOR_CONFIG := "'[unix_http_server]\\nfile=/var/run/supervisor.sock\\nchmod=0770\\nchown=root:supervisor\\n[supervisord]\\nlogfile=/var/log/supervisor/supervisord.log\\npidfile=/var/run/supervisord.pid\\nchildlogdir=/var/log/supervisor\\n[rpcinterface:supervisor]\\nsupervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\\n[supervisorctl]\\nserverurl=unix:///var/run/supervisor.sock\\n[include]\\nfiles = /etc/supervisor/conf.d/*.conf' > /etc/supervisor/supervisord.conf"
-					ORCA_SUPERVISOR_CONFIG := "'[program:orca_client]\\ncommand=/orca/bin/orcahostd --interval 30 --hostid " + string(newHost.Id) + " --traineruri " + cloud.apiEndpoint + "\\nautostart=true\\nautorestart=true\\nstartretries=2\\nuser=root\\nredirect_stderr=true\\nstdout_logfile=/orca/log/client.log\\nstdout_logfile_maxbytes=50MB\\n' > /etc/supervisor/conf.d/orca.conf"
-					RSYSLOG_CONFIG := "'module(load=\\\"imfile\\\" PollingInterval=\\\"10\\\")\\ninput(type=\\\"imfile\\\"\\nFile=\\\"/orca/log/client.log\\\")\\nmodule(load=\\\"imuxsock\\\")\\ntemplate(name=\\\"ForwardFormat\\\" type=\\\"list\\\") {\\nconstant(value=\\\"\\<\\\")\\nproperty(name=\\\"pri\\\")\\nconstant(value=\\\"\\>\\\")\\nproperty(name=\\\"timestamp\\\" dateFormat=\\\"rfc3339\\\")\\nproperty(name=\\\"syslogtag\\\" position.from=\\\"1\\\" position.to=\\\"32\\\")\\nconstant(value=\\\"" + newHost.Id + ":\\\")\\nproperty(name=\\\"msg\\\" spifno1stsp=\\\"on\\\")\\nproperty(name=\\\"msg\\\")\\n}\\n$ModLoad imuxsock\\n*.* @@" + cloud.loggingEndpoint + ";ForwardFormat' > /etc/rsyslog.conf"
-
 					instance := []string{
-						"echo orca | sudo -S addgroup --system supervisor",
-						"echo orca | sudo -S apt-get update",
-						"echo orca | sudo -S apt-get install -y git golang-1.10 supervisor docker.io rsyslog",
-						"echo orca | sudo -S sh -c \"echo " + SUPERVISOR_CONFIG + "\"",
-						"echo orca | sudo -S sh -c \"echo " + ORCA_SUPERVISOR_CONFIG + "\"",
-						"echo orca | sudo -S sh -c \"echo " + RSYSLOG_CONFIG + "\"",
-						"echo orca | sudo -S rm -rf /orca",
-						"echo orca | sudo -S service rsyslog restart",
-						"echo orca | sudo -S mkdir -p /orca",
-						"echo orca | sudo -S mkdir -p /orca/apps",
-						"echo orca | sudo -S mkdir -p /orca/log",
-						"echo orca | sudo -S mkdir -p /orca/client",
-						"echo orca | sudo -S mkdir -p /orca/client/data",
-						"echo orca | sudo -S mkdir -p /orca/client/config",
-						"echo orca | sudo -S chmod -R 777 /orca",
-						"rm -rf /orca/src && mkdir -p /orca/src && cd /orca/src && git clone https://github.com/theorcaproject/orcahostd.git",
-						"PATH=/usr/lib/go-1.10/bin:$PATH GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go get github.com/Sirupsen/logrus && go get golang.org/x/crypto/ssh && go get github.com/gorilla/mux'",
-						"PATH=/usr/lib/go-1.10/bin:$PATH GOPATH=/orca bash -c 'cd /orca/src/orcahostd && go get orcahostd && go build && go install'",
-						"echo orca | sudo -S service supervisor restart",
+						"docker pull michaellawson/orcahostd:latest",
+						"docker run -e HOSTID='" + string(newHost.Id) + "' -e TRAINER_URL='"+cloud.apiEndpoint+"' -e DOCKER_SOCKET='/var/root/run/docker.sock' -v /var/run:/var/root/run/ michaellawson/orcahostd",
 					}
 
 					for _, cmd := range instance {
