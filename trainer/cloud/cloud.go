@@ -98,7 +98,7 @@ func (cloud *CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 
 					instance := []string{
 						"docker pull michaellawson/orcahostd:latest",
-						"docker run -e HOSTID='" + string(newHost.Id) + "' -e TRAINER_URL='"+cloud.apiEndpoint+"' -e DOCKER_SOCKET='/var/root/run/docker.sock' -v /var/run:/var/root/run/ michaellawson/orcahostd",
+						"docker run -e HOSTID='" + string(newHost.Id) + "' -e TRAINER_URL='"+cloud.apiEndpoint+"' -e DOCKER_SOCKET='/var/root/run/docker.sock' -v /var/run:/var/root/run/ --network='host' michaellawson/orcahostd",
 					}
 
 					for _, cmd := range instance {
