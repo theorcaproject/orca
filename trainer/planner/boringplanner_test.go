@@ -1194,7 +1194,6 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T) {
 
 	stateStore := state.StateStore{}
 	stateStore.Init(&config)
-	//state.Audit.Init(&config)
 
 	versionConfigApp1 := make(map[string]*model.VersionConfig)
 	versionConfigApp1["1"] = &model.VersionConfig{
@@ -1268,10 +1267,16 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T) {
 
 	changes := planner.Plan_OptimiseLayout(config, stateStore)
 	fmt.Printf("changes: %+v", changes)
-	if len(changes) != 0 {
+	if len(changes) != 2 {
 		t.Errorf("%+v", changes)
 	}
 
+	if changes[0].Type != "add_application" {
+		t.Errorf("change is not valid %+v", changes[0])
+	}
+	if changes[1].Type != "remove_application" {
+		t.Errorf("change is not valid %+v", changes[1])
+	}
 }
 
 func TestPlan__Plan_HostWithFailedAppsAndErrors_Terminated(t *testing.T) {

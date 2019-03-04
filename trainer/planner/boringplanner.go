@@ -135,6 +135,30 @@ func (planner *BoringPlanner) canDeploy(applicationConfiguration *model.Applicat
 	return true
 }
 
+func (planner *BoringPlanner) FindServerInChanges(changes []PlanningChange, app *model.ApplicationConfiguration) bool {
+	for _, newServerChange := range changes {
+		if newServerChange.Type != "new_server" {
+			continue
+		}
+
+		if newServerChange.Network != app.GetLatestPublishedConfiguration().Network {
+			continue
+		}
+
+		if !securityGroupsMatch(newServerChange.SecurityGroups, app.GetLatestPublishedConfiguration().SecurityGroups) {
+			continue
+		}
+
+		if newServerChange.GroupingTag != app.GetLatestPublishedConfiguration().GroupingTag {
+			continue
+		}
+
+		return true
+	}
+
+	return false
+}
+
 func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configuration.ConfigurationStore, currentState state.StateStore) []PlanningChange {
 	ret := make([]PlanningChange, 0)
 
@@ -196,39 +220,18 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 				break
 			}
 
-			if !foundServer {
-				/* Its possible that we have already asked for a new server, lets see if there is one that matches */
-
-				for _, newServerChange := range ret {
-					if (newServerChange.Network != applicationConfiguration.GetLatestPublishedConfiguration().Network) {
-						continue
-					}
-
-					if (!securityGroupsMatch(newServerChange.SecurityGroups, applicationConfiguration.GetLatestPublishedConfiguration().SecurityGroups)) {
-						continue
-					}
-
-					if (newServerChange.GroupingTag != applicationConfiguration.GetLatestPublishedConfiguration().GroupingTag) {
-						continue
-					}
-
-					foundServer = true
-					break
+			if !foundServer && !planner.FindServerInChanges(ret, applicationConfiguration) {
+				/* Search through the current changes and check to see if it will work */
+				change := PlanningChange{
+					Type: "new_server",
+					Id:   uuid.NewV4().String(),
+					RequiresReliableInstance: true,
+					Network:                  applicationConfiguration.GetLatestPublishedConfiguration().Network,
+					SecurityGroups:           applicationConfiguration.GetLatestPublishedConfiguration().SecurityGroups,
+					GroupingTag:              applicationConfiguration.GetLatestPublishedConfiguration().GroupingTag,
 				}
 
-				if !foundServer {
-					/* Search through the current changes and check to see if it will work */
-					change := PlanningChange{
-						Type: "new_server",
-						Id:   uuid.NewV4().String(),
-						RequiresReliableInstance: true,
-						Network:                  applicationConfiguration.GetLatestPublishedConfiguration().Network,
-						SecurityGroups:           applicationConfiguration.GetLatestPublishedConfiguration().SecurityGroups,
-						GroupingTag:              applicationConfiguration.GetLatestPublishedConfiguration().GroupingTag,
-					}
-
-					ret = append(ret, change)
-				}
+				ret = append(ret, change)
 			}
 		}
 	}
