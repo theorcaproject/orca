@@ -19,6 +19,7 @@ along with Orca.  If not, see <http://www.gnu.org/licenses/>.
 package planner
 
 import (
+	"fmt"
 	"orca/trainer/configuration"
 	"orca/trainer/model"
 	"orca/trainer/state"
@@ -212,6 +213,7 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 					}
 
 					foundServer = true
+					break
 				}
 
 				if !foundServer {
@@ -610,59 +612,99 @@ func (planner *BoringPlanner) Plan(configurationStore configuration.Configuratio
 	/* First step, deal with servers that are broken ? */
 	ret = extend(ret, planner.Plan_KullBrokenServers(configurationStore, currentState))
 	if len(ret) > 0 {
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Plan_KullBrokenServers had events"),
+		})
+
 		return ret
 	}
 
 	/* First step, lets check that our min needs are satisfied? */
 	ret = extend(ret, planner.Plan_SatisfyMinNeeds(configurationStore, currentState))
 	if len(ret) > 0 {
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Plan_SatisfyMinNeeds had events"),
+		})
+
 		return ret
 	}
 
 	/* Ok, now that the mins are running, lets kull of old version of the app */
 	ret = extend(ret, planner.Plan_RemoveOldVersions(configurationStore, currentState))
 	if len(ret) > 0 {
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Plan_RemoveOldVersions had events"),
+		})
+
 		return ret
 	}
 
 	/* Ok, now that the min is sorted, lets scale down desired instances */
 	ret = extend(ret, planner.Plan_RemoveOldDesired(configurationStore, currentState))
 	if len(ret) > 0 {
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Plan_RemoveOldDesired had events"),
+		})
+
 		return ret
 	}
 
 	/* Grand, lets scale up the desired */
 	ret = extend(ret, planner.Plan_SatisfyDesiredNeeds(configurationStore, currentState))
 	if len(ret) > 0 {
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Plan_SatisfyDesiredNeeds had events"),
+		})
+
 		return ret
 	}
 
 	/* Second stage of planning: Terminate any instances that are left behind */
 	ret = extend(ret, planner.Plan_KullBrokenApplications(configurationStore, currentState))
 	if len(ret) > 0 {
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Plan_KullBrokenApplications had events"),
+		})
+
 		return ret
 	}
 
 	ret = extend(ret, planner.Plan_KullUnusedServers(configurationStore, currentState))
 	if len(ret) > 0 {
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Plan_KullUnusedServers had events"),
+		})
+
 		return ret
 	}
 
 	/* Third stage of planning: Move applications around to see if we can optimise it to be cheaper */
 	ret = extend(ret, planner.Plan_OptimiseLayout(configurationStore, currentState))
 	if len(ret) > 0 {
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Plan_OptimiseLayout had events"),
+		})
+
 		return ret
 	}
 
 	/* Kull servers that are terminating. If we reach this step, MINS/DESIRED are meet so we can kill them of */
 	ret = extend(ret, planner.Plan_KullServersInTerminatingState(configurationStore, currentState))
 	if len(ret) > 0 {
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Plan_KullServersInTerminatingState had events"),
+		})
+
 		return ret
 	}
 
 	/* Kull servers that have their resources exeeded. If we reach this step, MINS/DESIRED are meet so we can kill them of */
 	ret = extend(ret, planner.Plan_KullServersResourceExceededState(configurationStore, currentState))
 	if len(ret) > 0 {
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Plan_KullServersResourceExceededState had events"),
+		})
+
 		return ret
 	}
 
