@@ -500,6 +500,10 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 
 			/* Now search, can we move this application to any other machine ?*/
 			for _, potentialHost := range currentState.ListOfHosts() {
+				if potentialHost.Id == hostEntity.Id {
+					continue
+				}
+
 				if hostEntity.SpotInstance != potentialHost.SpotInstance {
 					continue
 				}
