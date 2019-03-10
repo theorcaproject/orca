@@ -512,8 +512,11 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 				}
 
 				// if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersionRunning(app.Name, app.Version) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
-				if hostIsSuitable(potentialHost, appConfiguration) && planner.hostHasCorrectAffinity(potentialHost, appConfiguration) &&
-					planner.hostHasCapacity(potentialHost, configurationStore) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
+				if hostIsSuitable(potentialHost, appConfiguration) &&
+					!potentialHost.HasAppWithSameVersionRunning(app.Name, app.Version) &&
+					planner.hostHasCorrectAffinity(potentialHost, appConfiguration) &&
+					planner.hostHasCapacity(potentialHost, configurationStore) &&
+					len(potentialHost.Apps) >= len(hostEntity.Apps) {
 
 					change := PlanningChange{
 						Type:            "add_application",
