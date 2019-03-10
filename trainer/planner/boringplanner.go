@@ -512,28 +512,28 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 				}
 
 				// if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersionRunning(app.Name, app.Version) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
-				if hostIsSuitable(potentialHost, appConfiguration) && planner.hostHasCorrectAffinity(potentialHost, appConfiguration) && planner.hostHasCapacity(potentialHost, configurationStore) {
-					if hostIsSuitable(potentialHost, appConfiguration) && planner.hostHasCorrectAffinity(potentialHost, appConfiguration) {
-						change := PlanningChange{
-							Type:            "add_application",
-							ApplicationName: app.Name,
-							HostId:          potentialHost.Id,
-							Id:              uuid.NewV4().String(),
-						}
+				if hostIsSuitable(potentialHost, appConfiguration) && planner.hostHasCorrectAffinity(potentialHost, appConfiguration) &&
+					planner.hostHasCapacity(potentialHost, configurationStore) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
 
-						ret = append(ret, change)
-
-						change2 := PlanningChange{
-							Type:            "remove_application",
-							ApplicationName: app.Name,
-							HostId:          hostEntity.Id,
-							Id:              uuid.NewV4().String(),
-						}
-
-						ret = append(ret, change2)
-
-						return ret
+					change := PlanningChange{
+						Type:            "add_application",
+						ApplicationName: app.Name,
+						HostId:          potentialHost.Id,
+						Id:              uuid.NewV4().String(),
 					}
+
+					ret = append(ret, change)
+
+					change2 := PlanningChange{
+						Type:            "remove_application",
+						ApplicationName: app.Name,
+						HostId:          hostEntity.Id,
+						Id:              uuid.NewV4().String(),
+					}
+
+					ret = append(ret, change2)
+
+					return ret
 				}
 			}
 		}
