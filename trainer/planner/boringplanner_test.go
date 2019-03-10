@@ -1251,7 +1251,7 @@ func TestPlan__Plan_ComplexOptimise_Step2(t *testing.T) {
 		State:          "running",
 		SpotInstance:   true,
 		SecurityGroups: []model.SecurityGroup{{Group: "secgrp1"}},
-		Apps:           []model.Application{{Name: "mylinewize", Version: "1", State: "running"}, {Name: "surfwizeweb", Version: "1", State: "running"}, {Name: "surfwizeauth", Version: "1", State: "running"}, {Name: "classwize", Version: "1", State: "running"}},
+		Apps:           []model.Application{{Name: "mylinewize", Version: "1", State: "running"}, {Name: "surfwizeauth", Version: "1", State: "running"}, {Name: "classwize", Version: "1", State: "running"}},
 	}
 	stateStore.Add("host2", host2)
 
