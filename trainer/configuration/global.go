@@ -56,6 +56,7 @@ type GlobalSettings struct {
 	InstanceType              string
 	SpotInstanceType          string
 	TrainerConfigBackupBucket string
+	LoggingDisabled           bool
 
 	/* Immutable configuration for the boring planner.
 	---> Much like AWS settings, must restart trainer for these
