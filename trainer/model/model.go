@@ -270,6 +270,8 @@ type VersionConfig struct {
 
 	DeploymentFailures int
 	DeploymentSuccess  int
+
+	Approved			bool
 }
 
 func (config *VersionConfig) GetVersion() int {
@@ -332,10 +334,14 @@ func (app *ApplicationConfiguration) GetLatestVersion() string {
 
 func (app *ApplicationConfiguration) GetLatestPublishedVersion() string {
 	version := 0
-	for v, _ := range app.PublishedConfig {
-		iversion, _ := strconv.Atoi(v)
-		if iversion > version {
-			version = iversion
+	for v,config := range app.PublishedConfig {
+		/* We are only interested in published configurations that are approved */
+
+		if config.Approved {
+			iversion, _ := strconv.Atoi(v)
+			if iversion > version {
+				version = iversion
+			}
 		}
 	}
 
@@ -374,6 +380,10 @@ func (app *ApplicationConfiguration) GetLatestConfiguration() *VersionConfig {
 func (app *ApplicationConfiguration) GetLatestPublishedConfiguration() *VersionConfig {
 	last_version := app.GetLatestPublishedVersion()
 	return app.PublishedConfig[last_version]
+}
+
+func (app *ApplicationConfiguration) GetPublishedConfigByVersion(version string) *VersionConfig {
+	return app.PublishedConfig[version]
 }
 
 func (config *VersionConfig) ApplyPropertyGroup(name string, prop *PropertyGroup) {

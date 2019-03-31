@@ -47,6 +47,14 @@ type Logs struct {
 	StdErr string
 }
 
+type ApplicationStatus struct {
+	Name              string
+	MinDeployment     int
+	DesiredDeployment int
+	Enabled           bool
+	PendingChanges    int
+}
+
 var ApiLogger = log.LoggerWithField(log.Logger, "module", "api")
 
 func (api *Api) Init(port int, configurationStore *configuration.ConfigurationStore, state *state.StateStore, cloudProvider *cloud.CloudProvider) {
@@ -66,6 +74,8 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r.HandleFunc("/config/applications", api.getAllConfigurationApplications)
 	r.HandleFunc("/config/applications/status", api.getAllConfigurationApplications_Status)
 	r.HandleFunc("/config/applications/configuration/latest", api.getAllConfigurationApplications_Configurations_Latest)
+	r.HandleFunc("/config/applications/configuration/pending", api.configurationPending)
+	r.HandleFunc("/config/applications/configuration/pending/approve", api.configurationApprove)
 	r.HandleFunc("/state", api.getAllRunningState)
 	r.HandleFunc("/checkin", api.hostCheckin)
 
@@ -119,20 +129,22 @@ func (api *Api) getAllConfiguration(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) getAllConfigurationApplications_Status(w http.ResponseWriter, r *http.Request) {
 	if api.authenticate_user(w, r) {
-		listOfApplications := []*model.ApplicationConfiguration{}
+		var listOfApplications []*ApplicationStatus
 		for _, application := range api.configurationStore.GetAllConfiguration() {
-			var app_stats = &model.ApplicationConfiguration{}
-			app_stats.Name = application.Name
-			app_stats.MinDeployment = application.MinDeployment
-			app_stats.DesiredDeployment = application.DesiredDeployment
-			app_stats.DisableSchedule = application.DisableSchedule
-			app_stats.DeploymentSchedule = application.DeploymentSchedule
-			app_stats.ScheduleParts = application.ScheduleParts
-			app_stats.Enabled = application.Enabled
-			app_stats.Publish = application.Publish
-			app_stats.PropertyGroups = application.PropertyGroups
-			app_stats.Depends = application.Depends
-			listOfApplications = append(listOfApplications, app_stats)
+			var applicationStatus = &ApplicationStatus{}
+			applicationStatus.Name = application.Name
+			applicationStatus.MinDeployment = application.MinDeployment
+			applicationStatus.DesiredDeployment = application.DesiredDeployment
+			applicationStatus.Enabled = application.Enabled
+			applicationStatus.PendingChanges = 0
+
+			for _, publishedConfigChange := range application.PublishedConfig {
+				if !publishedConfigChange.Approved {
+					applicationStatus.PendingChanges += 1
+				}
+			}
+
+			listOfApplications = append(listOfApplications, applicationStatus)
 		}
 		returnJson(w, listOfApplications)
 	}
@@ -214,6 +226,66 @@ func (api *Api) getAllConfigurationApplications_Configurations_Latest(w http.Res
 		}
 
 		returnJson(w, nil)
+	}
+}
+
+func (api *Api) configurationApprove(w http.ResponseWriter, r *http.Request) {
+	if api.authenticate_user(w, r) {
+		applicationName := r.URL.Query().Get("application")
+
+		if applicationName == ""  {
+			for _, appConfig := range api.configurationStore.GetAllConfigurationAsOrderedList() {
+				for _, config := range appConfig.PublishedConfig {
+					if !config.Approved {
+						config.Approved = true
+
+						state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+							Message: "API: Configuration approved,  " + applicationName + ", version" + config.Version,
+							AppId:   applicationName,
+						})
+					}
+				}
+			}
+		} else {
+			application, err := api.configurationStore.GetConfiguration(applicationName)
+			if err == nil {
+				for _, config := range application.PublishedConfig {
+					config.Approved = true
+
+					state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+						Message: "API: Configuration approved,  " + applicationName + ", version" + config.Version,
+						AppId:   applicationName,
+					})
+				}
+
+			}
+		}
+
+		api.persistConfiguration()
+		returnJson(w, nil)
+		return
+	}
+}
+
+func (api *Api) configurationPending(w http.ResponseWriter, r *http.Request) {
+	if api.authenticate_user(w, r) {
+		applicationName := r.URL.Query().Get("application")
+		application, err := api.configurationStore.GetConfiguration(applicationName)
+		var pending []*model.VersionConfig
+
+		for _, config := range application.PublishedConfig {
+			if config.Approved == false {
+				pending = append(pending, config)
+			}
+		}
+
+		if r.Method == "POST" {
+			if err == nil {
+			}
+		}
+
+		returnJson(w, pending)
+		return
 	}
 }
 

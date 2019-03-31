@@ -230,6 +230,7 @@ func (store *ConfigurationStore) RequestPublishConfiguration(config *model.Appli
 		AppliedPropertyGroups: make(map[string]int),
 		DeploymentFailures:    0,
 		DeploymentSuccess:     0,
+		Approved: false,
 	}
 
 	publishedConfiguration.Files = make([]model.File, len(templateForConfiguration.Files))
@@ -275,6 +276,7 @@ func (store *ConfigurationStore) DoesRequestPublishConfigurationMakeSense(config
 		AppliedPropertyGroups: lastPublishedConfiguration.AppliedPropertyGroups,
 		DeploymentFailures:    lastPublishedConfiguration.DeploymentFailures,
 		DeploymentSuccess:     lastPublishedConfiguration.DeploymentSuccess,
+		Approved:				lastPublishedConfiguration.Approved,
 	}
 
 	publishedConfiguration.Files = make([]model.File, len(templateForConfiguration.Files))

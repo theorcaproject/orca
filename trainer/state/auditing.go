@@ -33,7 +33,7 @@ import (
 
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	elastic "gopkg.in/olivere/elastic.v5"
+	"gopkg.in/olivere/elastic.v5"
 )
 
 type OrcaDb struct {
@@ -69,32 +69,6 @@ const (
 	AUDIT__INFO    = AuditSeverity("info")
 	AUDIT__DEBUG   = AuditSeverity("debug")
 	AUDIT__MONITOR = AuditSeverity("monitor")
-	LOG__STDOUT    = "stdout"
-	LOG__STDERR    = "stderr"
-
-	LOG_MAPPING = `{
-                        "mappings" : {
-                            "log" : {
-                                "properties" : {
-                                    "Timestamp" : { "type" : "date" },
-                                 }
-                            }
-                        }
-                    }`
-
-	AUDIT_MAPPING = `{
-                        "mappings" : {
-                            "event" : {
-                                "properties" : {
-                                    "Timestamp" : { "type" : "date" },
-                                    "HostId" : { "type" : "string", "index" : "not_analyzed"},
-                                    "AppId" : { "type" : "string", "index" : "not_analyzed"},
-                                    "Message" : { "type" : "string", "index" : "not_analyzed"},
-                                    "Severity" : { "type" : "string"}
-                                }
-                            }
-                        }
-                    }`
 )
 
 var Audit OrcaDb
@@ -160,14 +134,6 @@ func (db *OrcaDb) Init(configurationStore *configuration.ConfigurationStore) {
 func (db *OrcaDb) Insert__AuditEvent(event AuditEvent) {
 	if !db.enabled {
 		return
-	}
-
-	if event.Severity == AUDIT__ERROR {
-		logs.AuditLogger.Errorln(event.Message)
-	} else if event.Severity == AUDIT__INFO {
-		logs.AuditLogger.Infoln(event.Message)
-	} else if event.Severity == AUDIT__DEBUG {
-		logs.AuditLogger.Debugln(event.Message)
 	}
 
 	/* Run hooks */
@@ -285,12 +251,16 @@ func (db *OrcaDb) Insert__Log(log LogEvent) {
 			}
 		}
 	}
-	log.Timestamp = time.Now()
-	s := db.session.Copy()
-	defer s.Close()
-	c := s.DB("orca").C("logs")
-	if err := c.Insert(&log); err != nil {
-		fmt.Println(err)
+
+	/* Log it locally */
+	if !db.configurationStore.GlobalSettings.LocalLoggingDisabled {
+		log.Timestamp = time.Now()
+		s := db.session.Copy()
+		defer s.Close()
+		c := s.DB("orca").C("logs")
+		if err := c.Insert(&log); err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 

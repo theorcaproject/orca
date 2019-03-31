@@ -38,6 +38,10 @@ var Stats StatisticsDb
 func (db *StatisticsDb) Init(configurationStore *configuration.ConfigurationStore) {
 	db.configurationStore = configurationStore
 
+	if db.configurationStore.GlobalSettings.StatsDatabaseUri == ""{
+		return
+	}
+
 	session, err := mgo.Dial(db.configurationStore.GlobalSettings.StatsDatabaseUri)
 	if err != nil {
 		panic(err)
@@ -150,6 +154,10 @@ type HostUtilisationStatistic struct {
 }
 
 func (db *StatisticsDb) Insert__ApplicationUtilisationStatistic(event ApplicationUtilisationStatistic) {
+	if db.session == nil {
+		return
+	}
+
 	s := db.session.Copy()
 	defer s.Close()
 
@@ -162,6 +170,10 @@ func (db *StatisticsDb) Insert__ApplicationUtilisationStatistic(event Applicatio
 }
 
 func (db *StatisticsDb) Insert__ApplicationHostUtilisationStatistic(event ApplicationHostUtilisationStatistic) {
+	if db.session == nil {
+		return
+	}
+
 	s := db.session.Copy()
 	defer s.Close()
 
@@ -174,6 +186,10 @@ func (db *StatisticsDb) Insert__ApplicationHostUtilisationStatistic(event Applic
 }
 
 func (db *StatisticsDb) Insert__HostUtilisationStatistic(event HostUtilisationStatistic) {
+	if db.session == nil {
+		return
+	}
+
 	s := db.session.Copy()
 	defer s.Close()
 
@@ -186,11 +202,15 @@ func (db *StatisticsDb) Insert__HostUtilisationStatistic(event HostUtilisationSt
 }
 
 func (db *StatisticsDb) Query__ApplicationUtilisationStatistic(application string) []ApplicationUtilisationStatistic {
+	var results []ApplicationUtilisationStatistic
+	if db.session == nil {
+		return results
+	}
+
 	s := db.session.Copy()
 	defer s.Close()
 
 	c := s.DB("orca").C("app_utilisation")
-	var results []ApplicationUtilisationStatistic
 	err := c.Find(bson.M{"appname": application}).Sort("-timestamp").All(&results)
 	if err != nil {
 		panic("error querying db")
@@ -200,11 +220,15 @@ func (db *StatisticsDb) Query__ApplicationUtilisationStatistic(application strin
 }
 
 func (db *StatisticsDb) Query__HostUtilisationStatistic(host string) []HostUtilisationStatistic {
+	var results []HostUtilisationStatistic
+	if db.session == nil {
+		return results
+	}
+
 	s := db.session.Copy()
 	defer s.Close()
 
 	c := s.DB("orca").C("host_utilisation")
-	var results []HostUtilisationStatistic
 	err := c.Find(bson.M{"host": host}).Sort("-timestamp").All(&results)
 	if err != nil {
 		panic("error querying db")
@@ -214,11 +238,15 @@ func (db *StatisticsDb) Query__HostUtilisationStatistic(host string) []HostUtili
 }
 
 func (db *StatisticsDb) Query__LatestHostUtilisationStatistic(host string) HostUtilisationStatistic {
+	var results HostUtilisationStatistic
+	if db.session == nil {
+		return results
+	}
+
 	s := db.session.Copy()
 	defer s.Close()
 
 	c := s.DB("orca").C("host_utilisation")
-	var results HostUtilisationStatistic
 	err := c.Find(bson.M{"host": host}).Sort("-timestamp").One(&results)
 	if err != nil {
 		logs.AuditLogger.Errorln(err)
@@ -229,11 +257,15 @@ func (db *StatisticsDb) Query__LatestHostUtilisationStatistic(host string) HostU
 }
 
 func (db *StatisticsDb) Query__ApplicationHostUtilisationStatistic(application string, host string) []ApplicationHostUtilisationStatistic {
+	var results []ApplicationHostUtilisationStatistic
+	if db.session == nil {
+		return results
+	}
+
 	s := db.session.Copy()
 	defer s.Close()
 
 	c := s.DB("orca").C("app_host_utilisation")
-	var results []ApplicationHostUtilisationStatistic
 	err := c.Find(bson.M{"host": host, "appname": application}).Sort("-timestamp").All(&results)
 	if err != nil {
 		panic("error querying db")
