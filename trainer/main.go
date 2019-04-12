@@ -67,7 +67,7 @@ func main() {
 	}
 
 	startTime := time.Now()
-	plannerAndTimeoutsTicker := time.NewTicker(time.Second * 10)
+	plannerAndTimeoutsTicker := time.NewTicker(time.Second * 20)
 	go func() {
 		for {
 			<-plannerAndTimeoutsTicker.C
