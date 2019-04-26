@@ -63,7 +63,7 @@ func main() {
 		awsEngine := cloud.AwsCloudEngine{}
 		awsEngine.Init(store.GlobalSettings.AWSAccessKeyId, store.GlobalSettings.AWSAccessKeySecret, store.GlobalSettings.AWSRegion, store.GlobalSettings.AWSBaseAmi, store.GlobalSettings.AWSSSHKey, store.GlobalSettings.AWSSSHKeyPath,
 			store.GlobalSettings.AWSSpotPrice, store.GlobalSettings.InstanceType, store.GlobalSettings.SpotInstanceType, store.GlobalSettings.TrainerConfigBackupBucket)
-		cloud_provider.Init(&awsEngine, store.GlobalSettings.InstanceUsername, store.GlobalSettings.Uri, store.GlobalSettings.LoggingUri)
+		cloud_provider.Init(&awsEngine, store.GlobalSettings.InstanceUsername, store.GlobalSettings.Uri, store.GlobalSettings.LoggingUri, store.GlobalSettings.CloudProviderCommands)
 	}
 
 	startTime := time.Now()

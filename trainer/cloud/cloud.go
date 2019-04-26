@@ -33,15 +33,17 @@ type CloudProvider struct {
 	apiEndpoint     string
 	loggingEndpoint string
 	sshUser         string
+	commands		[]string
 
 	lastSpotInstanceFailure time.Time
 }
 
-func (cloud *CloudProvider) Init(engine CloudEngine, sshUser string, apiEndpoint string, loggingEndpoint string) {
+func (cloud *CloudProvider) Init(engine CloudEngine, sshUser string, apiEndpoint string, loggingEndpoint string, commands []string) {
 	cloud.Engine = engine
 	cloud.apiEndpoint = apiEndpoint
 	cloud.sshUser = sshUser
 	cloud.loggingEndpoint = loggingEndpoint
+	cloud.commands = commands
 }
 
 func (cloud *CloudProvider) ActionChange(change *model.ChangeServer, stateStore *state.StateStore) {
@@ -100,6 +102,10 @@ func (cloud *CloudProvider) ActionChange(change *model.ChangeServer, stateStore 
 						"sudo -S mkdir /tmp/orca",
 						"sudo -S docker pull michaellawson/orcahostd:latest",
 						"sudo -S docker run -d -e HOSTID='" + string(newHost.Id) + "' -e TRAINER_URL='"+cloud.apiEndpoint+"' -e DOCKER_SOCKET='unix:///var/root/run/docker.sock' -v /var/run:/var/root/run/ -v /tmp/orca:/tmp/orca --network='host' michaellawson/orcahostd",
+					}
+
+					for _, command := range cloud.commands {
+						instance = append(instance, command)
 					}
 
 					for _, cmd := range instance {

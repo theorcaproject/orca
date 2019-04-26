@@ -61,6 +61,7 @@ func (store *ConfigurationStore) Init(trainerConfigurationFilePath string) {
 		AuditDatabaseUri:       "http://localhost:9200",
 		StatsDatabaseUri:       "localhost",
 		ServerTTL:              86400,
+		CloudProviderCommands:  make([] string, 0),
 	}
 }
 
