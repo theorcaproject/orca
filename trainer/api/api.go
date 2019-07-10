@@ -70,6 +70,7 @@ func (api *Api) Init(port int, configurationStore *configuration.ConfigurationSt
 	r.HandleFunc("/checkin", api.hostCheckin)
 
 	r.HandleFunc("/state/cloud/host/performance", api.getHostPerformance)
+	r.HandleFunc("/state/cloud/host/terminate", api.terminateHost)
 	r.HandleFunc("/state/cloud/host/latest/performance", api.getHostLatestPerformance)
 	r.HandleFunc("/state/cloud/application/performance", api.getAppPerformance)
 	r.HandleFunc("/state/cloud/application/host/performance", api.getAppHostPerformance)
@@ -246,7 +247,7 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 				Changes:   []model.ChangeApplication{},
 				Resources: model.HostResources{},
 			}
-			ip, subnet, secGrps, isSpot, spotId := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
+			ip, subnet, secGrps, isSpot, spotId, instanceType := api.cloudProvider.Engine.GetHostInfo(cloud.HostId(hostId))
 			host.GroupingTag = api.cloudProvider.Engine.GetTag("GroupingTag", host.Id)
 
 			host.Ip = ip
@@ -254,10 +255,11 @@ func (api *Api) hostCheckin(w http.ResponseWriter, r *http.Request) {
 			host.SecurityGroups = secGrps
 			host.SpotInstance = isSpot
 			host.SpotInstanceId = spotId
+			host.InstanceType = instanceType
 			api.state.Add(hostId, host)
 
 			state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
-				Message: fmt.Sprintf("Discovered new server %s, ip: %s, subnet: %s spot: %t", hostId, ip, subnet, isSpot),
+				Message: fmt.Sprintf("Discovered new server %s, ip: %s, subnet: %s spot: %t, instanceType: %s", hostId, ip, subnet, isSpot, instanceType),
 				HostId:  hostId,
 			})
 		}
@@ -399,6 +401,19 @@ func (api *Api) getHostPerformance(w http.ResponseWriter, r *http.Request) {
 	if api.authenticate_user(w, r) {
 		host := r.URL.Query().Get("host")
 		returnJson(w, state.Stats.Query__HostUtilisationStatistic(host))
+	}
+}
+
+func (api *Api) terminateHost(w http.ResponseWriter, r *http.Request) {
+	if api.authenticate_user(w, r) {
+		host := r.URL.Query().Get("host")
+		for _, host_object := range api.state.GetAllHosts(){
+			if host_object.Id == host {
+				host_object.State = "userTerminateRequested"
+			}
+
+		}
+		returnJson(w, api.state.GetAllHosts())
 	}
 }
 

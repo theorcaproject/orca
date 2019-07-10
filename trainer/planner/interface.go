@@ -33,6 +33,8 @@ type PlanningChange struct {
 	/* Creation or removal of server*/
 	InstanceId string
 	InstanceNeeds string
+	InstanceType string
+
 	RequiresReliableInstance bool
 	Network string
 	SecurityGroups []model.SecurityGroup

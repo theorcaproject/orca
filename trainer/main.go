@@ -231,13 +231,14 @@ func main() {
 
 					/* Add new server */
 					cloud_provider.ActionChange(&model.ChangeServer{
-						Id:   uuid.NewV4().String(),
-						Type: "new_server",
-						Time: time.Now().Format(time.RFC3339Nano),
+						Id:                       uuid.NewV4().String(),
+						Type:                     "new_server",
+						Time:                     time.Now().Format(time.RFC3339Nano),
 						RequiresReliableInstance: change.RequiresReliableInstance,
 						Network:                  change.Network,
 						SecurityGroups:           change.SecurityGroups,
 						GroupingTag:              change.GroupingTag,
+						InstanceType:             change.InstanceType,
 					}, state_store)
 
 					continue

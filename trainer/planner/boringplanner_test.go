@@ -1084,7 +1084,7 @@ func TestPlan__Plan_BasicOptimise(t *testing.T) {
 	stateStore.Add("host3", host3)
 
 	changes := planner.Plan_OptimiseLayout(config, stateStore)
-	fmt.Println("%+v", changes)
+	//fmt.Println("%+v", changes)
 	fmt.Printf("changes: %+v", changes)
 	if len(changes) != 2 || changes[0].Type != "add_application" && changes[0].HostId != "host1" {
 		t.Errorf("%+v", changes)

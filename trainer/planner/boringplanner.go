@@ -149,6 +149,10 @@ func (planner *BoringPlanner) FindServerInChanges(changes []PlanningChange, app 
 			continue
 		}
 
+		if newServerChange.InstanceType != app.GetLatestPublishedConfiguration().InstanceType {
+			continue
+		}
+
 		if newServerChange.GroupingTag != app.GetLatestPublishedConfiguration().GroupingTag {
 			continue
 		}
@@ -191,6 +195,17 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 					continue
 				}
 
+				/* Does this application override the normal instance type */
+				if applicationConfiguration.GetLatestPublishedConfiguration().InstanceType != "" {
+					if hostEntity.InstanceType != applicationConfiguration.GetLatestPublishedConfiguration().InstanceType {
+						continue
+					}
+				}else{
+					if hostEntity.InstanceType != configurationStore.GlobalSettings.InstanceType {
+						continue
+					}
+				}
+
 				/* If this host already has this application version and its running avoid */
 				if hostEntity.HasAppWithSameVersionRunning(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) {
 					continue
@@ -229,6 +244,7 @@ func (planner *BoringPlanner) Plan_SatisfyMinNeeds(configurationStore configurat
 					Network:                  applicationConfiguration.GetLatestPublishedConfiguration().Network,
 					SecurityGroups:           applicationConfiguration.GetLatestPublishedConfiguration().SecurityGroups,
 					GroupingTag:              applicationConfiguration.GetLatestPublishedConfiguration().GroupingTag,
+					InstanceType:             applicationConfiguration.GetLatestPublishedConfiguration().InstanceType,
 				}
 
 				ret = append(ret, change)
@@ -245,6 +261,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 	requiresSpotServer := false
 	serverNetwork := ""
 	groupingTag := ""
+	instanceType := ""
 	var serverSecurityGroups []model.SecurityGroup
 
 	for _, applicationConfiguration := range configurationStore.GetAllConfigurationAsOrderedList() {
@@ -279,6 +296,17 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 					continue
 				}
 
+				/* Does this application override the normal instance type */
+				if applicationConfiguration.GetLatestPublishedConfiguration().InstanceType != "" {
+					if hostEntity.InstanceType != applicationConfiguration.GetLatestPublishedConfiguration().InstanceType {
+						continue
+					}
+				}else{
+					if hostEntity.InstanceType != configurationStore.GlobalSettings.InstanceType {
+						continue
+					}
+				}
+
 				if hostEntity.HasAppWithSameVersionRunning(applicationConfiguration.Name, applicationConfiguration.GetLatestPublishedVersion()) {
 					continue
 				}
@@ -300,6 +328,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 				serverNetwork = applicationConfiguration.GetLatestPublishedConfiguration().Network
 				serverSecurityGroups = applicationConfiguration.GetLatestPublishedConfiguration().SecurityGroups
 				groupingTag = applicationConfiguration.GetLatestPublishedConfiguration().GroupingTag
+				instanceType = applicationConfiguration.GetLatestPublishedConfiguration().InstanceType
 			}
 		}
 	}
@@ -312,6 +341,7 @@ func (planner *BoringPlanner) Plan_SatisfyDesiredNeeds(configurationStore config
 			Network:                  serverNetwork,
 			SecurityGroups:           serverSecurityGroups,
 			GroupingTag:              groupingTag,
+			InstanceType:             instanceType,
 		}
 
 		ret = append(ret, change)
@@ -511,7 +541,17 @@ func (planner *BoringPlanner) Plan_OptimiseLayout(configurationStore configurati
 					continue
 				}
 
-				// if potentialHost.Id != hostEntity.Id && !potentialHost.HasAppWithSameVersionRunning(app.Name, app.Version) && len(potentialHost.Apps) >= len(hostEntity.Apps) {
+				/* Does this application override the normal instance type */
+				if appConfiguration.GetLatestPublishedConfiguration().InstanceType != "" {
+					if potentialHost.InstanceType != appConfiguration.GetLatestPublishedConfiguration().InstanceType {
+						continue
+					}
+				}else{
+					if potentialHost.InstanceType != configurationStore.GlobalSettings.InstanceType {
+						continue
+					}
+				}
+
 				if hostIsSuitable(potentialHost, appConfiguration) &&
 					!potentialHost.HasAppWithSameVersionRunning(app.Name, app.Version) &&
 					planner.hostHasCorrectAffinity(potentialHost, appConfiguration) &&
@@ -599,7 +639,17 @@ func (planner *BoringPlanner) Plan_KullServersResourceExceededState(configuratio
 			}
 
 			ret = append(ret, change)
+		}else if hostEntity.State == "userTerminateRequested" {
+			change := PlanningChange{
+				Type:   "retire_server",
+				HostId: hostEntity.Id,
+				Id:     uuid.NewV4().String(),
+				Reason: "Someone from the interface has requested that this instance be terminated",
+			}
+
+			ret = append(ret, change)
 		}
+
 	}
 	return ret
 }

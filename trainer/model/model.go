@@ -59,6 +59,7 @@ type ChangeServer struct {
 
 	//Other stuff
 	GroupingTag string
+	InstanceType string
 }
 
 type HostResources struct {
@@ -270,6 +271,7 @@ type VersionConfig struct {
 
 	DeploymentFailures int
 	DeploymentSuccess  int
+	InstanceType	string
 }
 
 func (config *VersionConfig) GetVersion() int {

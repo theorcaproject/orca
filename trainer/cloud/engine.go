@@ -28,7 +28,7 @@ type CloudEngine interface {
 	SpawnSpotInstanceSync(change *model.ChangeServer) *model.Host
 	GetInstanceType(HostId) InstanceType
 	TerminateInstance(HostId) bool
-	GetHostInfo(HostId) (string, string, []model.SecurityGroup, bool, string)
+	GetHostInfo(HostId) (string, string, []model.SecurityGroup, bool, string, string)
 	WasSpotInstanceTerminatedDueToPrice(spotRequestId string) (bool, string)
 	GetIp(hostId string) string
 	GetPem() string
