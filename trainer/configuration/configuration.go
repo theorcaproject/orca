@@ -61,7 +61,7 @@ func (store *ConfigurationStore) Init(trainerConfigurationFilePath string) {
 		AuditDatabaseUri:       "http://localhost:9200",
 		StatsDatabaseUri:       "localhost",
 		ServerTTL:              86400,
-		CloudProviderCommands:  make([] string, 0),
+		CloudProviderCommands:  make([]string, 0),
 	}
 }
 
@@ -227,6 +227,7 @@ func (store *ConfigurationStore) RequestPublishConfiguration(config *model.Appli
 		EnvironmentVariables: templateForConfiguration.EnvironmentVariables,
 		Checks:               templateForConfiguration.Checks,
 		GroupingTag:          templateForConfiguration.GroupingTag,
+		InstanceType:         templateForConfiguration.InstanceType,
 
 		AppliedPropertyGroups: make(map[string]int),
 		DeploymentFailures:    0,
@@ -276,6 +277,7 @@ func (store *ConfigurationStore) DoesRequestPublishConfigurationMakeSense(config
 		AppliedPropertyGroups: lastPublishedConfiguration.AppliedPropertyGroups,
 		DeploymentFailures:    lastPublishedConfiguration.DeploymentFailures,
 		DeploymentSuccess:     lastPublishedConfiguration.DeploymentSuccess,
+		InstanceType:          templateForConfiguration.InstanceType,
 	}
 
 	publishedConfiguration.Files = make([]model.File, len(templateForConfiguration.Files))
