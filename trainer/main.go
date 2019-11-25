@@ -73,6 +73,7 @@ func main() {
 			store.GlobalSettings.GcpPublicKey,
 			store.GlobalSettings.GcpImageUrl,
 			store.GlobalSettings.GcpPemFile,
+			store.GlobalSettings.InstanceType,
 			)
 		cloud_provider.Init(&gcpEngine, store.GlobalSettings.InstanceUsername, store.GlobalSettings.Uri, store.GlobalSettings.LoggingUri, store.GlobalSettings.CloudProviderCommands)
 	}

@@ -26,6 +26,7 @@ import (
 	"google.golang.org/api/option"
 	"log"
 	"orca/trainer/model"
+	"orca/trainer/state"
 	"strings"
 	"time"
 )
@@ -35,14 +36,15 @@ type GcpCloudEngine struct {
 	CredentialsFile string
 	Zone            string
 
-	PemFile   string
-	PublicKey string
-	User      string
-	ImageUrl  string
+	PemFile      string
+	PublicKey    string
+	User         string
+	ImageUrl     string
+	InstanceType string
 }
 
 func (engine *GcpCloudEngine) Init(projectId string, zone string, credentialsFile string, user string, publicKey string,
-	imageUrl string, pemFile string) {
+	imageUrl string, pemFile string, instanceType string) {
 
 	engine.ProjectId = projectId
 	engine.Zone = zone
@@ -50,9 +52,10 @@ func (engine *GcpCloudEngine) Init(projectId string, zone string, credentialsFil
 	engine.User = user
 	engine.PublicKey = publicKey
 	engine.ImageUrl = imageUrl
-	engine.PemFile= pemFile
+	engine.PemFile = pemFile
+	engine.InstanceType = instanceType
 
-	}
+}
 
 func (a *GcpCloudEngine) GetComputeClient() *compute.Service {
 	ctx := context.Background()
@@ -82,16 +85,29 @@ func (a *GcpCloudEngine) GetIp(hostId string) string {
 func (a *GcpCloudEngine) GetSubnet(hostId string) string {
 	service := a.GetComputeClient()
 	inst, _ := service.Instances.Get(a.ProjectId, a.Zone, hostId).Do()
-	return inst.NetworkInterfaces[0].Subnetwork
+	return inst.NetworkInterfaces[0].Network
+}
+
+func (a *GcpCloudEngine) getSecurityGroups(hostId string) []model.SecurityGroup {
+	service := a.GetComputeClient()
+	inst, _ := service.Instances.Get(a.ProjectId, a.Zone, hostId).Do()
+
+	ret := make([] model.SecurityGroup, 0)
+	for _, tag := range inst.Tags.Items {
+		ret = append(ret, model.SecurityGroup{Group: tag})
+	}
+
+	return ret
 }
 
 func (a *GcpCloudEngine) GetHostInfo(hostId HostId) (string, string, []model.SecurityGroup, bool, string, string) {
 	ip := a.GetIp(string(hostId))
 	subnetId := a.GetSubnet(string(hostId))
 	instanceType := a.GetInstanceType(hostId)
+	securityGroups := a.getSecurityGroups(string(hostId))
 
 	/* GCP does not have the notion of security groups like AWS. So we return an empty sg array */
-	return ip, subnetId, []model.SecurityGroup{}, false, "", string(instanceType)
+	return ip, subnetId, securityGroups, false, "", string(instanceType)
 }
 
 func (a *GcpCloudEngine) waitOnInstanceReady(hostId HostId) bool {
@@ -122,18 +138,27 @@ func (engine *GcpCloudEngine) GetInstanceType(hostId HostId) InstanceType {
 
 func (engine *GcpCloudEngine) SpawnInstanceSync(change *model.ChangeServer) *model.Host {
 	service := engine.GetComputeClient()
-	prefix := "https://www.googleapis.com/compute/v1/projects/" + engine.ProjectId
 	instanceNameUuid, _ := uuid.NewUUID()
 	s := strings.Split(instanceNameUuid.String(), "-")
 	instanceName := s[0]
 	instanceName = "orca-" + instanceName
 	googlifiedPublicKey := engine.GetUsername() + ":" + engine.GetPublicKey()
 
+	tags := make([]string, 0)
+	for _, sgroup := range change.SecurityGroups {
+		tags = append(tags, string(sgroup.Group))
+	}
+
+	machineType := engine.InstanceType
+	if change.InstanceType != "" {
+		machineType = change.InstanceType
+	}
+	
 	// Show the current images that are available.
 	instance := &compute.Instance{
 		Name:        instanceName,
 		Description: "orca instance",
-		MachineType: prefix + "/zones/" + engine.Zone + "/machineTypes/n1-standard-1",
+		MachineType: machineType,
 		Disks: []*compute.AttachedDisk{
 			{
 				AutoDelete: true,
@@ -153,7 +178,7 @@ func (engine *GcpCloudEngine) SpawnInstanceSync(change *model.ChangeServer) *mod
 						Name: "External NAT",
 					},
 				},
-				Network: prefix + "/global/networks/default",
+				Network: change.Network,
 			},
 		},
 		ServiceAccounts: []*compute.ServiceAccount{
@@ -172,6 +197,9 @@ func (engine *GcpCloudEngine) SpawnInstanceSync(change *model.ChangeServer) *mod
 					Value: &googlifiedPublicKey,
 				},
 			},
+		},
+		Tags: &compute.Tags{
+			Items: tags,
 		},
 	}
 
@@ -192,7 +220,8 @@ func (engine *GcpCloudEngine) SpawnInstanceSync(change *model.ChangeServer) *mod
 		return &model.Host{}
 	}
 
-	return host;
+	host.Ip = engine.GetIp(instanceName)
+	return host
 }
 
 func (engine *GcpCloudEngine) TerminateInstance(hostId HostId) bool {
@@ -234,6 +263,23 @@ func (engine *GcpCloudEngine) SanityCheckHosts(hosts map[string]*model.Host) {
 }
 
 func (engine *GcpCloudEngine) doSanityCheck(host *model.Host) {
+	ip, network, securityGroups, isSpot, spotId, instanceType := engine.GetHostInfo(HostId(host.Id))
+	if ip == "" || network == "" || len(securityGroups) == 0 {
+		return
+	}
+	if host.Ip != ip || host.Network != network || host.SpotInstance != isSpot || !securityGroupsEqual(host.SecurityGroups, securityGroups) || host.SpotInstanceId != spotId || host.InstanceType != instanceType {
+		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
+			Message: fmt.Sprintf("Got different info for host %s from GCP. Host was: %s, AWS Ip: %s, Subnet: %s, SpotInstance: %t, securityGroups: %v",
+				host.Id, host, ip, network, isSpot, securityGroups),
+		})
+
+		host.Ip = ip
+		host.Network = network
+		host.SpotInstance = isSpot
+		host.SecurityGroups = securityGroups
+		host.SpotInstanceId = spotId
+		host.InstanceType = instanceType
+	}
 }
 
 func (engine *GcpCloudEngine) WasSpotInstanceTerminatedDueToPrice(spotRequestId string) (bool, string) {
@@ -241,6 +287,7 @@ func (engine *GcpCloudEngine) WasSpotInstanceTerminatedDueToPrice(spotRequestId 
 }
 
 func (engine *GcpCloudEngine) GetTag(tagKey string, newHostId string) string {
+	tagKey = strings.ToLower(tagKey)
 	service := engine.GetComputeClient()
 	inst, _ := service.Instances.Get(engine.ProjectId, engine.Zone, newHostId).Do()
 
@@ -253,6 +300,7 @@ func (engine *GcpCloudEngine) GetTag(tagKey string, newHostId string) string {
 }
 
 func (engine *GcpCloudEngine) SetTag(newHostId string, tagKey string, tagValue string) {
+	tagKey = strings.ToLower(tagKey)
 	service := engine.GetComputeClient()
 	inst, _ := service.Instances.Get(engine.ProjectId, engine.Zone, newHostId).Do()
 	existingLabels := inst.Labels
