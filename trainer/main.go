@@ -18,6 +18,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/twinj/uuid"
+	"gopkg.in/mcuadros/go-syslog.v2"
 	"orca/trainer/api"
 	"orca/trainer/cloud"
 	"orca/trainer/configuration"
@@ -27,9 +29,6 @@ import (
 	"orca/trainer/state"
 	"strings"
 	"time"
-
-	"github.com/twinj/uuid"
-	"gopkg.in/mcuadros/go-syslog.v2"
 )
 
 func main() {
@@ -64,6 +63,18 @@ func main() {
 		awsEngine.Init(store.GlobalSettings.AWSAccessKeyId, store.GlobalSettings.AWSAccessKeySecret, store.GlobalSettings.AWSRegion, store.GlobalSettings.AWSBaseAmi, store.GlobalSettings.AWSSSHKey, store.GlobalSettings.AWSSSHKeyPath,
 			store.GlobalSettings.AWSSpotPrice, store.GlobalSettings.InstanceType, store.GlobalSettings.SpotInstanceType, store.GlobalSettings.TrainerConfigBackupBucket)
 		cloud_provider.Init(&awsEngine, store.GlobalSettings.InstanceUsername, store.GlobalSettings.Uri, store.GlobalSettings.LoggingUri, store.GlobalSettings.CloudProviderCommands)
+
+	} else if store.GlobalSettings.CloudProvider == "gcp" {
+		gcpEngine := cloud.GcpCloudEngine{}
+		gcpEngine.Init(store.GlobalSettings.GcpProjectId,
+			store.GlobalSettings.GcpZone,
+			store.GlobalSettings.GcpCredentialsFile,
+			store.GlobalSettings.GcpUser,
+			store.GlobalSettings.GcpPublicKey,
+			store.GlobalSettings.GcpImageUrl,
+			store.GlobalSettings.GcpPemFile,
+			)
+		cloud_provider.Init(&gcpEngine, store.GlobalSettings.InstanceUsername, store.GlobalSettings.Uri, store.GlobalSettings.LoggingUri, store.GlobalSettings.CloudProviderCommands)
 	}
 
 	startTime := time.Now()

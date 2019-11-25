@@ -39,15 +39,27 @@ type LoggingWebHook struct {
 }
 
 type GlobalSettings struct {
-	ApiPort                   int
-	LoggingPort               int
-	CloudProvider             string
-	AWSAccessKeyId            string
-	AWSAccessKeySecret        string
-	AWSRegion                 string
-	AWSBaseAmi                string
-	AWSSSHKey                 string
-	AWSSSHKeyPath             string
+	ApiPort       int
+	LoggingPort   int
+	CloudProvider string
+
+	/* AWS Settings */
+	AWSAccessKeyId     string
+	AWSAccessKeySecret string
+	AWSRegion          string
+	AWSBaseAmi         string
+	AWSSSHKey          string
+	AWSSSHKeyPath      string
+
+	/* GCP Settings */
+	GcpProjectId       string
+	GcpCredentialsFile string
+	GcpZone            string
+	GcpPemFile         string
+	GcpPublicKey       string
+	GcpUser            string
+	GcpImageUrl        string
+
 	PlanningAlg               string
 	InstanceUsername          string
 	Uri                       string
