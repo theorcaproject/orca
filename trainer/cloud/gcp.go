@@ -153,7 +153,7 @@ func (engine *GcpCloudEngine) SpawnInstanceSync(change *model.ChangeServer) *mod
 	if change.InstanceType != "" {
 		machineType = change.InstanceType
 	}
-	
+
 	// Show the current images that are available.
 	instance := &compute.Instance{
 		Name:        instanceName,
@@ -267,7 +267,10 @@ func (engine *GcpCloudEngine) doSanityCheck(host *model.Host) {
 	if ip == "" || network == "" || len(securityGroups) == 0 {
 		return
 	}
-	if host.Ip != ip || host.Network != network || host.SpotInstance != isSpot || !securityGroupsEqual(host.SecurityGroups, securityGroups) || host.SpotInstanceId != spotId || host.InstanceType != instanceType {
+	if host.Ip != ip || host.Network != network || host.SpotInstance != isSpot ||
+		!securityGroupsEqual(host.SecurityGroups, securityGroups) ||
+		host.SpotInstanceId != spotId || host.InstanceType != instanceType {
+
 		state.Audit.Insert__AuditEvent(state.AuditEvent{Severity: state.AUDIT__INFO,
 			Message: fmt.Sprintf("Got different info for host %s from GCP. Host was: %s, AWS Ip: %s, Subnet: %s, SpotInstance: %t, securityGroups: %v",
 				host.Id, host, ip, network, isSpot, securityGroups),
@@ -353,9 +356,43 @@ func (engine *GcpCloudEngine) MonitorDataQueue(name string) int {
 }
 
 func (engine *GcpCloudEngine) RegisterWithLb(hostId string, lbId string) {
+	endpoints := make([]*compute.NetworkEndpoint, 1)
+	endpoint := compute.NetworkEndpoint{
+		Instance: hostId,
+	}
+	endpoints[0] = &endpoint
+
+	request := compute.NetworkEndpointGroupsAttachEndpointsRequest{
+		NetworkEndpoints: endpoints,
+	}
+
+	service := engine.GetComputeClient()
+	_, err := service.NetworkEndpointGroups.AttachNetworkEndpoints(
+		engine.ProjectId, engine.Zone, "nginix-http", &request).Do()
+
+	if err != nil {
+		log.Printf("Register with LB failed, %s", err)
+	}
+
 	return
 }
 
 func (engine *GcpCloudEngine) DeRegisterWithLb(hostId string, lbId string) {
-	return
+	endpoints := make([]*compute.NetworkEndpoint, 1)
+	endpoint := compute.NetworkEndpoint{
+		Instance: hostId,
+	}
+	endpoints[0] = &endpoint
+
+	request := compute.NetworkEndpointGroupsDetachEndpointsRequest{
+		NetworkEndpoints: endpoints,
+	}
+
+	service := engine.GetComputeClient()
+	_, err := service.NetworkEndpointGroups.DetachNetworkEndpoints(
+		engine.ProjectId, engine.Zone, "nginix-http", &request).Do()
+
+	if err != nil {
+		log.Printf("DeRegister with LB failed, %s", err)
+	}
 }
